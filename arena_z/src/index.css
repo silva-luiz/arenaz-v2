@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+* {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.primaryButton {
+  background-color: var(--primary-color);
+  color: var(--title-color);
+  padding: 10px 30px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+  margin-inline: 10px;
+  transition: 0.5s ease;
+
+}
+
+.primaryButton:hover {
+  background-color: var(--primary-color-hover);
+  cursor: pointer;
+}
+
+.outlinedButton {
+  background-color: transparent;
+  color: var(--title-color);
+  padding: 10px 30px;
+  border-radius: 12px;
+  border: 2px solid var(--title-color);
+  font-size: 1.2rem;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+  margin-inline: 10px;
+  transition: 0.5s ease;
+}
+
+.outlinedButton:hover {
+  background-color: var(--background-color-hover);
+  cursor: pointer;
+}

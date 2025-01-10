@@ -1,0 +1,38 @@
+@import url('./colors.css');
+
+.siteNavbar {
+  display: flex;
+  justify-content: space-between;
+  width: 95vw;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.arenazMainButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-color);
+  transition: transform 0.3s ease;
+}
+
+.arenazMainButton:hover {
+  transform: scale(1.05);
+}
+
+.arenazLogo {
+  margin-right: 10px;
+  width: 100px;
+  height: auto;
+}
+
+.arenazMainButton p {
+  margin: 0;
+  font-size: 16px;
+  color: #000;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
