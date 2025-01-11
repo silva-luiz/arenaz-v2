@@ -8,6 +8,10 @@ strong {
   color: var(--primary-color);
 }
 
+hr{
+  color: var(--primary-color);
+}
+
 .primaryButton {
   background-color: var(--primary-color);
   color: var(--title-color);

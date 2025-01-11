@@ -16,7 +16,7 @@ function AccordionMenu({ title, children }) {
           </button>
         </h3>
         {isActive ? (
-          <p>{children}</p>
+          <p className={styles.accordionText}>{children}</p>
         ) : (
           null
         )}
