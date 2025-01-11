@@ -1,0 +1,13 @@
+.accordionIten {
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.accordionTitleQuestion{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

@@ -1,0 +1,37 @@
+.mainContainer {
+  width: 100vw;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 20px;
+}
+
+.descriptionTitle {
+  width: 100%;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  text-align: left;
+}
+
+.descriptionContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.descriptionTopic {
+  flex: 1 1 30%;
+  margin: 10px;
+  min-width: 250px;
+  box-sizing: border-box;
+}
+
+.topicTitle {
+  font-size: 1.5rem;
+}
+
+.topicDescription {
+  font-size: 1.2rem;
+  color: var(--text-color);
+}

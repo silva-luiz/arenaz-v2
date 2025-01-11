@@ -1,0 +1,28 @@
+.faqMainContainer {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 75px auto;
+  justify-content: flex-start;
+  background-color: var(--faq-background-color);
+  padding: 50px 20px;
+}
+
+.faqTitle {
+  flex: 1;
+  font-size: 2rem;
+  color: var(--title-color);
+  margin: 100px 60px;
+}
+
+.accordionListContainer {
+  flex: 2;
+  align-items: start;
+  margin-right: 60px;
+}
+
+.accordionContainer {
+  flex: 2;
+  margin: 100px 60px;
+  align-items: start;
+}
