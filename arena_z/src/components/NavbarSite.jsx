@@ -1,9 +1,21 @@
-import arenaZLogo from '../assets/arenaz-logo.png';
+import arenaZLogo from '/arenaz-logo.png';
 
 import styles from './NavbarSite.module.css';
+import Button from './Button';
 
 
 const NavbarSite = () => {
+
+  const goToLogin = (e) =>{
+    e.preventDefault();
+    console.log('Foi pro login');
+  }
+
+  const goToRegister = (e) =>{
+    e.preventDefault();
+    console.log('Foi pro cadastro');
+  }
+
   return (
     <div className={styles.siteNavbar}>
       <a href="#" className={styles.arenazMainButton}>
@@ -11,9 +23,8 @@ const NavbarSite = () => {
         <p>Arena Z</p>
       </a>
       <div>
-        <button className="primaryButton">Criar conta</button>
-        <button className="outlinedButton">Entrar</button>
-
+        <Button className='primaryButton' text='Criar conta' action={goToRegister}/>
+        <Button className='outlinedButton' text='Entrar' action={goToLogin}/>      
       </div>
     </div>
   )

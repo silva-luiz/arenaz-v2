@@ -2,7 +2,15 @@ import PropTypes from 'prop-types';
 
 import styles from './SiteDescription.module.css';
 
-const SiteDescription = ({ DescriptionTitle, Title1, Title2, Title3, Description1, Description2, Description3 }) => {
+const SiteDescription = ({ 
+  DescriptionTitle, 
+  Title1, 
+  Title2, 
+  Title3, 
+  Description1, 
+  Description2, 
+  Description3
+ }) => {
   return (
     <div className={styles.mainContainer}>
       <h2 className={styles.descriptionTitle}>{DescriptionTitle}</h2>
