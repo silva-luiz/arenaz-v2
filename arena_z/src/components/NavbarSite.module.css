@@ -1,18 +1,17 @@
-@import url('./colors.css');
-
 .siteNavbar {
   display: flex;
   justify-content: space-between;
-  width: 95vw;
   align-items: center;
   margin: 0 auto;
   max-width: 1200px;
+  width: 95%; /* Ajusta a largura para telas pequenas */
+  padding: 10px 0; /* Adiciona um pouco de espaço ao redor */
 }
 
+/* Estilos para o botão de logo */
 .arenazMainButton {
   display: flex;
   align-items: center;
-  justify-content: center;
   text-decoration: none;
   color: var(--text-color);
   transition: transform 0.3s ease;
@@ -30,9 +29,55 @@
 
 .arenazMainButton p {
   margin: 0;
-  font-size: 16px;
-  color: #000;
   font-size: 1.3rem;
   font-weight: 600;
+  color: #000;
 }
 
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+  .siteNavbar {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px; 
+  }
+
+  .arenazLogo {
+    width: 80px;
+  }
+
+  .arenazMainButton p {
+    font-size: 1.1rem;
+  }
+
+  .siteNavbar div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .siteNavbar {
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 10px;
+  }
+
+  .arenazLogo {
+    width: 70px;
+  }
+
+  .arenazMainButton p {
+    font-size: 1rem;
+  }
+
+  .siteNavbar div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+  }
+}

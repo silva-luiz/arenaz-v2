@@ -1,12 +1,9 @@
-import LoginPage from "./components/Login/LoginPage"
-
+import RegisterPage from "./components/Register/RegisterPage"
 
 function App() {
-
-
   return (
     <div className='main-container'>
-      <LoginPage/>
+      <RegisterPage/>
     </div>
   )
 }

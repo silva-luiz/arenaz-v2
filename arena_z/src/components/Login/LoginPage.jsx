@@ -38,7 +38,6 @@ const LoginPage = () => {
                     <input type="email" placeholder='E-mail' name='email' onChange={(e) => setEmail(e.target.value)}/>
                     <FaUser className={styles.faIcon} />
                 </div>
-                
             </div>
 
             <div className={styles.inputContainer}>
