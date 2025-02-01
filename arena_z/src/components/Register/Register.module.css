@@ -8,6 +8,10 @@ p {
     margin: 10px 5px;
 }
 
+.arenaRegisterTitle, .arenaRegisterSubtitle, .arenaRegisterParagraph{
+    text-align: left;
+}
+
 .registerSubtitle {
     margin-bottom: 25px;
 }
@@ -146,6 +150,21 @@ p {
     margin-left: 5px;
     color: var(--text-color);
 }
+
+.radioContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .radioItem {
+    display: flex;
+    align-items: center;
+  }
+
+  .radioItem input[type="radio"]:checked {
+    accent-color: var(--primary-color); /* Cor quando o radio button está selecionado */
+  }
 
 /* Media Queries para responsividade */
 @media (max-width: 768px) {
