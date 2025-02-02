@@ -1,0 +1,110 @@
+/* Navbar fixa no topo */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; 
+    background-color: var(--background-color);
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+    padding-top: 80px;
+}
+
+
+.errorContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+
+.errorImg {
+    max-width: 50%;
+    height: auto;
+    object-fit: contain;
+}
+
+
+.errorMessageContainer {
+    flex: 1;
+    text-align: center;
+}
+
+.heading {
+    font-size: 300px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.message {
+    font-size: 50px;
+    margin: 20px 0;
+}
+
+.link {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--text-color);
+    transition: color 0.3s ease, transform 0.3s ease;
+    text-decoration: none;
+}
+
+.link:hover {
+    font-size: 18px;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .errorContainer {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .errorImg {
+        max-width: 80%;
+    }
+
+    .heading {
+        font-size: 150px;
+    }
+
+    .message {
+        font-size: 30px;
+    }
+
+    .link {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .errorImg {
+        max-width: 90%;
+    }
+
+    .heading {
+        font-size: 100px;
+    }
+
+    .message {
+        font-size: 24px;
+    }
+
+    .link {
+        font-size: 14px;
+    }
+}
