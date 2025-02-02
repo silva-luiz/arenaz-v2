@@ -1,28 +1,55 @@
 .faqMainContainer {
   display: flex;
-  width: 100%;
+  flex-direction: column; /* Mudança para coluna em dispositivos pequenos */
+  width: 90%;
   max-width: 1200px;
   margin: 75px auto;
-  justify-content: flex-start;
   background-color: var(--faq-background-color);
   padding: 50px 20px;
+  border-radius: 12px;
 }
 
 .faqTitle {
-  flex: 1;
   font-size: 2rem;
   color: var(--title-color);
-  margin: 100px 60px;
+  margin-bottom: 40px; /* Diminuir espaçamento para dar mais proximidade ao conteúdo */
+  text-align: center;  /* Centraliza o título */
 }
 
 .accordionListContainer {
-  flex: 2;
-  align-items: start;
-  margin-right: 60px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Espaçamento entre cada item do acordeão */
 }
 
-.accordionContainer {
-  flex: 2;
-  margin: 100px 60px;
-  align-items: start;
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+  .faqMainContainer {
+    padding: 40px 10px;  /* Reduz o padding em dispositivos menores */
+  }
+
+  .faqTitle {
+    font-size: 1.8rem;   /* Tamanho de fonte menor em tablets */
+    margin-bottom: 30px;
+  }
+
+  .accordionListContainer {
+    gap: 15px;  /* Reduz o espaçamento entre os itens do acordeão */
+  }
+}
+
+@media (max-width: 480px) {
+  .faqMainContainer {
+    padding: 30px 10px;
+  }
+
+  .faqTitle {
+    font-size: 1.5rem;  /* Tamanho menor para dispositivos móveis */
+    margin-bottom: 20px;
+  }
+
+  .accordionListContainer {
+    gap: 10px;  /* Espaçamento menor entre os itens */
+  }
 }

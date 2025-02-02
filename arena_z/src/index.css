@@ -47,6 +47,7 @@ hr{
   transition: transform 0.3s ease;
   margin-inline: 10px;
   transition: 0.5s ease;
+  min-width: 150px;
 }
 
 .primaryButton:hover {
@@ -84,6 +85,8 @@ hr{
   transition: transform 0.3s ease;
   margin-inline: 10px;
   transition: 0.5s ease;
+  min-width: 150px;
+
 }
 
 .outlinedButton:hover {

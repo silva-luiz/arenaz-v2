@@ -4,8 +4,9 @@
   align-items: center;
   margin: 0 auto;
   max-width: 1200px;
-  width: 95%; /* Ajusta a largura para telas pequenas */
-  padding: 10px 0; /* Adiciona um pouco de espaço ao redor */
+  width: 95%;
+  padding: 10px 0;
+  gap: 20px; /* Espaçamento entre logo e botões */
 }
 
 /* Estilos para o botão de logo */
@@ -32,6 +33,11 @@
   font-size: 1.3rem;
   font-weight: 600;
   color: #000;
+}
+
+.siteNavbar div {
+  display: flex;
+  gap: 15px; /* Espaço entre os botões */
 }
 
 /* Media Queries para responsividade */

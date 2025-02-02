@@ -4,30 +4,41 @@
   text-align: center;
   max-width: 1200px;
   align-items: center;
+  width: 100%;
+  background-color: var(--background-color);
+  color: var(--text-color);
   position: relative;
   bottom: 0;
-  width: 100%; /* Garante que o footer ocupe toda a largura da tela */
-  background-color: var(--background-color); /* Para dar um fundo ao footer, caso necessário */
-  color: var(--text-color); /* Cor do texto */
+}
+
+
+html, body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > div {
+  flex: 1;
 }
 
 /* Media Queries para responsividade */
 @media (max-width: 768px) {
   .siteFooter {
-    padding: 15px 10px; /* Aumenta o padding para telas menores */
+    padding: 15px 10px;
   }
 
   .siteFooter p {
-    font-size: 14px; /* Ajusta o tamanho da fonte para telas menores */
+    font-size: 14px;
   }
 }
 
 @media (max-width: 480px) {
   .siteFooter {
-    padding: 20px 10px; /* Aumenta o padding em telas muito pequenas */
+    padding: 20px 10px;
   }
 
   .siteFooter p {
-    font-size: 12px; /* Ajusta ainda mais o tamanho da fonte para telas pequenas */
+    font-size: 12px;
   }
 }
