@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import styles from '../error/ErrorPage.module.css';
+import styles from "../error/ErrorPage.module.css";
 import SiteFooter from "../SiteFooter";
-import errorImg from '../../../public/404_img.jpg'; // Certifique-se do caminho correto da imagem
+import errorImg from "../../assets/404_img.jpg"
 
 const ErrorPage = () => {
   return (
