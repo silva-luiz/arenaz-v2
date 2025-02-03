@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
 import styles from '../error/ErrorPage.module.css';
-import NavbarSite from "../NavbarSite";
 import SiteFooter from "../SiteFooter";
 import errorImg from '../../../public/404_img.jpg'; // Certifique-se do caminho correto da imagem
 
 const ErrorPage = () => {
   return (
     <div className={styles.container}>
-      <NavbarSite className={styles.navbar}/>
       <div className={styles.errorContainer}>
         <img src={errorImg} alt="Logo" className={styles.errorImg} />
         <div className={styles.errorMessageContainer}>
