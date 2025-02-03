@@ -49,7 +49,6 @@ const LoginPage = () => {
                                 <input type="checkbox" className={styles.checkbox} />
                                 Lembrar login
                             </label>
-                            <a href="#" className={styles.forgetPasswordLink}>Esqueci minha senha</a>
                         </div>
                         <Button className={styles.loginPrimaryButton} text='Entrar' action={handleSubmit} />
                         <div className={styles.signUpLink}>

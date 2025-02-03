@@ -79,11 +79,20 @@
   font-size: 14px;
 }
 
+.faIcon{
+  color: var(--text-color);
+}
+
 .recallForget {
   width: 100%;
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
+}
+
+.recallForget .checkbox {
+  margin-right: 10px;
+  accent-color: var(--primary-color);
 }
 
 .loginPrimaryButton {
