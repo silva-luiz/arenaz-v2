@@ -78,7 +78,7 @@ p {
     align-items: center;
     padding: 20px;
     text-align: center;
-    width: 50vw; /* Ajuste para telas maiores */
+    width: 50vw;
     border: solid 1px var(--background-color-hover);
     border-radius: 12px;
 }

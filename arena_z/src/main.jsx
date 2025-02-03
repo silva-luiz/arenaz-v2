@@ -9,7 +9,7 @@ import HomePage from './components/Home/HomePage.jsx'
 import ReservationsPage from './components/Reservations/ReservationsPage.jsx'
 
 // React-Router import
-import { createBrowserRouter, RouterProvider, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Route, Navigate } from 'react-router-dom';
 import ErrorPage from './components/error/ErrorPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx'
 
@@ -32,6 +32,10 @@ const router = createBrowserRouter(
       path: "home",
       element: <HomePage/>,
       children: [
+        {
+          index: true,
+          element: <Navigate to="dashboard" />
+        },
         {
           path: "dashboard",
           element: <DashboardPage/>
