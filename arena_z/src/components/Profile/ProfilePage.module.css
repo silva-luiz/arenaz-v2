@@ -62,10 +62,8 @@ span{
     position: relative;
     display: flex;
     align-items: center;
-    border: 1px solid var(--background-color-hover);
     border-radius: 12px;
     padding: 10px;
-    background-color: var(--background-color);
 }
 
 .inputWrapper input {

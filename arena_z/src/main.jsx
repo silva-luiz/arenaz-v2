@@ -12,25 +12,26 @@ import ReservationsPage from './components/Reservations/ReservationsPage.jsx'
 import { createBrowserRouter, RouterProvider, Route, Navigate } from 'react-router-dom';
 import ErrorPage from './components/error/ErrorPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx'
+import ArenaRegisterForm from './components/Register/ArenaRegisterForm.jsx'
 
 const router = createBrowserRouter(
   [
     {
       path: "/",
       element: <App />,
-      errorElement: <ErrorPage/>
+      errorElement: <ErrorPage />
     },
     {
       path: "login",
-      element: <LoginPage/>
+      element: <LoginPage />
     },
     {
       path: "register",
-      element: <RegisterPage/>
+      element: <RegisterPage />
     },
     {
       path: "home",
-      element: <HomePage/>,
+      element: <HomePage />,
       children: [
         {
           index: true,
@@ -38,21 +39,24 @@ const router = createBrowserRouter(
         },
         {
           path: "dashboard",
-          element: <DashboardPage/>
+          element: <DashboardPage />
         },
         {
           path: "reservations",
-          element: <ReservationsPage/>
+          element: <ReservationsPage />
         },
         {
           path: "profile",
-          element: <ProfilePage/>
+          element: <ProfilePage />
+        },
+        {
+          path: "new-arena",
+          element: <ArenaRegisterForm />
         }
       ]
     }
-
   ]
-)
+);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

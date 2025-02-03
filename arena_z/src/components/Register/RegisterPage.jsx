@@ -3,7 +3,6 @@ import NavbarSite from '../NavbarSite';
 import SiteFooter from '../SiteFooter';
 import UserRegisterForm from './UserRegisterForm';
 import StablishmentRegisterForm from './StablishmentRegisterForm';
-import ArenaRegisterForm from './ArenaRegisterForm';
 
 import styles from '../Register/Register.module.css';
 
@@ -22,9 +21,6 @@ const formTemplate = {
     cep: "",
     address: "",
     city: "",
-    arenaName: "",
-    arenaPrice: "",
-    arenaCategory: ""
 }
 
 const RegisterPage = () => {
@@ -39,7 +35,6 @@ const RegisterPage = () => {
     const formComponents = [
         <UserRegisterForm key="user-register" data={data} updateFieldHandler={updateFieldHandler}/>,
         <StablishmentRegisterForm key="stablishment-register" data={data} updateFieldHandler={updateFieldHandler}/>,
-        <ArenaRegisterForm key="arena-register" data={data} updateFieldHandler={updateFieldHandler}/>
     ];
 
     const { currentStep, currentComponent, changeStep, isLastStep, isFirstStep } = useForm(formComponents);

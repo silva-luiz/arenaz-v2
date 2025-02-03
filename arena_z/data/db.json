@@ -1,0 +1,16 @@
+{
+  "arenas": [
+    {
+      "id": "44cc",
+      "arenaName": "Arena do zé",
+      "arenaPrice": "150",
+      "arenaCategory": "society"
+    },
+    {
+      "id": "489d",
+      "arenaName": "teste123",
+      "arenaPrice": "150",
+      "arenaCategory": "society"
+    }
+  ]
+}
