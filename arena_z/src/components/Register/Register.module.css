@@ -10,6 +10,7 @@ p {
 
 .arenaRegisterTitle, .arenaRegisterSubtitle, .arenaRegisterParagraph{
     text-align: left;
+    padding-bottom: 15px;
 }
 
 .registerSubtitle {
@@ -156,7 +157,7 @@ p {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 50px;
+    padding: 20px 0;
   }
   
   .radioItem {
