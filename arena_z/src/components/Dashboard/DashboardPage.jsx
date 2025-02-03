@@ -22,7 +22,7 @@ const DashboardPage = () => {
 
         {/* Condicional para verificar se não há arenas */}
         {arenas && arenas.length === 0 ? (
-          <p className={styles.noArenasMessage}>Você ainda não tem nenhuma arena cadastrada. Adicione uma nova!</p>
+          <p className={styles.noArenasMessage}>Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!</p>
         ) : (
           <div className={styles.cardsContainer}>
             {arenas && arenas.map((arena) => (

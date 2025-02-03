@@ -62,18 +62,19 @@ span{
     position: relative;
     display: flex;
     align-items: center;
+    border: 1px solid var(--background-color-hover);
     border-radius: 12px;
     padding: 10px;
-}
-
-.inputWrapper input {
+    background-color:var(--background-color);
+  }
+  
+  .inputWrapper input {
     border: none;
     outline: none;
     width: 100%;
+    padding: 10px;
     font-size: 14px;
-    padding: 5px;
-}
-
+  }
 .actionButtonsContainer{
     padding-top: 20px;
     display: flex;
