@@ -1,9 +1,18 @@
-import { Outlet, Link, NavLink } from "react-router-dom";
+import { Outlet, Link, NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import styles from '../Home/HomePage.module.css';
 import arenaZLogo from '/arenaz-logo.png';
 
-
 function HomePage() {
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Lógica de logout, como limpar o token ou o estado do usuário.
+    setShowModal(false);
+    navigate('/'); // Redireciona para a página inicial
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -12,8 +21,38 @@ function HomePage() {
           <p>Arena Z</p>
         </Link>
 
-        <button className={styles.logoutBtn}>Sair</button>
+        <button 
+          className={styles.logoutBtn} 
+          onClick={() => setShowModal(true)}
+        >
+          Sair
+        </button>
       </header>
+
+      {/* Modal de Confirmação de Logout */}
+      {showModal && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h3>Sair</h3>
+            <p>Tem certeza que deseja sair?</p>
+            <div className={styles.modalActions}>
+              <button 
+                className="outlinedButton" 
+                onClick={() => setShowModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="primaryButton" 
+                onClick={handleLogout}
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={styles.content}>
         <aside className={styles.sidebar}>
           <ul className={styles.navList}>

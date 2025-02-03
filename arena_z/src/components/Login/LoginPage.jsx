@@ -28,7 +28,7 @@ const LoginPage = () => {
                     <form className={styles.loginForm} onSubmit={handleSubmit}>
                         <img src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
                         <div className={styles.loginTitle}>
-                            <h1>Olá, seja bem-vindo ao <span>ArenaZ</span></h1>
+                            <h1>Olá, seja bem-vindo ao <span className={styles.siteName}>ArenaZ</span></h1>
                         </div>
                         <div className={styles.inputContainer}>
                             <span>E-mail</span>
