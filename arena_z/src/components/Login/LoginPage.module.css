@@ -28,7 +28,7 @@
 }
 
 .formContainer {
-  flex: 1; /* O formulário ocupará 40% */
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,9 +42,8 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background-color: white; /* Adiciona um fundo branco */
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Adiciona uma sombra sutil */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .arenaZLogo {

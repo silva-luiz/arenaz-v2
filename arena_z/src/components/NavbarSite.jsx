@@ -6,12 +6,9 @@ import { Link } from 'react-router-dom';
 
 
 const NavbarSite = () => {
-
-
-
   return (
     <div className={styles.siteNavbar}>
-      <Link to="/">
+      <Link to="/" className={styles.arenazMainButton}>
         <a className={styles.arenazMainButton}>
           <img src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
           <p>Arena Z</p>

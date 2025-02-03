@@ -122,7 +122,7 @@ p {
     border: 1px solid var(--background-color-hover);
     border-radius: 12px;
     padding: 10px;
-    background-color: transparent;
+    background-color: var(--background-color);
 }
 
 .inputWrapper i {
