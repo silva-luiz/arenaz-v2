@@ -10,6 +10,7 @@ import styles from '../Register/Register.module.css';
 // Import Hooks
 import { useForm } from '../hooks/useForm';
 import { useState } from 'react';
+import { useFetch } from '../../hooks/useFetch';
 
 const formTemplate = {
     name: "",
@@ -23,23 +24,36 @@ const formTemplate = {
     city: "",
 }
 
+const url = 'http://localhost:3000/users';
+
 const RegisterPage = () => {
     const [data, setData] = useState(formTemplate);
 
     const updateFieldHandler = (key, value) => {
         setData((prev) => {
-            return {...prev, [key]: value}
+            return { ...prev, [key]: value }
         });
-    }    
+    }
 
     const formComponents = [
-        <UserRegisterForm key="user-register" data={data} updateFieldHandler={updateFieldHandler}/>,
-        <StablishmentRegisterForm key="stablishment-register" data={data} updateFieldHandler={updateFieldHandler}/>,
+        <UserRegisterForm key="user-register" data={data} updateFieldHandler={updateFieldHandler} />,
+        <StablishmentRegisterForm key="stablishment-register" data={data} updateFieldHandler={updateFieldHandler} />,
     ];
 
     const { currentStep, currentComponent, changeStep, isLastStep, isFirstStep } = useForm(formComponents);
 
+    const { httpConfig } = useFetch(url);
 
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const user = {
+            data
+        };
+
+        httpConfig(user, 'POST');
+    }
 
     return (
         <div className={styles.pageWrapper}>
@@ -54,12 +68,11 @@ const RegisterPage = () => {
                         <div className='inputsContainer'>{currentComponent}</div>
                         <div className={styles.actionButtonsContainer}>
                             {!isFirstStep && (<button className={styles.outlinedButton} type='button' onClick={() => changeStep(currentStep - 1)}>Voltar</button>)}
-                            {!isLastStep ? (<button className={styles.primaryButton} type='submit'>Avançar</button>) : (<button className='primaryButton' type='button'>Finalizar</button>)}
+                            {!isLastStep ? (<button className={styles.primaryButton} type='submit'>Avançar</button>) : (<button className='primaryButton' type='button' onClick={handleSubmit}>Finalizar</button>)}
                         </div>
                     </form>
                 </div>
             </div>
-
             <SiteFooter />
         </div>
 
