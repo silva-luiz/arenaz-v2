@@ -1,20 +1,20 @@
 import styles from '../Register/Register.module.css';
 import PropTypes from 'prop-types';
 
-const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
+const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
   return (
     <div>
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor='stablishment'>Nome do estabelecimento</span>
+          <span htmlFor='establishment'>Nome do estabelecimento</span>
           <div className={styles.inputWrapper}>
             <input
             type='text'
-            name='stablishment'
-            id='stablishment'
+            name='establishment'
+            id='establishment'
             placeholder='Nome do estabelecimento'
-            value={data.stablishmentName || ""}
-            onChange={(e) => updateFieldHandler("stablishmentName", e.target.value)}
+            value={data.establishmentName || ""}
+            onChange={(e) => updateFieldHandler("establishmentName", e.target.value)}
             required
             />
           </div>
@@ -23,7 +23,7 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor='email'>Telefone</span>
+          <span htmlFor='phone'>Telefone</span>
           <div className={styles.inputWrapper}>
             <input
             type="tel"
@@ -31,8 +31,8 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
             name="phone"
             pattern="(\(?\d{2}\)?\s?)?\d{5}-?\d{4}"
             placeholder="(99)99999-9999"
-            value={data.phone || ""}
-            onChange={(e) => updateFieldHandler("phone", e.target.value)}
+            value={data.establishmentPhone || ""}
+            onChange={(e) => updateFieldHandler("establishmentPhone", e.target.value)}
             required
             />
           </div>
@@ -49,8 +49,8 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
             name="cep"
             pattern="\d{5}-?\d{3}"
             placeholder="12345-678"
-            value={data.cep || ""}
-            onChange={(e) => updateFieldHandler("cep", e.target.value)}
+            value={data.establishmentCep || ""}
+            onChange={(e) => updateFieldHandler("establishmentCep", e.target.value)}
             required
             />
           </div>
@@ -66,8 +66,8 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
             name='address'
             id='address'
             placeholder='Insira o endereço'
-            value={data.address || ""}
-            onChange={(e) => updateFieldHandler("address", e.target.value)}
+            value={data.establishmentAddress || ""}
+            onChange={(e) => updateFieldHandler("establishmentAddress", e.target.value)}
             required
             />
           </div>
@@ -83,8 +83,8 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
             name='city'
             id='city'
             placeholder='Insira a cidade'
-            value={data.city || ""}
-            onChange={(e) => updateFieldHandler("city", e.target.value)}
+            value={data.establishmentCity || ""}
+            onChange={(e) => updateFieldHandler("establishmentCity", e.target.value)}
             required
             />
           </div>
@@ -94,15 +94,15 @@ const StablishmentRegisterForm = ({ data, updateFieldHandler }) => {
     </div>
   )
 }
-StablishmentRegisterForm.propTypes = {
+EstablishmentRegisterForm.propTypes = {
   data: PropTypes.shape({
-    stablishmentName: PropTypes.string,
-    phone: PropTypes.string,
-    cep: PropTypes.string,
-    address: PropTypes.string,
-    city: PropTypes.string,
+    establishmentName: PropTypes.string,
+    establishmentPhone: PropTypes.string,
+    establishmentCep: PropTypes.string,
+    establishmentAddress: PropTypes.string,
+    establishmentCity: PropTypes.string,
   }).isRequired,
   updateFieldHandler: PropTypes.func.isRequired,
 };
 
-export default StablishmentRegisterForm;
+export default EstablishmentRegisterForm;

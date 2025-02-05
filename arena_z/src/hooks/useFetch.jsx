@@ -1,83 +1,97 @@
 import { useState, useEffect } from 'react';
-
-// 4 - Custom Hook
+import Cookies from 'js-cookie';
 
 export const useFetch = (url) => {
-
     const [data, setData] = useState(null);
-
-    // 5 - refatorando post
-
     const [config, setConfig] = useState(null);
     const [method, setMethod] = useState(null);
     const [callFetch, setcallFetch] = useState(null);
 
-    // 6 - inserindo Loading
-
+    // erro e loading
     const [loading, setLoading] = useState(false);
-
-    // 8 - states de erro
-
     const [error, setError] = useState(null);
 
-    const httpConfig = (data, method) => {
+    const userRequest = async (userData, method) => {
         if (method === 'POST') {
             setConfig({
                 method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(userData),
             });
 
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData),
+            });
+            const jsonData = await res.json();
+            console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
+
+            Cookies.set('auth_token', jsonData.token, { expires: 1 });
             setMethod(method);
         }
-    }
+    };
+
+    const establishmentRequest = async (establishmentData, method) => {
+        const token = Cookies.get('auth_token');
+
+        if (method === 'POST') {
+            setConfig({
+                method,
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(establishmentData),
+            });
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(establishmentData),
+            });
+            const jsonData = await res.json();
+            console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
+            Cookies.set('auth_token', jsonData.token, { expires: 1 });
+            setMethod(method);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
-            // 7 - tratando erros
             try {
-                // 6 - loading
                 setLoading(true);
-
                 const res = await fetch(url);
                 const json = await res.json();
-
                 setData(json);
-
             } catch (error) {
                 console.log(error.message);
                 setError('Erro ao carregar os dados.');
             }
             setLoading(false);
-
         };
         fetchData();
     }, [url, callFetch]);
 
-    // 5 - refatorando POST
-
     useEffect(() => {
         const httpRequest = async () => {
-            let json;
-
             if (method === 'POST') {
                 setLoading(true);
-
-                let fetchOptions = [url, config];
-
-                const res = await fetch(...fetchOptions);
-
-                json = await res.json();
-
+                const res = await fetch(url, config);
+                const json = await res.json();
+                setcallFetch(json);
                 setLoading(false);
-
             }
-            setcallFetch(json);
         };
         httpRequest();
     }, [config, method, url]);
 
-    return { data, httpConfig, loading, error };
+    return { data, userRequest, establishmentRequest, loading, error };
 };
