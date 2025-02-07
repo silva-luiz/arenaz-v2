@@ -13,14 +13,6 @@ export const useFetch = (url) => {
 
     const userRequest = async (userData, method) => {
         if (method === 'POST') {
-            setConfig({
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData),
-            });
-
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -29,26 +21,16 @@ export const useFetch = (url) => {
                 body: JSON.stringify(userData),
             });
             const jsonData = await res.json();
-            console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
-
             Cookies.set('auth_token', jsonData.token, { expires: 1 });
-            setMethod(method);
+            
+            return res; // Retornando a resposta da requisição
         }
     };
-
+    
     const establishmentRequest = async (establishmentData, method) => {
         const token = Cookies.get('auth_token');
-
+    
         if (method === 'POST') {
-            setConfig({
-                method,
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(establishmentData),
-            });
-
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -60,25 +42,27 @@ export const useFetch = (url) => {
             const jsonData = await res.json();
             console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
             Cookies.set('auth_token', jsonData.token, { expires: 1 });
-            setMethod(method);
+            
+            return res; // Retornando a resposta da requisição
         }
     };
+    
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const res = await fetch(url);
-                const json = await res.json();
-                setData(json);
-            } catch (error) {
-                console.log(error.message);
-                setError('Erro ao carregar os dados.');
-            }
-            setLoading(false);
-        };
-        fetchData();
-    }, [url, callFetch]);
+    // useEffect(() => {
+    //     const fetchData = async () => {
+    //         try {
+    //             setLoading(true);
+    //             const res = await fetch(url);
+    //             const json = await res.json();
+    //             setData(json);
+    //         } catch (error) {
+    //             console.log(error.message);
+    //             setError('Erro ao carregar os dados.');
+    //         }
+    //         setLoading(false);
+    //     };
+    //     fetchData();
+    // }, [url, callFetch]);
 
     useEffect(() => {
         const httpRequest = async () => {

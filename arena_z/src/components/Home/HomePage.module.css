@@ -36,44 +36,46 @@ body {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
     padding: 20px;
-  }
-  
-  .modalContent {
+}
+
+.modalContent {
     background: var(--background-color);
     padding: 20px;
     border-radius: 12px;
     text-align: center;
     max-width: 400px;
-    width: 100%; 
+    width: 100%;
     box-sizing: border-box;
-  }
-  
-  .modalActions {
+}
+
+.modalActions {
     margin-top: 20px;
-  }
-    
-  @media (max-width: 768px) {
+}
+
+@media (max-width: 768px) {
     .modalContent {
-      max-width: 90%;
-      padding: 15px;
+        max-width: 90%;
+        padding: 15px;
     }
-  
-    .outlinedButton, .primaryButton {
-      padding: 8px 15px;
+
+    .outlinedButton,
+    .primaryButton {
+        padding: 8px 15px;
     }
-  }
-  
-  @media (max-width: 480px) {
+}
+
+@media (max-width: 480px) {
     .modalContent {
-      max-width: 95%;
-      padding: 10px;
+        max-width: 95%;
+        padding: 10px;
     }
-  
-    .outlinedButton, .primaryButton {
-      padding: 6px 12px;
+
+    .outlinedButton,
+    .primaryButton {
+        padding: 6px 12px;
     }
-  }
-  
+}
+
 
 @media (min-width: 768px) {
     .content {
@@ -102,7 +104,7 @@ body {
 
 .navList {
     list-style: none;
-    flex-grow: 1; 
+    flex-grow: 1;
 }
 
 .navItem {
@@ -214,16 +216,14 @@ body {
 
 @media (max-width: 768px) {
     .arenazLogo {
-        width: 60px; 
+        width: 60px;
     }
 
     .arenazMainButton p {
-        font-size: 18px; 
+        font-size: 18px;
     }
-}
 
-@media (min-width: 768px) {
     .arenazMainButton p {
-        font-size: 22px; 
+        font-size: 22px;
     }
 }
