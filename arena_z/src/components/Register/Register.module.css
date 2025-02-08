@@ -201,6 +201,19 @@ p {
     margin-top: 20px;
 }
 
+/* Validação do email */
+
+.inputError {
+    border: 1px solid red !important;
+  }
+  
+  .errorText {
+    color: red;
+    font-size: 0.85rem;
+    margin-top: 5px;
+  }
+
+
 /* Media Queries para responsividade */
 @media (max-width: 768px) {
     .contentWrapper {

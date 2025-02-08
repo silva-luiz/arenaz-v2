@@ -8,8 +8,8 @@ import Modal from 'react-modal';
 import styles from '../Register/Register.module.css';
 import { useFetch } from '../../hooks/useFetch';
 
-const urlUsers = 'https://3f00-190-102-46-170.ngrok-free.app/api/user';
-const urlEstablishments = 'https://3f00-190-102-46-170.ngrok-free.app/api/establishment';
+const urlUsers = 'https://9b33-190-102-46-170.ngrok-free.app/api/user';
+const urlEstablishments = 'https://9b33-190-102-46-170.ngrok-free.app/api/establishment';
 
 import { useForm } from '../hooks/useForm';
 
@@ -31,6 +31,7 @@ const RegisterPage = () => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
     const [isSuccess, setIsSuccess] = useState(false);
+    const [emailError, setEmailError] = useState("");
 
     const updateFieldHandler = (key, value) => {
         setData((prev) => ({ ...prev, [key]: value }));
@@ -49,7 +50,7 @@ const RegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+    
         const user = {
             usr_name: data.name,
             usr_email: data.email,
@@ -62,7 +63,7 @@ const RegisterPage = () => {
             own_code: '',
             is_owner: true,
         };
-
+    
         const establishment = {
             est_name: data.establishmentName,
             est_phone: data.establishmentPhone,
@@ -72,38 +73,64 @@ const RegisterPage = () => {
             usr_cod_cad: 3,
             own_id: 10,
         };
-
+    
         try {
-            // Fazendo as requisições separadamente
             const userRes = await userRequest(user, 'POST');
-            const establishmentRes = await establishmentRequest(establishment, 'POST');
-
-            // Verifica se ambos os cadastros tiveram sucesso
-            if (userRes.ok && establishmentRes.ok) {
-                setIsSuccess(true);
-                setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
-            } else {
-                const userMessage = (await userRes.json()).erro || 'Erro no cadastro de usuário!!!';
-                const establishmentMessage = (await establishmentRes.json()).erro || 'Erro no cadastro de estabelecimento!!!';
+            const userData = await userRes.json();
+    
+            if (!userRes.ok) {
                 setIsSuccess(false);
-                setModalMessage(`${userMessage} | ${establishmentMessage}`);
+                setModalMessage(userData.erro || 'Erro no cadastro de usuário!!!');
+                setModalIsOpen(true);
+                return;
             }
 
+            const establishmentRes = await establishmentRequest(establishment, 'POST');
+            const establishmentData = await establishmentRes.json();
+    
+            if (!establishmentRes.ok) {
+
+                setIsSuccess(false);
+                setModalMessage(establishmentData.erro || 'Erro no cadastro de estabelecimento!!!');
+            } else {
+
+                setIsSuccess(true);
+                setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
+            }
         } 
-        catch (e) {
+        catch (error) {
+            console.error('Erro ao realizar cadastro:', error);
             setIsSuccess(false);
-            const errorMessage = e.erro
-                ? await e.response.json().then(data => data.erro || 'Erro desconhecido!!')
-                : e.erro || 'Erro desconhecido!!!';
-
-            setModalMessage('Erro ao realizar cadastro: ' + errorMessage);
-            console.log('Erro:', e);
+            setModalMessage(`Erro ao realizar cadastro: ${error.message || 'Tente novamente mais tarde.'}`);
         }
-
+    
         setModalIsOpen(true);
     };
 
 
+    // Validação do email para ativar o efeito onblur no campo 
+    const validateEmail = async (email) => {
+        if (!email) return;
+    
+        try {
+            const response = await fetch('https://9b33-190-102-46-170.ngrok-free.app/api/email-validation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                console.error('Erro na validação de e-mail:', data.erro);
+                alert(data.erro || 'Erro ao validar e-mail!');
+            }
+        } catch (error) {
+            console.error('Erro ao validar e-mail:', error);
+        }
+    };
 
     const closeModal = () => {
         setModalIsOpen(false);
