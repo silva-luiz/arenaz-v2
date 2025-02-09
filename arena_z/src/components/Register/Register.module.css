@@ -63,6 +63,13 @@ p {
     cursor: pointer;
 }
 
+.primaryButton:disabled {
+    background-color: var(--disabled-background-color);
+    color: var(--disabled-text-color);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 .pageWrapper {
     display: flex;
     flex-direction: column;
@@ -204,13 +211,14 @@ p {
 /* Validação do email */
 
 .inputError {
-    border: 1px solid red !important;
+    border: 1px solid var(--danger) !important;
   }
   
   .errorText {
-    color: red;
+    color: var(--danger);
     font-size: 0.85rem;
     margin-top: 5px;
+    text-align: start;
   }
 
 

@@ -9,11 +9,11 @@ import styles from '../Register/Register.module.css';
 import { useFetch } from '../../hooks/useFetch';
 import URLS from '../routes/routes';
 
+
 const urlUsers = URLS.REGISTER_USER;
 const urlEstablishments = URLS.REGISTER_ESTABLISHMENT;
 
 import { useForm } from '../hooks/useForm';
-
 
 const formTemplate = {
     usr_name: "",
@@ -33,6 +33,7 @@ const RegisterPage = () => {
     const [modalMessage, setModalMessage] = useState("");
     const [isSuccess, setIsSuccess] = useState(false);
     const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
 
     const updateFieldHandler = (key, value) => {
         setData((prev) => ({ ...prev, [key]: value }));
@@ -45,6 +46,8 @@ const RegisterPage = () => {
             updateFieldHandler={updateFieldHandler} 
             emailError={emailError} 
             setEmailError={setEmailError} 
+            password={passwordError}
+            setPasswordError={setPasswordError}
         />,
         <EstablishmentRegisterForm key="establishment-register" data={data} updateFieldHandler={updateFieldHandler} />,
     ];
@@ -134,7 +137,7 @@ const RegisterPage = () => {
                             {!isLastStep ? (<button 
                                 className={styles.primaryButton} 
                                 type='submit' 
-                                disabled={emailError !== ""}
+                                disabled={emailError !== "" || passwordError !== ""}
                             >Avançar</button>) : (
                                 <button className={styles.primaryButton} type='button' onClick={handleSubmit}>Finalizar</button>
                             )}
