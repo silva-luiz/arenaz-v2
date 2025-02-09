@@ -7,9 +7,10 @@ import { Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import styles from '../Register/Register.module.css';
 import { useFetch } from '../../hooks/useFetch';
+import URLS from '../routes/routes';
 
-const urlUsers = 'https://9b33-190-102-46-170.ngrok-free.app/api/user';
-const urlEstablishments = 'https://9b33-190-102-46-170.ngrok-free.app/api/establishment';
+const urlUsers = URLS.REGISTER_USER;
+const urlEstablishments = URLS.REGISTER_ESTABLISHMENT;
 
 import { useForm } from '../hooks/useForm';
 
@@ -105,31 +106,6 @@ const RegisterPage = () => {
         }
     
         setModalIsOpen(true);
-    };
-
-
-    // Validação do email para ativar o efeito onblur no campo 
-    const validateEmail = async (email) => {
-        if (!email) return;
-    
-        try {
-            const response = await fetch('https://9b33-190-102-46-170.ngrok-free.app/api/email-validation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            });
-    
-            const data = await response.json();
-    
-            if (!response.ok) {
-                console.error('Erro na validação de e-mail:', data.erro);
-                alert(data.erro || 'Erro ao validar e-mail!');
-            }
-        } catch (error) {
-            console.error('Erro ao validar e-mail:', error);
-        }
     };
 
     const closeModal = () => {

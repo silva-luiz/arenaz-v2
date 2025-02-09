@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from '../Register/Register.module.css';
 import PropTypes from 'prop-types';
+import URLS  from '../routes/routes';
 
 const UserRegisterForm = ({ data, updateFieldHandler }) => {
   const [emailError, setEmailError] = useState("");
@@ -9,7 +10,7 @@ const UserRegisterForm = ({ data, updateFieldHandler }) => {
     if (!data.email) return;
 
     try {
-      const response = await fetch("https://9b33-190-102-46-170.ngrok-free.app/api/email-validation", {
+      const response = await fetch(URLS.EMAIL_VALIDATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -117,7 +118,10 @@ const UserRegisterForm = ({ data, updateFieldHandler }) => {
 
 UserRegisterForm.propTypes = {
   data: PropTypes.shape({
+    name: PropTypes.string,
     email: PropTypes.string,
+    password: PropTypes.string,
+    confirmPassword: PropTypes.string,
   }).isRequired,
   updateFieldHandler: PropTypes.func.isRequired,
 };
