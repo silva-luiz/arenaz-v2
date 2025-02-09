@@ -16,6 +16,9 @@ const URLS = {
     // Arena
     REGISTER_ARENA: `${BASE_URL}api/arena`,
     GET_USER_ARENAS: `${BASE_URL}api/arenas/user`,
+
+    // Login
+    LOGIN: `${BASE_URL}api/login`,
 };
 
 export default URLS;

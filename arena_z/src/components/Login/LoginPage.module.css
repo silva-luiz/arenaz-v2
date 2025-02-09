@@ -104,7 +104,7 @@
   padding: 10px 20px;
   border-radius: 12px;
   background-color: var(--primary-color);
-  color: white;
+  color: var(--title-color);
   border: none;
   cursor: pointer;
   transition: 0.3s;
@@ -131,6 +131,18 @@
 .signUpLink a:hover {
   text-decoration: underline;
 }
+
+.inputError {
+  border: 1px solid var(--danger) !important;
+}
+
+.errorText {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  text-align: start;
+}
+
 
 @media (max-width: 768px) {
   .loginMainContainer {

@@ -51,25 +51,22 @@ export const useFetch = (url) => {
     
                 if (!res.ok) {
                     console.error(`Erro ao fazer requisição: ${jsonData.message || jsonData.error}`);
-                    return { res, jsonData };  // Retorna tanto a resposta quanto o JSON
+                    return { res, jsonData };
                 }
-    
+
                 console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
+
                 if (jsonData.token) {
                     Cookies.set('auth_token', jsonData.token, { expires: 1 });
                 }
-    
-                return { res, jsonData };  // Retorna tanto a resposta quanto o JSON
-    
+
+                return { res, jsonData };
             } catch (error) {
                 console.error('Erro na requisição:', error);
             }
         }
     };
     
-
-
-
     // useEffect(() => {
     //     const fetchData = async () => {
     //         try {
