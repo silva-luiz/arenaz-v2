@@ -3,8 +3,7 @@ import styles from '../Register/Register.module.css';
 import PropTypes from 'prop-types';
 import URLS  from '../routes/routes';
 
-const UserRegisterForm = ({ data, updateFieldHandler }) => {
-  const [emailError, setEmailError] = useState("");
+const UserRegisterForm = ({ data, updateFieldHandler, emailError, setEmailError }) => {
 
   const validateEmail = async () => {
     if (!data.email) return;

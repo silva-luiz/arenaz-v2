@@ -39,7 +39,13 @@ const RegisterPage = () => {
     }
 
     const formComponents = [
-        <UserRegisterForm key="user-register" data={data} updateFieldHandler={updateFieldHandler} />,
+        <UserRegisterForm 
+            key="user-register" 
+            data={data} 
+            updateFieldHandler={updateFieldHandler} 
+            emailError={emailError} 
+            setEmailError={setEmailError} 
+        />,
         <EstablishmentRegisterForm key="establishment-register" data={data} updateFieldHandler={updateFieldHandler} />,
     ];
 
@@ -125,9 +131,11 @@ const RegisterPage = () => {
                         <div className='inputsContainer'>{currentComponent}</div>
                         <div className={styles.actionButtonsContainer}>
                             {!isFirstStep && (<button className={styles.outlinedButton} type='button' onClick={() => changeStep(currentStep - 1)}>Voltar</button>)}
-                            {!isLastStep ? (
-                                <button className={styles.primaryButton} type='submit'>Avançar</button>
-                            ) : (
+                            {!isLastStep ? (<button 
+                                className={styles.primaryButton} 
+                                type='submit' 
+                                disabled={emailError !== ""}
+                            >Avançar</button>) : (
                                 <button className={styles.primaryButton} type='button' onClick={handleSubmit}>Finalizar</button>
                             )}
                         </div>
