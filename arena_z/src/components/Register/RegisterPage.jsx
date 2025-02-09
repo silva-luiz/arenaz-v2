@@ -40,12 +40,12 @@ const RegisterPage = () => {
     }
 
     const formComponents = [
-        <UserRegisterForm 
-            key="user-register" 
-            data={data} 
-            updateFieldHandler={updateFieldHandler} 
-            emailError={emailError} 
-            setEmailError={setEmailError} 
+        <UserRegisterForm
+            key="user-register"
+            data={data}
+            updateFieldHandler={updateFieldHandler}
+            emailError={emailError}
+            setEmailError={setEmailError}
             password={passwordError}
             setPasswordError={setPasswordError}
         />,
@@ -60,8 +60,8 @@ const RegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
-        const user = {
+
+        const userData = {
             usr_name: data.name,
             usr_email: data.email,
             usr_password: data.password,
@@ -73,8 +73,8 @@ const RegisterPage = () => {
             own_code: '',
             is_owner: true,
         };
-    
-        const establishment = {
+
+        const establishmentData = {
             est_name: data.establishmentName,
             est_phone: data.establishmentPhone,
             est_zipcode: data.establishmentCep,
@@ -83,39 +83,42 @@ const RegisterPage = () => {
             usr_cod_cad: 3,
             own_id: 10,
         };
-    
+
         try {
-            const userRes = await userRequest(user, 'POST');
-            const userData = await userRes.json();
-    
+            const [userResponse, establishmentResponse] = await Promise.all([
+                userRequest(userData, 'POST'),
+                establishmentRequest(establishmentData, 'POST')
+            ]);
+
+            const { res: userRes, jsonData: userJson } = userResponse;
+            const { res: establishmentRes, jsonData: establishmentJson } = establishmentResponse;
+
             if (!userRes.ok) {
                 setIsSuccess(false);
                 setModalMessage(userData.erro || 'Erro no cadastro de usuário!!!');
                 setModalIsOpen(true);
                 return;
-            }
-
-            const establishmentRes = await establishmentRequest(establishment, 'POST');
-            const establishmentData = await establishmentRes.json();
-    
-            if (!establishmentRes.ok) {
-
-                setIsSuccess(false);
-                setModalMessage(establishmentData.erro || 'Erro no cadastro de estabelecimento!!!');
             } else {
-
                 setIsSuccess(true);
                 setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
             }
-        } 
-        catch (error) {
-            console.error('Erro ao realizar cadastro:', error);
-            setIsSuccess(false);
-            setModalMessage(`Erro ao realizar cadastro: ${error.message || 'Tente novamente mais tarde.'}`);
+
+            if (!establishmentRes.ok) {
+                setIsSuccess(false);
+                setModalMessage(establishmentData.erro || 'Erro no cadastro de estabelecimento!!!');
+            } else {
+                setIsSuccess(true);
+                setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
+            }
+
+            console.log("Cadastro realizado com sucesso!", userJson, establishmentJson);
+        } catch (error) {
+            console.error('Erro ao realizar as requisições:', error);
         }
-    
+
         setModalIsOpen(true);
     };
+
 
     const closeModal = () => {
         setModalIsOpen(false);
@@ -134,9 +137,9 @@ const RegisterPage = () => {
                         <div className='inputsContainer'>{currentComponent}</div>
                         <div className={styles.actionButtonsContainer}>
                             {!isFirstStep && (<button className={styles.outlinedButton} type='button' onClick={() => changeStep(currentStep - 1)}>Voltar</button>)}
-                            {!isLastStep ? (<button 
-                                className={styles.primaryButton} 
-                                type='submit' 
+                            {!isLastStep ? (<button
+                                className={styles.primaryButton}
+                                type='submit'
                                 disabled={emailError !== "" || passwordError !== ""}
                             >Avançar</button>) : (
                                 <button className={styles.primaryButton} type='button' onClick={handleSubmit}>Finalizar</button>

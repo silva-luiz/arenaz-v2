@@ -20,33 +20,55 @@ export const useFetch = (url) => {
                 },
                 body: JSON.stringify(userData),
             });
+    
             const jsonData = await res.json();
             Cookies.set('auth_token', jsonData.token, { expires: 1 });
-            
-            return res; // Retornando a resposta da requisição
+    
+            return { res, jsonData };  // Retorna tanto a resposta quanto o JSON
         }
     };
     
     const establishmentRequest = async (establishmentData, method) => {
         const token = Cookies.get('auth_token');
     
+        if (!token) {
+            console.error("Token não encontrado!");
+            return;
+        }
+    
         if (method === 'POST') {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(establishmentData),
-            });
-            const jsonData = await res.json();
-            console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
-            Cookies.set('auth_token', jsonData.token, { expires: 1 });
-            
-            return res; // Retornando a resposta da requisição
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(establishmentData),
+                });
+    
+                const jsonData = await res.json();
+    
+                if (!res.ok) {
+                    console.error(`Erro ao fazer requisição: ${jsonData.message || jsonData.error}`);
+                    return { res, jsonData };  // Retorna tanto a resposta quanto o JSON
+                }
+    
+                console.log(`Status Code: ${res.status} -> Mensagem: ${jsonData.message} -> Erro: ${jsonData.error}`);
+                if (jsonData.token) {
+                    Cookies.set('auth_token', jsonData.token, { expires: 1 });
+                }
+    
+                return { res, jsonData };  // Retorna tanto a resposta quanto o JSON
+    
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+            }
         }
     };
     
+
+
 
     // useEffect(() => {
     //     const fetchData = async () => {
