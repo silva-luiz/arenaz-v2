@@ -1,13 +1,24 @@
 import Button from '../../components/Button';
 import styles from '../Dashboard/DashboardPage.module.css';
 import ArenaCard from './ArenaCard';
+import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
-import { useFetch } from '../../hooks/useFetch';
+import { useFetch } from '../Register/hooks/useFetch';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const url = 'http://localhost:3000/arenas';
 
-const DashboardPage = () => {
+const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
   const { data: arenas } = useFetch(url);
+
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+}
 
   return (
     <div>
@@ -26,10 +37,10 @@ const DashboardPage = () => {
         ) : (
           <div className={styles.cardsContainer}>
             {arenas && arenas.map((arena) => (
-              <ArenaCard 
-                key={arena.id} 
-                arenaName={arena.arenaName} 
-                arenaCategory={arena.arenaCategory} 
+              <ArenaCard
+                key={arena.id}
+                arenaName={arena.arenaName}
+                arenaCategory={arena.arenaCategory}
               />
             ))}
           </div>
@@ -59,8 +70,38 @@ const DashboardPage = () => {
           <p className={styles.noReservationsMessage}>Você ainda não tem reservas ativas.</p>
         )}
       </div>
+
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Resultado do Cadastro"
+        className={styles.modal}
+        overlayClassName={styles.modalOverlay}
+      >
+        <div className={styles.modalContent}>
+          <h2 className={styles.header}>{isExpiredSession ? "Sucesso" : "Erro"}</h2>
+          <p>{modalMessage}</p>
+          {isExpiredSession ? (
+            <div className={styles.modalActions}>
+              <Link to="/login" className='primaryButton'>
+                Ir para Login
+              </Link>
+            </div>
+
+          ) : (
+            <div className={styles.modalActions}>
+              <button onClick={closeModal} className='primaryButton'>Fechar</button>
+            </div>
+          )}
+        </div>
+
+      </Modal>
     </div>
   );
 }
+DashboardPage.propTypes = {
+  isExpiredSession: PropTypes.bool.isRequired,
+  setIsExpiredSession: PropTypes.func.isRequired,
+};
 
 export default DashboardPage;

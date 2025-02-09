@@ -105,6 +105,7 @@
   border-radius: 12px;
   background-color: var(--primary-color);
   color: var(--title-color);
+  font-weight: bold;
   border: none;
   cursor: pointer;
   transition: 0.3s;

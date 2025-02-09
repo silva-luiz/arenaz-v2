@@ -2,12 +2,12 @@ import NavbarSite from '../NavbarSite';
 import SiteFooter from '../SiteFooter';
 import UserRegisterForm from './UserRegisterForm';
 import EstablishmentRegisterForm from './EstablishmentRegisterForm';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import styles from '../Register/Register.module.css';
-import { useFetch } from '../../hooks/useFetch';
 import URLS from '../routes/routes';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useFetch } from '../Register/hooks/useFetch';
 
 
 const urlUsers = URLS.REGISTER_USER;

@@ -39,7 +39,7 @@ const LoginPage = () => {
             const jsonData = await loginRes.json();
 
             if (loginRes.ok) {
-                Cookies.set('auth_token', jsonData.token, { expires: 1 });
+                sessionStorage.setItem("auth-token",jsonData.token);
                 navigate('../home/dashboard');
             } else {
                 setCredentialsError(jsonData.message || 'Credenciais inválidas');

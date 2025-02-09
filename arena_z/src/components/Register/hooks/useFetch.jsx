@@ -29,7 +29,7 @@ export const useFetch = (url) => {
     };
     
     const establishmentRequest = async (establishmentData, method) => {
-        const token = Cookies.get('auth_token');
+        const token = sessionStorage.getItem("auth-token");
     
         if (!token) {
             console.error("Token não encontrado!");

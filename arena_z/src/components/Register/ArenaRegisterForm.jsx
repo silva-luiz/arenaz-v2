@@ -2,7 +2,8 @@ import styles from '../Register/ArenaRegisterForm.module.css';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFetch } from '../../hooks/useFetch';
+import { useFetch } from '../Register/hooks/useFetch';
+
 
 const url = 'http://localhost:3000/arenas';
 

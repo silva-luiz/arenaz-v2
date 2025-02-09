@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export const LoginHook = (url) => {
+export const DashboardHooks = (url) => {
     const [data, setData] = useState(null);
     const [config, setConfig] = useState(null);
     const [method, setMethod] = useState(null);
@@ -11,17 +11,22 @@ export const LoginHook = (url) => {
     const [error, setError] = useState(null);
 
     const loginRequest = async (userData, method) => {
-        if (method === 'POST') {
+        const token = sessionStorage.getItem("auth-token");
+        if (method === 'GET') {
             const res = await fetch(url, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Bearer': 'Bearer ' + token,
                 },
                 body: JSON.stringify(userData),
             });
     
             const jsonData = await res.json();
-            sessionStorage.setItem("auth-token",jsonData.token);
+
+            if(!res.ok) {
+                isExpiredSession = true;
+            }
     
             return { res, jsonData };
         }

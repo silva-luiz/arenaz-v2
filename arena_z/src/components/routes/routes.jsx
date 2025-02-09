@@ -19,6 +19,7 @@ const URLS = {
 
     // Login
     LOGIN: `${BASE_URL}api/login`,
+    VERIFY_TOKEN: `${BASE_URL}api/verify-token`,
 };
 
 export default URLS;
