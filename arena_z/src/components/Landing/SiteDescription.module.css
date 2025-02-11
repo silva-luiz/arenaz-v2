@@ -1,8 +1,9 @@
 .mainContainer {
-  width: 100vw;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 10px 20px;
+  padding: 20px;
+  box-sizing: border-box; /* Certifique-se de que o padding não afete a largura total */
 }
 
 .descriptionTitle {
@@ -24,14 +25,56 @@
   flex: 1 1 30%;
   margin: 10px;
   min-width: 250px;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Inclui o padding e border no tamanho do elemento */
 }
 
 .topicTitle {
   font-size: 1.5rem;
+  margin-bottom: 10px;
 }
 
 .topicDescription {
   font-size: 1.2rem;
   color: var(--text-color);
+}
+
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+  .descriptionTopic {
+    flex: 1 1 45%;
+    min-width: 200px;
+  }
+
+  .topicTitle {
+    font-size: 1.4rem;
+  }
+
+  .topicDescription {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContainer {
+    padding: 15px; /* Ajusta o padding para telas menores */
+  }
+
+  .descriptionContainer {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .descriptionTopic {
+    width: 100%; /* Garante que os tópicos ocupem toda a largura em telas pequenas */
+    margin-bottom: 20px;
+    min-width: unset;
+  }
+
+  .topicTitle {
+    font-size: 1.3rem;
+  }
+
+  .topicDescription {
+    font-size: 1rem;
+  }
 }

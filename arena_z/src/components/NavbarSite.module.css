@@ -4,11 +4,11 @@
   align-items: center;
   margin: 0 auto;
   max-width: 1200px;
-  width: 95%; /* Ajusta a largura para telas pequenas */
-  padding: 10px 0; /* Adiciona um pouco de espaço ao redor */
+  width: 95%;
+  padding: 10px 0;
+  gap: 20px;
 }
 
-/* Estilos para o botão de logo */
 .arenazMainButton {
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
 
 .arenazLogo {
   margin-right: 10px;
-  width: 100px;
+  width: 80px;
   height: auto;
 }
 
@@ -34,7 +34,11 @@
   color: #000;
 }
 
-/* Media Queries para responsividade */
+.siteNavbar div {
+  display: flex;
+  gap: 15px;
+}
+
 @media (max-width: 768px) {
   .siteNavbar {
     flex-direction: column;

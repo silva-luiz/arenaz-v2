@@ -1,10 +1,65 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App.jsx'
 import './index.css'
+import App from './App.jsx'
+import LoginPage from '../src/components/Login/LoginPage.jsx'
+import RegisterPage from '../src/components/Register/RegisterPage.jsx'
+import ProfilePage from './components/Profile/ProfilePage.jsx'
+import HomePage from './components/Home/HomePage.jsx'
+import ReservationsPage from './components/Reservations/ReservationsPage.jsx'
+
+// React-Router import
+import { createBrowserRouter, RouterProvider, Route, Navigate } from 'react-router-dom';
+import ErrorPage from './components/error/ErrorPage.jsx';
+import DashboardPage from './components/Dashboard/DashboardPage.jsx'
+import ArenaRegisterForm from './components/Register/ArenaRegisterForm.jsx'
+
+const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: <App />,
+      errorElement: <ErrorPage />
+    },
+    {
+      path: "login",
+      element: <LoginPage />
+    },
+    {
+      path: "register",
+      element: <RegisterPage />
+    },
+    {
+      path: "home",
+      element: <HomePage />,
+      children: [
+        {
+          index: true,
+          element: <Navigate to="dashboard" />
+        },
+        {
+          path: "dashboard",
+          element: <DashboardPage />
+        },
+        {
+          path: "reservations",
+          element: <ReservationsPage />
+        },
+        {
+          path: "profile",
+          element: <ProfilePage />
+        },
+        {
+          path: "new-arena",
+          element: <ArenaRegisterForm />
+        }
+      ]
+    }
+  ]
+);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 )

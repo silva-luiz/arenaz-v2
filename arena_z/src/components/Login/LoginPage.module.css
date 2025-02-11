@@ -1,181 +1,162 @@
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
 .loginMainContainer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 900px;
-    max-width: 1200px;
-    margin: 0 auto;
-    flex-grow: 1;
-  }
-  
-  .loginWallpaper {
-    flex: 1; 
-    height: 100%;
-    background-image: url('../../public/login-wallpaper.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  
-  .loginForm {
-    flex: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    margin-top: 100px;
-  }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-grow: 1;
+  width: 100vw;
+  max-width: 1200px;
+  padding: 20px;
+  margin: 0 auto;
+  gap: 40px;
+  flex: 2;
+}
 
-  .loginTitle{
-    width: 60%;
-    text-align: center;
-  }
+.loginWallpaper {
+  flex: 1;
+  background-image: url('../../public/login-wallpaper.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100%;
+  min-height: 400px;
+}
 
-  .arenaZLogo{
-    width: 150px;
-    height: auto;
-  }
+.formContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  @media (max-width: 1200px) {
-    .mainContainer {
-      height: auto;
-    }
-    .arenaZLogo {
-      width: 100px; 
-    }
-  }
+.loginForm {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-  .loginForm span{
-    font-weight: bold;
-    color: var(--primary-color);
-  }
+.arenaZLogo {
+  width: 150px;
+  height: auto;
+}
 
-  body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
+.loginTitle {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.siteName{
+  color: var(--primary-color);
 }
 
 .inputContainer {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 20px;
-    width: 100%;
-    max-width: 400px;
-}
-
-.inputContainer span {
-    margin-bottom: 5px;
-    font-size: 14px;
-    color: var(--text-color);
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 .inputWrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--background-color-hover);
-    border-radius: 12px;
-    padding: 10px;
-    background-color: transparent;
-}
-
-.inputWrapper i {
-    color: var(--background-color-hover);
-    margin-right: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-color-hover);
+  border-radius: 12px;
+  padding: 10px;
+  background-color:var(--background-color);
 }
 
 .inputWrapper input {
-    border: none;
-    outline: none;
-    width: 100%;
-    font-size: 14px;
-    padding: 5px;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
 }
 
-.inputWrapper input::placeholder {
+.faIcon{
   color: var(--text-color);
 }
 
-.inputWrapper:focus-within {
-  border-color: var(--primary-color);
-}
-
-.inputWrapper {
-  margin-left: 5px;
-  color: var(--text-color);
-}
-
-.recallForget{
-  margin: 20px 0;
+.recallForget {
+  width: 100%;
   display: flex;
   justify-content: space-between;
-  width: 100%;
-  max-width: 390px;
+  margin-bottom: 20px;
 }
 
-.checkbox {
-  width: 15px;
-  height: 15px;
-  margin-right: 5px;
-  cursor: pointer;
+.recallForget .checkbox {
+  margin-right: 10px;
   accent-color: var(--primary-color);
 }
 
-.recallForget label{
-  color: var(--text-color);
-}
-
-.forgetPasswordLink, .startNowLink{
-  text-decoration: none;
-  font-weight: bold;
-  color: var(--primary-color);
-  transition: 0.5s ease;
-}
-
-.forgetPasswordLink:hover, .startNowLink:hover{
-  text-decoration: underline;
-
-}
-
 .loginPrimaryButton {
-  background-color: var(--primary-color);
-  width: 400px;
-  color: var(--title-color);
-  padding: 10px 30px;
+  width: 100%;
+  padding: 10px 20px;
   border-radius: 12px;
+  background-color: var(--primary-color);
+  color: var(--title-color);
+  font-weight: bold;
   border: none;
-  font-size: 1.2rem;
-  text-decoration: none;
-  transition: transform 0.3s ease;
-  margin-inline: 10px;
-  transition: 0.5s ease;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
 .loginPrimaryButton:hover {
   background-color: var(--primary-color-hover);
-  cursor: pointer;
 }
 
 .signUpLink {
   display: flex;
-  align-items: center; 
-  justify-content: center; 
-}
-
-.signUpLink p {
-  margin-right: 10px; 
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
 }
 
 .signUpLink a {
+  margin-left: 10px;
   color: var(--primary-color);
   text-decoration: none;
+  font-weight: bold;
 }
 
 .signUpLink a:hover {
   text-decoration: underline;
+}
+
+.inputError {
+  border: 1px solid var(--danger) !important;
+}
+
+.errorText {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  text-align: start;
+}
+
+
+@media (max-width: 768px) {
+  .loginMainContainer {
+      flex-direction: column;
+      padding: 10px;
+  }
+
+  .loginWallpaper {
+      width: 100%;
+      height: 300px;
+  }
+
+  .formContainer {
+      width: 100%;
+  }
 }
