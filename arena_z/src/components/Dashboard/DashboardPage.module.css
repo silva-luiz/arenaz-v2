@@ -48,9 +48,9 @@
     margin-bottom: 10px;
 }
 
-.seeArenaDetails {
+.newReservationLink{
     background-color: var(--primary-color);
-    color: var(--secondary-color);
+    font-weight: bold;
     text-decoration: none;
     padding: 10px 15px;
     border-radius: 8px;
@@ -72,7 +72,7 @@
 .noReservationsMessage {
   text-align: center;
   font-size: 1.2rem;
-  color: #555;
+  color: var(--text-color);
   margin-top: 20px;
 }
 

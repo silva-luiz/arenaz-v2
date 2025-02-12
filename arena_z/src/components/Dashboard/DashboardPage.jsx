@@ -3,22 +3,21 @@ import styles from '../Dashboard/DashboardPage.module.css';
 import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
-import { useFetch } from '../Register/hooks/useFetch';
+import { useDashboardHooks } from './hooks/DashboardHooks'; // Atualize para o nome correto do hook
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 
 const url = 'http://localhost:3000/arenas';
 
 const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
-  const { data: arenas } = useFetch(url);
+  const { data: arenas, loading, error } = useDashboardHooks(url); // Pega os dados de arenas a partir do hook
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
-
   const closeModal = () => {
     setModalIsOpen(false);
-}
+  }
 
   return (
     <div>
@@ -28,19 +27,22 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
           <Link to='../new-arena'>
             <Button text='+ Nova arena' className='secondaryButton' />
           </Link>
-          <Button text='+ Nova reserva' className='primaryButton' />
         </div>
 
-        {/* Condicional para verificar se não há arenas */}
-        {arenas && arenas.length === 0 ? (
+        {/* Verificação de carregamento e erro */}
+        {loading ? (
+          <p>Carregando...</p>
+        ) : error ? (
+          <p className={styles.errorMessage}>Erro ao carregar arenas: {error}</p>
+        ) : arenas && arenas.length === 0 ? (
           <p className={styles.noArenasMessage}>Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!</p>
         ) : (
           <div className={styles.cardsContainer}>
             {arenas && arenas.map((arena) => (
               <ArenaCard
                 key={arena.id}
-                arenaName={arena.arenaName}
-                arenaCategory={arena.arenaCategory}
+                arenaName={arena.name}
+                arenaCategory={arena.category}
               />
             ))}
           </div>
@@ -99,6 +101,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
     </div>
   );
 }
+
 DashboardPage.propTypes = {
   isExpiredSession: PropTypes.bool.isRequired,
   setIsExpiredSession: PropTypes.func.isRequired,

@@ -1,4 +1,19 @@
 {
   "arenas": [
+    {
+      "id": 1,
+      "name": "Arena São paulinho 1",
+      "category": "Society"    
+    },
+    {
+      "id": 2,
+      "name": "Arena São paulinho 2",
+      "category": "BeachSports"    
+    },
+    {
+      "id": 1,
+      "name": "Arena São paulinho 3",
+      "category": "Tennis"    
+    }
   ]
 }

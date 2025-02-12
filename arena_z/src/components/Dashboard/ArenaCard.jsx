@@ -11,11 +11,12 @@ const ArenaCard = ({ arenaName, arenaCategory }) => {
             <img src={ArenaCardImg} alt='Arena Card Image' className={styles.arenaCardImage} />
             <p className={styles.arenaName}>{arenaName}</p>
             <p className={styles.arenaCategory}>{arenaCategory}</p>
-            <Link className={styles.seeArenaDetails}>
-                <p>
-                    Ver detalhes da Arena
-                </p>
+            <Link className={styles.newReservationLink}>
+                <h5 className={styles.netReservationLinkText}>
+                    + Nova reserva
+                </h5>
             </Link>
+            
 
         </div>
     )
