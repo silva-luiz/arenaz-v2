@@ -41,8 +41,8 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
             {arenas && arenas.map((arena) => (
               <ArenaCard
                 key={arena.id}
-                arenaName={arena.name}
-                arenaCategory={arena.category}
+                arenaName={arena.arenaName}
+                arenaCategory={arena.arenaCategory}
               />
             ))}
           </div>

@@ -1,19 +1,22 @@
 {
   "arenas": [
     {
-      "id": 1,
-      "name": "Arena São paulinho 1",
-      "category": "Society"    
+      "id": "f731",
+      "arenaName": "Arena teste 12",
+      "arenaPrice": "123",
+      "arenaCategory": "society"
     },
     {
-      "id": 2,
-      "name": "Arena São paulinho 2",
-      "category": "BeachSports"    
+      "id": "09a4",
+      "arenaName": "Arena Teste 2",
+      "arenaPrice": "150",
+      "arenaCategory": "other"
     },
     {
-      "id": 1,
-      "name": "Arena São paulinho 3",
-      "category": "Tennis"    
+      "id": "2254",
+      "arenaName": "teste",
+      "arenaPrice": "123",
+      "arenaCategory": "beachSports"
     }
   ]
 }

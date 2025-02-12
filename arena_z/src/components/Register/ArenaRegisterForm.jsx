@@ -1,9 +1,7 @@
 import styles from '../Register/ArenaRegisterForm.module.css';
-import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFetch } from '../Register/hooks/useFetch';
-
+import { useRegisterArena } from './hooks/registerArenaHook';  // Alteração aqui
 
 const url = 'http://localhost:3000/arenas';
 
@@ -12,12 +10,13 @@ const ArenaRegisterForm = () => {
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const { httpConfig, loading } = useFetch(url);
+  
+  const { registerArena, loading, error } = useRegisterArena(url);  // Chame o hook no nível superior
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const arena = {
       arenaName,
       arenaPrice,
@@ -25,10 +24,15 @@ const ArenaRegisterForm = () => {
     };
 
     // Envia a arena para a API
-    await httpConfig(arena, 'POST');
-
-    setShowModal(true);
+    const { res, jsonData } = await registerArena(arena);  // Usa a função diretamente do hook
+  
+    if (res.ok) {
+      setShowModal(true);
+    } else {
+      console.error('Erro ao registrar arena:', jsonData);
+    }
   };
+  
 
   return (
     <>
@@ -153,15 +157,6 @@ const ArenaRegisterForm = () => {
       )}
     </>
   );
-};
-
-ArenaRegisterForm.propTypes = {
-  data: PropTypes.shape({
-    arenaName: PropTypes.string,
-    arenaPrice: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    arenaCategory: PropTypes.string,
-  }).isRequired,
-  updateFieldHandler: PropTypes.func.isRequired,
 };
 
 export default ArenaRegisterForm;
