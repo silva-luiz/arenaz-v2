@@ -41,13 +41,7 @@ const ProfilePage = () => {
                 <div className={styles.inputWrapper}>
                   <input type="text" placeholder='Endereço' name='establishmentAddress' onChange={(e) => setEstablishmentAddress(e.target.value)} />
                 </div>
-              </div>
-              <div className={styles.inputContainer}>
-                <span>Número</span>
-                <div className={styles.inputWrapper}>
-                  <input type="text" placeholder='Número' name='establishmentNumber' onChange={(e) => setEstablishmentNumber(e.target.value)} />
-                </div>
-              </div>
+              </div>   
               <div className={styles.inputContainer}>
                 <span>Cidade</span>
                 <div className={styles.inputWrapper}>
