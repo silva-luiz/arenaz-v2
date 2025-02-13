@@ -57,13 +57,13 @@ function HomePage() {
         <aside className={styles.sidebar}>
           <ul className={styles.navList}>
             <li className={styles.navItem}>
-              <NavLink to="dashboard" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Início</NavLink>
+              <NavLink to="/home/dashboard" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Início</NavLink>
             </li>
             <li className={styles.navItem}>
-              <NavLink to="reservations" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Reservas ativas</NavLink>
+              <NavLink to="/home/reservations" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Reservas ativas</NavLink>
             </li>
             <li className={styles.navItem}>
-              <NavLink to="profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Perfil</NavLink>
+              <NavLink to="/home/profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Perfil</NavLink>
             </li>
           </ul>
         </aside>

@@ -1,0 +1,65 @@
+p{
+    margin: 10px 0;
+}
+
+h2{
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+h4{
+    font-size: 1.3rem;
+}
+
+.arenaInfosContainer {
+    display: flex;
+    border: 1px solid var(--text-color);
+    border-radius: 12px;
+    padding: 15px;
+    justify-content:start;
+    align-items: start;
+    margin: 15px 0;
+    gap: 50px;
+}
+
+.singleInfoContainer{
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+}
+
+.arenaCategorySoccer {
+    font-weight: 600;
+    color: var(--secondary-title-color);
+    background-color: var(--success);
+    padding: 5px 20px;
+    align-self: center;
+    border-radius: 12px;
+}
+
+.arenaCategoryBeach {
+    font-weight: 600;
+    color: var(--secondary-title-color);
+    background-color: var(--warning);
+    padding: 5px 20px;
+    align-self: center;
+    border-radius: 12px;
+}
+
+.arenaCategoryTennis {
+    font-weight: 600;
+    color: var(--secondary-title-color);
+    background-color: var(--orange);
+    padding: 5px 20px;
+    align-self: center;
+    border-radius: 12px;
+}
+
+.arenaCategoryOther {
+    font-weight: 600;
+    color: var(--secondary-title-color);
+    background-color: var(--secondary-color);
+    padding: 5px 20px;
+    align-self: center;
+    border-radius: 12px;
+}

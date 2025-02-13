@@ -5,13 +5,13 @@ import styles from '../Dashboard/DashboardPage.module.css'
 import { Link } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
-const ArenaCard = ({ arenaName, arenaCategory }) => {
+const ArenaCard = ({ arenaName, arenaCategory, goToReservation }) => {
     return (
         <div className={styles.arenaCard}>
             <img src={ArenaCardImg} alt='Arena Card Image' className={styles.arenaCardImage} />
             <p className={styles.arenaName}>{arenaName}</p>
             <p className={styles.arenaCategory}>{arenaCategory}</p>
-            <Link className={styles.newReservationLink}>
+            <Link className={styles.newReservationLink} to={goToReservation}>
                 <h5 className={styles.netReservationLinkText}>
                     + Nova reserva
                 </h5>
@@ -25,6 +25,7 @@ const ArenaCard = ({ arenaName, arenaCategory }) => {
 ArenaCard.propTypes = {
     arenaName: PropTypes.string.isRequired,
     arenaCategory: PropTypes.string.isRequired,
+    goToReservation: PropTypes.string.isRequired,
 };
 
 export default ArenaCard

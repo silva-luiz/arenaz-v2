@@ -1,22 +1,22 @@
 {
   "arenas": [
     {
-      "id": "f731",
-      "arenaName": "Arena teste 12",
-      "arenaPrice": "123",
+      "id": "e29a",
+      "arenaName": "Arena do fefe",
+      "arenaPrice": "150",
       "arenaCategory": "society"
     },
     {
-      "id": "09a4",
-      "arenaName": "Arena Teste 2",
-      "arenaPrice": "150",
-      "arenaCategory": "other"
+      "id": "4c92",
+      "arenaName": "arena do lulu",
+      "arenaPrice": "130",
+      "arenaCategory": "beachSports"
     },
     {
-      "id": "2254",
-      "arenaName": "teste",
-      "arenaPrice": "123",
-      "arenaCategory": "beachSports"
+      "id": "cc17",
+      "arenaName": "arena do ut",
+      "arenaPrice": "1333",
+      "arenaCategory": "tennis"
     }
   ]
 }

@@ -43,6 +43,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
                 key={arena.id}
                 arenaName={arena.arenaName}
                 arenaCategory={arena.arenaCategory}
+                goToReservation={`/reservations/${arena.id}`}
               />
             ))}
           </div>

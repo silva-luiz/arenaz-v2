@@ -13,6 +13,7 @@ import { createBrowserRouter, RouterProvider, Route, Navigate } from 'react-rout
 import ErrorPage from './components/error/ErrorPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx'
 import ArenaRegisterForm from './components/Register/ArenaRegisterForm.jsx'
+import CreateReservationPage from './components/Reservations/CreateReservationPage.jsx'
 
 const router = createBrowserRouter(
   [
@@ -54,9 +55,20 @@ const router = createBrowserRouter(
           element: <ArenaRegisterForm />
         }
       ]
+    },
+    {
+      path: "reservations/:id",
+      element: <HomePage />, // Renderiza HomePage para manter o layout
+      children: [
+        {
+          index: true,
+          element: <CreateReservationPage /> // Renderiza CreateReservationPage no Outlet
+        }
+      ]
     }
   ]
 );
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
