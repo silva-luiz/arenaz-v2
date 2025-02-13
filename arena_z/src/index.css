@@ -94,3 +94,72 @@ hr{
   background-color: var(--background-color-hover);
   cursor: pointer;
 }
+
+
+/* apagar ou ajeitar */
+
+/* Estiliza a borda do calendário */
+.react-datepicker {
+  border: 2px solid #FFD700 !important; /* Amarelo */
+  border-radius: 10px !important;
+  background-color: #000 !important; /* Fundo preto */
+  color: #FFD700 !important; /* Texto amarelo */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Estiliza o cabeçalho */
+.react-datepicker__header {
+  background-color: #FFD700; /* Amarelo */
+  color: #000; /* Texto preto */
+  border-bottom: 1px solid #FFD700;
+}
+
+/* Estiliza os dias */
+.react-datepicker__day {
+  color: #FFD700; /* Texto amarelo */
+  font-weight: bold;
+  background-color: #FFFFFF; /* Fundo preto */
+  border-radius: 8px;
+}
+
+/* Estiliza o dia atual */
+.react-datepicker__day--today {
+  background-color: #FFD700; /* Fundo amarelo */
+  color: #000; /* Texto preto */
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* Estiliza o dia selecionado */
+.react-datepicker__day--selected {
+  background-color: #FFD700 !important; /* Fundo amarelo */
+  color: #000 !important; /* Texto preto */
+  border-radius: 50% !important;
+}
+
+/* Estiliza os dias desabilitados */
+.react-datepicker__day--disabled {
+  color: #555; /* Tom acinzentado */
+  background-color: #333; /* Fundo preto-acinzentado */
+  cursor: not-allowed;
+}
+
+/* Estiliza as setas de navegação */
+.react-datepicker__navigation--previous,
+.react-datepicker__navigation--next {
+  border-color: #FFD700; /* Amarelo */
+}
+
+/* Estiliza o hover nas setas de navegação */
+.react-datepicker__navigation--previous:hover,
+.react-datepicker__navigation--next:hover {
+  background-color: #FFD700; /* Amarelo */
+  border-radius: 50%;
+}
+
+/* Estiliza o hover nos dias */
+.react-datepicker__day:hover {
+  background-color: #FFD700; /* Amarelo no hover */
+  color: #000; /* Texto preto no hover */
+  border-radius: 50%;
+}

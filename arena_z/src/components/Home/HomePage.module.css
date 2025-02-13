@@ -154,7 +154,7 @@ body {
 }
 
 .logoutBtn:hover {
-    background-color: #c53030;
+    background-color: var(--danger);
 }
 
 @media (min-width: 768px) {
@@ -166,7 +166,6 @@ body {
 .mainContent {
     flex-grow: 1;
     padding: 20px;
-    background-color: #fff;
     height: 100%;
 }
 

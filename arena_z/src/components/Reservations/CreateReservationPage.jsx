@@ -1,7 +1,13 @@
 import { useParams } from "react-router-dom"
 import { useDashboardHooks } from "../Dashboard/hooks/DashboardHooks"
+import React, { useState } from "react";
+import DatePicker from "react-datepicker";
 
 import styles from "../Reservations/CreateReservationPage.module.css"
+import "react-datepicker/dist/react-datepicker.css";
+
+// CSS Modules, react-datepicker-cssmodules.css
+import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 
 const CreateReservationPage = () => {
 
@@ -10,6 +16,7 @@ const CreateReservationPage = () => {
   const url = `http://localhost:3000/arenas/${id}`;
 
   const { data: arena, loading, error } = useDashboardHooks(url);
+  const [startDate, setStartDate] = useState(new Date());
 
   if (!arena) return <p>Carregando dados...</p>;
 
@@ -42,6 +49,8 @@ const CreateReservationPage = () => {
       </div>
       <h2>Datas e horários disponíveis</h2>
       <p>Selecione um dia e um horário para fazer um novo agendamento:</p>
+      <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} inline/>
+
     </div>
   );
   
