@@ -18,7 +18,7 @@ const CreateReservationPage = () => {
       <h2>Informações da Arena</h2>
       <div className={styles.arenaInfosContainer}>
         <div className={styles.singleInfoContainer}>
-          <h4>Nome da arena</h4>
+          <h4>Nome da Arena</h4>
           <p>{arena.arenaName}</p>
         </div>
         <div className={styles.singleInfoContainer}>

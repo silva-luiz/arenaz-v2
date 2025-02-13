@@ -17,6 +17,12 @@
       "arenaName": "arena do ut",
       "arenaPrice": "1333",
       "arenaCategory": "tennis"
+    },
+    {
+      "id": "8744",
+      "arenaName": "Bernabeu",
+      "arenaPrice": "200",
+      "arenaCategory": "other"
     }
   ]
 }

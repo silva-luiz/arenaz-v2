@@ -20,7 +20,6 @@
     transition: transform 0.2s ease-in-out;
     width: 300px;
     text-align: center;
-    cursor: pointer;
     margin-bottom: 20px;
 }
 
@@ -35,21 +34,38 @@
     border-bottom: 2px solid var(--background-color);
 }
 
+.arenaInfos{
+    display:flex;
+    flex-direction:column;
+}
+
 .arenaName {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: bold;
     margin: 15px 0 5px 0;
     color: var(--title-color);
 }
 
 .arenaCategory {
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--text-color);
     margin-bottom: 10px;
 }
 
+.arenaPrice {
+    font-weight: 600;
+    margin: 10px 0;
+    color: var(--secondary-title-color);
+    background-color: var(--success);
+    padding: 5px 20px;
+    align-self: center;
+    border-radius: 12px;
+    align-items: center;
+}
+
 .newReservationLink{
     background-color: var(--primary-color);
+    color: var(--title-color);
     font-weight: bold;
     text-decoration: none;
     padding: 10px 15px;
@@ -60,11 +76,11 @@
     transition: background-color 0.2s ease-in-out;
 }
 
-.seeArenaDetails:hover {
+.newReservationLink:hover {
     background-color: var(--primary-color-hover);
 }
 
-.seeArenaDetails p {
+.newReservationLink p {
     margin: 0;
 }
 
