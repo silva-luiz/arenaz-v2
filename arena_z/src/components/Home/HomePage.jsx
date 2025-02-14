@@ -16,7 +16,7 @@ function HomePage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Link to="dashboard" className={styles.arenazMainButton}>
+        <Link to="/home/dashboard" className={styles.arenazMainButton}>
           <img src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
           <p>Arena Z</p>
         </Link>

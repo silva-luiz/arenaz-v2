@@ -1,13 +1,13 @@
-p{
+p {
     margin: 10px 0;
 }
 
-h2{
+h2 {
     font-size: 1.5rem;
     margin: 0;
 }
 
-h4{
+h4 {
     font-size: 1.3rem;
 }
 
@@ -16,13 +16,16 @@ h4{
     border: 1px solid var(--text-color);
     border-radius: 12px;
     padding: 15px;
-    justify-content:start;
+    justify-content: stretch;
     align-items: start;
     margin: 15px 0;
     gap: 50px;
+    box-sizing: border-box;
+    overflow: auto;
 }
 
-.singleInfoContainer{
+
+.singleInfoContainer {
     display: flex;
     flex-direction: column;
     justify-content: start;
@@ -62,4 +65,47 @@ h4{
     padding: 5px 20px;
     align-self: center;
     border-radius: 12px;
+}
+
+.reservationContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+}
+
+.timePickerContainer {
+    display: flex;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+}
+
+.TimePickerComponent {
+    margin: 5px;
+    border: solid 2px var(--primary-color);
+    border-radius: 12px;
+    padding: 1px 25px;
+    flex: 1 1 90px;
+    text-align: center;
+    transition: 0.5s ease;
+
+}
+
+.TimePickerComponent:hover {
+    background-color: var(--secondary-color);
+    cursor: pointer;
+    border: solid 2px var(--primary-color);
+}
+
+.TimePickerComponent:hover > p {
+    color: var(--secondary-title-color);
+  }
+
+.TimePickerComponent p{
+    font-weight: bold;
+}
+
+.TimePickerComponent p:hover {
+    color: var(--secondary-title-color);
+    font-weight: bold;
 }
