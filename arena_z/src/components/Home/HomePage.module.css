@@ -84,7 +84,8 @@ body {
 }
 
 .sidebar {
-    width: 300px;
+    min-width: 250px;
+    width: 250px;
     background-color: var(--secondary-color);
     color: var(--background-color);
     padding: 20px;
