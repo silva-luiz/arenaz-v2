@@ -1,7 +1,7 @@
 import styles from '../Register/ArenaRegisterForm.module.css';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useRegisterArena } from './hooks/registerArenaHook';
 import URLS from '../routes/routes';
 
@@ -9,27 +9,30 @@ import URLS from '../routes/routes';
 const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
+  const location = useLocation();
+  const  est_id  = location.state || {}; 
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
+ 
   
   const { registerArena, loading, error } = useRegisterArena(url);  // Chame o hook no nível superior
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const arena = {
       are_name: arenaName,
       are_price: arenaPrice,
       are_category: arenaCategory,
       usr_cod_cad: 3,
+      est_id: est_id,
     };
 
-
     // Envia a arena para a API
-    const { res, jsonData } = await registerArena(arena);  // Usa a função diretamente do hook
+    const { res, jsonData } = await registerArena(arena);  
   
     if (res.ok) {
       setShowModal(true);

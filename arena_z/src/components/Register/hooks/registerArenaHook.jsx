@@ -4,13 +4,17 @@ export const useRegisterArena = (url) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const registerArena = async (arenaData) => {  
+  const registerArena = async (arenaData) => { 
+    const token = sessionStorage.getItem("auth-token");
+
     setLoading(true);
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          "Authorization": `Bearer ${token}`,
+          "ngrok-skip-browser-warning": "69420"
         },
         body: JSON.stringify(arenaData),
       });

@@ -17,6 +17,7 @@ export const useDashboardHooks = (url) => {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "69420"
                 },
             });
 
