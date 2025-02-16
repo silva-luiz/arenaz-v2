@@ -93,6 +93,7 @@ body {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     border-radius: 0px 12px 12px 0px;
 }
 

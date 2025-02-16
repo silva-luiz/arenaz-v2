@@ -19,11 +19,16 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
     setModalIsOpen(false);
   }
 
+  
   return (
-    <div>
-      <h2>Minhas Arenas</h2>
+    <div className={styles.dashboardMainContent}>
       <div>
+        <p>bem vindo rafael</p>
+        <select name="" id=""><option value="">estab1</option>
+          <option value="estab2">estab2</option></select>
+
         <div className={styles.actionButtonContainer}>
+          <h2>Minhas Arenas</h2>
           <Link to='../new-arena'>
             <Button text='+ Nova arena' className='secondaryButton' />
           </Link>

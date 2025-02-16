@@ -23,6 +23,30 @@
       "arenaName": "Bernabeu",
       "arenaPrice": "200",
       "arenaCategory": "other"
+    },
+    {
+      "id": "1ee4",
+      "arenaName": "arena do rafael",
+      "arenaPrice": "123",
+      "arenaCategory": "beachSports"
+    },
+    {
+      "id": "d95f",
+      "arenaName": "arena do nicolau",
+      "arenaPrice": "123",
+      "arenaCategory": "tennis"
+    },
+    {
+      "id": "6427",
+      "arenaName": "teste",
+      "arenaPrice": "123",
+      "arenaCategory": "beachSports"
+    },
+    {
+      "id": "fca6",
+      "arenaName": "teste 2",
+      "arenaPrice": "333",
+      "arenaCategory": "society"
     }
   ],
   "reservationTime": [
@@ -218,6 +242,5 @@
       "id": "49",
       "timePicked": "23:30"
     }
-    
   ]
 }

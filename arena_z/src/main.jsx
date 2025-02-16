@@ -5,8 +5,10 @@ import App from './App.jsx'
 import LoginPage from '../src/components/Login/LoginPage.jsx'
 import RegisterPage from '../src/components/Register/RegisterPage.jsx'
 import ProfilePage from './components/Profile/ProfilePage.jsx'
+import EstablishmentProfilePage from './components/Profile/EstablishmentProfilePage.jsx'
 import HomePage from './components/Home/HomePage.jsx'
 import ReservationsPage from './components/Reservations/ReservationsPage.jsx'
+
 
 // React-Router import
 import { createBrowserRouter, RouterProvider, Route, Navigate } from 'react-router-dom';
@@ -47,12 +49,16 @@ const router = createBrowserRouter(
           element: <ReservationsPage />
         },
         {
-          path: "profile",
-          element: <ProfilePage />
+          path: "establishment-info",
+          element: <EstablishmentProfilePage />
         },
         {
           path: "new-arena",
           element: <ArenaRegisterForm />
+        },
+        {
+          path: "profile",
+          element: <ProfilePage />
         }
       ]
     },
