@@ -5,7 +5,9 @@ export const useDashboardHooks = (url) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchArenas = async () => {
+    const fetchDashboardData = async () => {
+        const token = sessionStorage.getItem("auth-token");
+
         setLoading(true);
         setError(null); 
 
@@ -13,7 +15,8 @@ export const useDashboardHooks = (url) => {
             const res = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json",
                 },
             });
 
@@ -22,17 +25,17 @@ export const useDashboardHooks = (url) => {
             }
 
             const jsonData = await res.json();
-            setData(jsonData); // Save fetched data to state
+            console.log(jsonData);
+            setData(jsonData);
         } catch (err) {
-            setError(err.message); // Handle any errors
+            setError(err.message);
         } finally {
-            setLoading(false); // Always turn off loading when the request is complete
+            setLoading(false);
         }
     };
 
-    // Load arenas when the component mounts
     useEffect(() => {
-        fetchArenas();
+        fetchDashboardData();
     }, [url]);
 
     return { data, loading, error };

@@ -1,9 +1,12 @@
 import styles from '../Register/ArenaRegisterForm.module.css';
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { useRegisterArena } from './hooks/registerArenaHook';  // Alteração aqui
+import { useRegisterArena } from './hooks/registerArenaHook';
+import URLS from '../routes/routes';
 
-const url = 'http://localhost:3000/arenas';
+
+const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
   const [arenaName, setArenaName] = useState('');
@@ -18,10 +21,12 @@ const ArenaRegisterForm = () => {
     e.preventDefault();
   
     const arena = {
-      arenaName,
-      arenaPrice,
-      arenaCategory,
+      are_name: arenaName,
+      are_price: arenaPrice,
+      are_category: arenaCategory,
+      usr_cod_cad: 3,
     };
+
 
     // Envia a arena para a API
     const { res, jsonData } = await registerArena(arena);  // Usa a função diretamente do hook
@@ -50,7 +55,7 @@ const ArenaRegisterForm = () => {
                   name="arenaName"
                   id="arenaName"
                   placeholder="Nome da Arena"
-                  value={arenaName}
+                  value={arenaName || ""}
                   onChange={(e) => setArenaName(e.target.value)}
                   required
                 />
@@ -67,7 +72,7 @@ const ArenaRegisterForm = () => {
                   name="arenaPrice"
                   id="arenaPrice"
                   placeholder="Preço"
-                  value={arenaPrice}
+                  value={arenaPrice || ""}
                   onChange={(e) => setArenaPrice(e.target.value)}
                   required
                 />
@@ -157,6 +162,12 @@ const ArenaRegisterForm = () => {
       )}
     </>
   );
+};
+
+ArenaRegisterForm.propTypes = {
+    arenaName: PropTypes.string,
+    arenaPrice: PropTypes.string,
+    arenaCategory: PropTypes.string,
 };
 
 export default ArenaRegisterForm;

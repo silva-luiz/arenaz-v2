@@ -17,7 +17,7 @@ const Button = ({ text, className, action }) => {
 Button.propTypes = {
   text: PropTypes.string.isRequired,
   className: PropTypes.string.isRequired,
-  action: PropTypes.func.isRequired,
+  action: PropTypes.func,
 }
 
 

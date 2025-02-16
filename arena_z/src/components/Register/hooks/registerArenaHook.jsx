@@ -4,7 +4,7 @@ export const useRegisterArena = (url) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const registerArena = async (arenaData) => {
+  const registerArena = async (arenaData) => {  
     setLoading(true);
     try {
       const res = await fetch(url, {

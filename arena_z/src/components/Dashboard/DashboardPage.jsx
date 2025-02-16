@@ -6,11 +6,12 @@ import { Link } from 'react-router-dom';
 import { useDashboardHooks } from './hooks/DashboardHooks'; // Atualize para o nome correto do hook
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import URLS from '../routes/routes';
 
-const url = 'http://localhost:3000/arenas';
+const url = URLS.LOAD_DASHBOARD;
 
 const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
-  const { data: arenas, loading, error } = useDashboardHooks(url); // Pega os dados de arenas a partir do hook
+  const { data: arenas, loading, error } = useDashboardHooks(url, 'GET'); // Pega os dados de arenas a partir do hook
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -110,8 +111,8 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
 }
 
 DashboardPage.propTypes = {
-  isExpiredSession: PropTypes.bool.isRequired,
-  setIsExpiredSession: PropTypes.func.isRequired,
+  isExpiredSession: PropTypes.bool,
+  setIsExpiredSession: PropTypes.func,
 };
 
 export default DashboardPage;
