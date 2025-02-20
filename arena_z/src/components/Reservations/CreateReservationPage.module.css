@@ -109,3 +109,42 @@ h4 {
     color: var(--secondary-title-color);
     font-weight: bold;
 }
+
+.table-responsive {
+    margin: 20px 0; /* Ajuste de margem */
+  }
+  
+  .custom-table {
+    background-color: #1c1c1e; /* Cor de fundo personalizada */
+    border-radius: 10px; /* Bordas arredondadas */
+    overflow: hidden; /* Para bordas arredondadas */
+  }
+  
+  .custom-table th, .custom-table td {
+    padding: 15px; /* Aumentar o espaçamento entre células */
+    text-align: center; /* Centralizar o texto */
+  }
+  
+  .custom-table th {
+    background-color: #2c2c2e; /* Cor do cabeçalho */
+    color: #fff; /* Cor do texto do cabeçalho */
+  }
+  
+  .custom-table tbody tr:hover {
+    background-color: #3a3a3c; /* Cor de destaque ao passar o mouse */
+    cursor: pointer; /* Cursor de pointer ao passar o mouse */
+  }
+  
+  .custom-table tbody tr:nth-child(odd) {
+    background-color: #2c2c2e; /* Cor das linhas ímpares */
+  }
+  
+  .custom-table tbody tr:nth-child(even) {
+    background-color: #1c1c1e; /* Cor das linhas pares */
+  }
+  
+  .custom-table td {
+    color: #ddd; /* Cor do texto do corpo */
+    font-size: 14px; /* Tamanho de fonte ajustado */
+  }
+  

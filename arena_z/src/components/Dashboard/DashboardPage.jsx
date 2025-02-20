@@ -25,9 +25,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
   return (
     <div className={styles.dashboardMainContent}>
       <div>
-        <p>bem vindo rafael</p>
-        <select name="" id=""><option value="">estab1</option>
-          <option value="estab2">estab2</option></select>
+        <h3 className={styles.welcome}>Olá, bem vindo(a), <span className={styles.userName}>Luiz</span></h3>
 
         <div className={styles.actionButtonContainer}>
           <h2>Minhas Arenas</h2>

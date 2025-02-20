@@ -8,6 +8,7 @@ import ProfilePage from './components/Profile/ProfilePage.jsx'
 import EstablishmentProfilePage from './components/Profile/EstablishmentProfilePage.jsx'
 import HomePage from './components/Home/HomePage.jsx'
 import ReservationsPage from './components/Reservations/ReservationsPage.jsx'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 // React-Router import

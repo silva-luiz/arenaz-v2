@@ -68,12 +68,12 @@ function HomePage() {
               <li className={styles.navItem}>
                 <NavLink to="/home/establishment-info" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Informações do estabelecimento</NavLink>
               </li>
+              <li>
+                <NavLink to="/home/profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
+                  Perfil do usuário
+                </NavLink>
+              </li>
             </ul>
-          </div>
-          <div className={styles.profile}>
-            <NavLink to="/home/profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
-              <FontAwesomeIcon icon={faUser} size="2x" /> Perfil do usuário
-            </NavLink>
           </div>
         </aside>
         <main className={styles.mainContent}>
