@@ -64,9 +64,12 @@ const router = createBrowserRouter(
       ]
     },
     {
-      path: "reservations/:id",
-      element: <HomePage />, // Renderiza HomePage para manter o layout
-      children: [
+      // path: "reservations/:id",
+      // element: <HomePage />, // Renderiza HomePage para manter o layout
+      // children: [
+        path: "reservationss",
+        element: <HomePage />, // Renderiza HomePage para manter o layout
+        children: [
         {
           index: true,
           element: <CreateReservationPage /> // Renderiza CreateReservationPage no Outlet

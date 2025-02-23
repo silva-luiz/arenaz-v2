@@ -29,13 +29,12 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
 
         <div className={styles.actionButtonContainer}>
           <h2>Minhas Arenas</h2>
-          {dashboardData && dashboardData.est_id && <Link to={{
+          <Link to={{
             pathname: '../new-arena',
-            state: { est_id: dashboardData.arenas.est_id }
           }}>
             <Button text='+ Nova arena' className='secondaryButton' />
-          </Link>}
-          
+          </Link>
+
         </div>
 
         {/* Verificação de carregamento e erro */}

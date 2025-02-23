@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import TimePickerComponent from "./TimePickerComponent";
 import useReservationHooks from "./hooks/useReservationHooks";
+import Form from 'react-bootstrap/Form';
 
 import styles from "../Reservations/CreateReservationPage.module.css"
 import "react-datepicker/dist/react-datepicker.css";
@@ -15,11 +16,12 @@ registerLocale("pt-BR", ptBR);
 
 
 const CreateReservationPage = () => {
-  
-  const { id } = useParams();
-  
+
+  // const { id } = useParams();
+
   const timePickerUrl = "http://localhost:3000/reservationTime";
-  const url = `http://localhost:3000/arenas/${id}`;
+  // const url = `http://localhost:3000/arenas/${id}`;
+  const url = `http://localhost:3000/arenas/`;
 
   const { data: arena, loading, error } = useDashboardHooks(url);
   const { data: timepickers } = useReservationHooks(timePickerUrl); // Pega os dados de horarios a partir do hook
@@ -65,17 +67,37 @@ const CreateReservationPage = () => {
           console.log(formattedDate)
         }} inline />
         <div className={styles.reservationContainer}>
-        <div className={styles.timePickerContainer}>
-          {timepickers && timepickers.map((timepicker) => (
-            <TimePickerComponent
-              key={timepicker.id}
-              timePicked={timepicker.timePicked}
-            />
-          ))}
+          <div className={styles.selectTimeContainer}>
+            <div className={styles.timePickerContainer}>
+              <h4>Horário de início</h4>
+              <Form.Select aria-label="Default select example">
+                <option>Selecione um horário...</option>
+                {timepickers && timepickers.map((timepicker) => (
+                  <option key={timepicker.id} value={timepicker.timePicked}>{timepicker.timePicked}</option>
+                ))}
+              </Form.Select>
+            </div>
+            <div className={styles.timePickerContainer}>
+              <h4>Horário de saída</h4>
+              <Form.Select aria-label="Default select example">
+                <option>Selecione um horário</option>
+                {timepickers && timepickers.map((timepicker) => (
+                  <option key={timepicker.id} value={timepicker.timePicked}>{timepicker.timePicked}</option>
+                ))}
+              </Form.Select>
+            </div>
+          </div>
+          <div className={styles.timePickerContainer}>
+            {timepickers && timepickers.map((timepicker) => (
+              <TimePickerComponent
+                key={timepicker.id}
+                timePicked={timepicker.timePicked}
+              />
+            ))}
+          </div>
+          <button className='primaryButton'>Prosseguir para agendamento</button>
         </div>
-        <button className='primaryButton'>Prosseguir para agendamento</button>
-        </div>
-        
+
       </div>
     </div>
   );

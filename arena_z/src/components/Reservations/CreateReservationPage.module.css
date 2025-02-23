@@ -74,6 +74,17 @@ h4 {
 
 }
 
+.selectTimeContainer {
+  display:flex;
+  gap: 20px;
+  padding: 10px 0;
+  justify-content: stretch;
+}
+
+.timePickerContainer {
+  flex-grow: 1;
+}
+
 .timePickerContainer {
     display: flex;
     flex-wrap: wrap;

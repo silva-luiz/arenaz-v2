@@ -73,6 +73,12 @@ function HomePage() {
                   Perfil do usuário
                 </NavLink>
               </li>
+<p>retirar esse navlink depois</p>
+              <li>
+                <NavLink to="/reservationss" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
+                  Criar reserva
+                </NavLink>
+              </li>
             </ul>
           </div>
         </aside>
