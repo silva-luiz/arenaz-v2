@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom"
 import { useDashboardHooks } from "../Dashboard/hooks/DashboardHooks"
 import { ptBR } from "date-fns/locale";
-import React, { useState } from "react";
+import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import TimePickerComponent from "./TimePickerComponent";
 import useReservationHooks from "./hooks/useReservationHooks";
@@ -20,14 +20,38 @@ const CreateReservationPage = () => {
   // const { id } = useParams();
 
   const timePickerUrl = "http://localhost:3000/reservationTime";
+  
   // const url = `http://localhost:3000/arenas/${id}`;
   const url = `http://localhost:3000/arenas/`;
 
   const { data: arena, loading, error } = useDashboardHooks(url);
   const { data: timepickers } = useReservationHooks(timePickerUrl); // Pega os dados de horarios a partir do hook
+  const [ startTime, setStartTime ] = useState();
+  const [ endTime, setEndTime ] = useState();
   const [startDate, setStartDate] = useState(new Date());
 
   const options = { weekday: 'short', year: 'numeric', month: '2-digit', day: 'numeric' };
+
+  const handleStartTimeChange = (e) => {
+    const selectedTime = e.target.value;
+    setStartTime(selectedTime);
+    console.log("Horário de início selecionado:", selectedTime);
+  }
+  
+  const handleEndTimeChange = (e) => {
+    const selectedTime = e.target.value;
+    setEndTime(selectedTime);
+    console.log("Horário de término selecionado:", selectedTime);
+  }
+
+  // Função para verificar se o horário está no intervalo entre início e fim
+  const isTimeInRange = (time) => {
+    if (startTime && endTime) {
+      return time >= startTime && time <= endTime;
+    }
+    return false;
+  };
+
 
   if (!arena) return <p>Carregando detalhes...</p>;
   if (!timepickers) return <p>Carregando horários...</p>;
@@ -70,7 +94,7 @@ const CreateReservationPage = () => {
           <div className={styles.selectTimeContainer}>
             <div className={styles.timePickerContainer}>
               <h4>Horário de início</h4>
-              <Form.Select aria-label="Default select example">
+              <Form.Select aria-label="Default select example" onChange={handleStartTimeChange}>
                 <option>Selecione um horário...</option>
                 {timepickers && timepickers.map((timepicker) => (
                   <option key={timepicker.id} value={timepicker.timePicked}>{timepicker.timePicked}</option>
@@ -79,7 +103,7 @@ const CreateReservationPage = () => {
             </div>
             <div className={styles.timePickerContainer}>
               <h4>Horário de saída</h4>
-              <Form.Select aria-label="Default select example">
+              <Form.Select aria-label="Default select example" onChange={handleEndTimeChange}>
                 <option>Selecione um horário</option>
                 {timepickers && timepickers.map((timepicker) => (
                   <option key={timepicker.id} value={timepicker.timePicked}>{timepicker.timePicked}</option>
@@ -92,6 +116,8 @@ const CreateReservationPage = () => {
               <TimePickerComponent
                 key={timepicker.id}
                 timePicked={timepicker.timePicked}
+                className={`${styles.timeOption} ${isTimeInRange(timepicker.timePicked) ? styles.timeInRange : ""
+                  }`}
               />
             ))}
           </div>
