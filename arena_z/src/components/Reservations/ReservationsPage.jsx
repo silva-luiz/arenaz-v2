@@ -20,72 +20,64 @@ const reservations = [
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
-  },
-  {
+  }, {
     arena: 'Arena 1',
     categoria: 'Society',
     locador: 'José da Silva',
     contato: '(12)99123-4456',
     data: '00/00/0000',
-    horario: '00:00',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
     valor: 'R$ 130,00',
   },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horario: '00:00',
-    valor: 'R$ 130,00',
-  }
 ];
 
 const ReservationsPage = () => {
@@ -114,7 +106,7 @@ const ReservationsPage = () => {
                 <td className={styles.tableData}>{reservation.locador}</td>
                 <td className={styles.tableData}>{reservation.contato}</td>
                 <td className={styles.tableData}>{reservation.data}</td>
-                <td className={styles.tableData}>{reservation.horario}</td>
+                <td className={styles.tableData}>{reservation.horarioEntrada} - {reservation.horarioSaida}</td>
                 <td className={styles.tableData}>{reservation.valor}</td>
               </tr>
             ))}
