@@ -10,7 +10,7 @@ const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
   const location = useLocation();
-  const  est_id  = location.state || {}; 
+  const est_id = location.state || 8; 
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
@@ -37,6 +37,7 @@ const ArenaRegisterForm = () => {
     if (res.ok) {
       setShowModal(true);
     } else {
+      setShowModal(true);
       console.error('Erro ao registrar arena:', jsonData);
     }
   };

@@ -7,13 +7,19 @@ export const useRegisterArena = (url) => {
   const registerArena = async (arenaData) => { 
     const token = sessionStorage.getItem("auth-token");
 
+    if (!token) {
+      console.error("Token não encontrado!");
+      return;
+  }
+
     setLoading(true);
+    let res = null;
     try {
-      const res = await fetch(url, {
+      res = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "69420"
         },
         body: JSON.stringify(arenaData),

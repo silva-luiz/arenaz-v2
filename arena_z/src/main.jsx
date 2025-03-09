@@ -17,6 +17,7 @@ import ErrorPage from './components/error/ErrorPage.jsx';
 import DashboardPage from './components/Dashboard/DashboardPage.jsx'
 import ArenaRegisterForm from './components/Register/ArenaRegisterForm.jsx'
 import CreateReservationPage from './components/Reservations/CreateReservationPage.jsx'
+import ConfirmReservationPage from './components/Reservations/ConfirmReservationPage.jsx'
 
 const router = createBrowserRouter(
   [
@@ -60,16 +61,17 @@ const router = createBrowserRouter(
         {
           path: "profile",
           element: <ProfilePage />
+        },
+        {
+          path: "confirm-reservation",
+          element: <ConfirmReservationPage />
         }
       ]
     },
     {
-      // path: "reservations/:id",
-      // element: <HomePage />, // Renderiza HomePage para manter o layout
-      // children: [
-        path: "reservationss",
-        element: <HomePage />, // Renderiza HomePage para manter o layout
-        children: [
+      path: "reservation",
+      element: <HomePage />, // Renderiza HomePage para manter o layout
+      children: [
         {
           index: true,
           element: <CreateReservationPage /> // Renderiza CreateReservationPage no Outlet

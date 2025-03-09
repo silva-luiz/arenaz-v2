@@ -1,5 +1,5 @@
 
-const BASE_URL = "https://fe22-190-102-46-170.ngrok-free.app/";
+const BASE_URL = "https://7b92-190-102-46-176.ngrok-free.app/";
 
 const URLS = {
     // User

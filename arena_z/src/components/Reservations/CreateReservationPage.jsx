@@ -24,8 +24,9 @@ const CreateReservationPage = () => {
   // const url = `http://localhost:3000/arenas/${id}`;
   const url = `http://localhost:3000/arenas/`;
 
-  const { data: arena, loading, error } = useDashboardHooks(url);
-  const { data: timepickers } = useReservationHooks(timePickerUrl); // Pega os dados de horarios a partir do hook
+  // const { data: arena, loading, error } = useDashboardHooks(url);
+  // const { data: timepickers } = useReservationHooks(timePickerUrl); // Pega os dados de horarios a partir do hook
+  const { data: arena } = useReservationHooks(url); // Pega os dados de horarios a partir do hook
   const [ startTime, setStartTime ] = useState();
   const [ endTime, setEndTime ] = useState();
   const [startDate, setStartDate] = useState(new Date());

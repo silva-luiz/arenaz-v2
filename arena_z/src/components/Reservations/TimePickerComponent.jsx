@@ -2,15 +2,15 @@ import styles from "../Reservations/CreateReservationPage.module.css"
 import PropTypes from 'prop-types';
 
 
-const TImePickerComponent = ({ timePicked }) => {
+const TimePickerComponent = ({ timePicked }) => {
   return (
     <div className={styles.TimePickerComponent} >
       <p>{timePicked}</p>
     </div>
   )
 }
-TImePickerComponent.propTypes = {
+TimePickerComponent.propTypes = {
   timePicked: PropTypes.string.isRequired,
 };
 
-export default TImePickerComponent;
+export default TimePickerComponent;

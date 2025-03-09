@@ -11,7 +11,7 @@ export const useFetch = (url) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const userRequest = async (userData, method) => {
+    const registerUser = async (userData, method) => {
         if (method === 'POST') {
             const res = await fetch(url, {
                 method: 'POST',
@@ -28,7 +28,7 @@ export const useFetch = (url) => {
         }
     };
     
-    const establishmentRequest = async (establishmentData, method) => {
+    const registerEstablishment = async (establishmentData, method) => {
         const token = sessionStorage.getItem("auth-token");
     
         if (!token) {
@@ -96,5 +96,5 @@ export const useFetch = (url) => {
         httpRequest();
     }, [config, method, url]);
 
-    return { data, userRequest, establishmentRequest, loading, error };
+    return { data, userRequest: registerUser, establishmentRequest: registerEstablishment, loading, error };
 };
