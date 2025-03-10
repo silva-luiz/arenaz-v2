@@ -31,10 +31,7 @@ export const useFetch = (url) => {
     const registerEstablishment = async (establishmentData, method) => {
         const token = sessionStorage.getItem("auth-token");
     
-        if (!token) {
-            console.error("Token não encontrado!");
-            return;
-        }
+        console.log('CHEGOU AQUI NO REGISTER ESTABLISHMENT');
     
         if (method === 'POST') {
             try {
@@ -96,5 +93,5 @@ export const useFetch = (url) => {
         httpRequest();
     }, [config, method, url]);
 
-    return { data, userRequest: registerUser, establishmentRequest: registerEstablishment, loading, error };
+    return { data, registerUser,  registerEstablishment, loading, error };
 };

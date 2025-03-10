@@ -31,7 +31,6 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
           <h2>Minhas Arenas</h2>
           <Link to={{
             pathname: '../new-arena',
-            state: { est_id: '8' }
           }}>
             <Button text='+ Nova arena' className='secondaryButton' />
           </Link>

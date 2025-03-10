@@ -20,7 +20,7 @@ export const useRegisterArena = (url) => {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "69420"
+          // "ngrok-skip-browser-warning": "69420" // usar apenas quando Ngrok estiver sendo utilizado
         },
         body: JSON.stringify(arenaData),
       });

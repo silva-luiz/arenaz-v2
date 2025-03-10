@@ -3,6 +3,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useRegisterArena } from './hooks/registerArenaHook';
+import { useFetchEstablishmentInfo } from '../Register/hooks/useFetchEstId';
 import URLS from '../routes/routes';
 
 
@@ -10,7 +11,7 @@ const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
   const location = useLocation();
-  const est_id = location.state || 8; 
+  const { establishmentInfo } = useFetchEstablishmentInfo(URLS.ESTABLISHMENT_INFO);
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
@@ -20,14 +21,21 @@ const ArenaRegisterForm = () => {
   const { registerArena, loading, error } = useRegisterArena(url);  // Chame o hook no nível superior
   const navigate = useNavigate();
 
+  const est_id = establishmentInfo ? establishmentInfo.est_id : null;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if(!est_id) {
+      console.error('Establishment ID não disponível');
+      return;
+    }
 
     const arena = {
       are_name: arenaName,
       are_price: arenaPrice,
       are_category: arenaCategory,
-      usr_cod_cad: 3,
+      usr_cod_cad: 25,
       est_id: est_id,
     };
 
