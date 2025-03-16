@@ -10,16 +10,15 @@
   bottom: 0;
 }
 
-
-html, body {
+/* html, body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-}
+} */
 
-body > div {
+/* body > div {
   flex: 1;
-}
+} */
 
 @media (max-width: 768px) {
   .siteFooter {
