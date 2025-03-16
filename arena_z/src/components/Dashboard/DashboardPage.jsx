@@ -20,7 +20,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
     setModalIsOpen(false);
   }
 
-  console.log(dashboardData);
+  console.log(dashboardData, '');
 
   return (
     <div className={styles.dashboardMainContent}>
