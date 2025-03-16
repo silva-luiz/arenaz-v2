@@ -1,0 +1,172 @@
+p {
+  margin: 10px 0;
+}
+
+h1 {
+font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+h3 {
+font-size: 1.4rem;
+}
+
+h4 {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  margin-top: 20px;
+}
+
+h5 {
+font-size: 1.2rem;
+}
+
+.arenaName{
+font-size: 1.5rem;
+font-weight: 600;
+margin-bottom: 10px;
+}
+
+.confirmReservationContainer {
+  border: 1px solid var(--text-color);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 15px 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.pageWrapper {
+display: flex;
+flex-direction: column;
+align-items: stretch;
+padding: 10px;
+}
+
+.formContainer {
+display: flex;
+justify-content: space-between;
+width: 100%;
+padding: 20px;
+border: 1px solid var(--background-color-hover);
+border-radius: 12px;
+}
+
+.column {
+flex-grow: 1;
+}
+
+.establishmentOwnerWrapper {
+display: flex;
+justify-content: space-between;
+flex-wrap: wrap;
+gap: 20px;
+width: 100%;
+}
+
+.establishmentContainer, .ownerContainer {
+flex-basis: 45%;
+flex-grow: 1;
+}
+
+.formContainer {
+width: 100%;
+display: flex;
+flex-direction: column;
+}
+
+span {
+color: var(--text-color);
+}
+
+.title {
+padding-bottom: 10px;
+}
+
+.formColumns {
+display: flex;
+justify-content: space-between;
+gap: 20px;
+width: 100%;
+}
+
+.inputContainer {
+display: flex;
+flex-direction: column;
+margin-bottom: 20px;
+width: 100%;
+}
+
+.inputWrapper {
+position: relative;
+display: flex;
+align-items: center;
+border: 1px solid var(--background-color-hover);
+border-radius: 12px;
+padding: 10px;
+background-color: var(--background-color);
+}
+
+.inputWrapper input {
+border: none;
+outline: none;
+width: 100%;
+padding: 10px;
+font-size: 14px;
+}
+
+.paymentContainer {
+display: flex;
+gap: 20px;
+}
+
+.radioItem {
+margin-right: 10px;
+}
+
+.actionButtonsContainer {
+padding-top: 20px;
+display: flex;
+gap: 10px;
+justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+.formColumns {
+  flex-direction: column;
+}
+
+.actionButtonsContainer {
+  flex-direction: column;
+  align-items: center;
+}
+
+.outlinedButton, .primaryButton {
+  width: 100%;
+  margin: 5px 0;
+}
+}
+
+@media (max-width: 480px) {
+.contentWrapper {
+  width: 90vw;
+}
+
+.formHeader h2 {
+  font-size: 1.5rem;
+}
+
+.formHeader p {
+  font-size: 14px;
+}
+
+.confirmReservationContainer {
+  padding: 10px;
+}
+}

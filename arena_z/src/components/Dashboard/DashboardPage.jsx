@@ -3,44 +3,57 @@ import styles from '../Dashboard/DashboardPage.module.css';
 import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
-import { useFetch } from '../Register/hooks/useFetch';
+import { useDashboardHooks } from './hooks/DashboardHooks';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import URLS from '../routes/routes';
 
-const url = 'http://localhost:3000/arenas';
+const url = URLS.LOAD_DASHBOARD;
 
 const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
-  const { data: arenas } = useFetch(url);
+  const { data: dashboardData, loading, error } = useDashboardHooks(url, 'GET');
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
-
   const closeModal = () => {
     setModalIsOpen(false);
-}
+  }
+
+  console.log(dashboardData);
 
   return (
-    <div>
-      <h2>Minhas Arenas</h2>
+    <div className={styles.dashboardMainContent}>
       <div>
+        <h3 className={styles.welcome}>Olá, bem vindo(a), <span className={styles.userName}>Luiz</span></h3>
+
         <div className={styles.actionButtonContainer}>
-          <Link to='../new-arena'>
+          <h2>Minhas Arenas</h2>
+          <Link to={{
+            pathname: '../new-arena',
+          }}>
             <Button text='+ Nova arena' className='secondaryButton' />
           </Link>
-          <Button text='+ Nova reserva' className='primaryButton' />
+
         </div>
 
-        {/* Condicional para verificar se não há arenas */}
-        {arenas && arenas.length === 0 ? (
+        {/* Verificação de carregamento e erro */}
+        {loading ? (
+          <p>Carregando...</p>
+        ) : error ? (
+          <p className={styles.errorMessage}>Erro ao carregar arenas: {error}</p>
+        ) : dashboardData && dashboardData.arenas.length === 0 ? (
           <p className={styles.noArenasMessage}>Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!</p>
         ) : (
           <div className={styles.cardsContainer}>
-            {arenas && arenas.map((arena) => (
+            {dashboardData && dashboardData.arenas.map((arena) => (
               <ArenaCard
                 key={arena.id}
-                arenaName={arena.arenaName}
-                arenaCategory={arena.arenaCategory}
+                arenaName={arena.are_name}
+                arenaCategory={arena.are_category}
+                arenaPrice={arena.are_price}
+                // goToReservation={`/reservations/${arena.id}`}
+                goToReservation={`/reservations/`}
               />
             ))}
           </div>
@@ -49,7 +62,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
 
       <h2>Reservas ativas</h2>
       <div className={styles.reservationStatusContainer}>
-        {arenas && arenas.length > 0 && (
+        {dashboardData && dashboardData.arenas.length > 0 && (
           <>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Total de reservas</p>
@@ -66,7 +79,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
           </>
         )}
 
-        {arenas && arenas.length === 0 && (
+        {dashboardData && dashboardData.arenas.length === 0 && (
           <p className={styles.noReservationsMessage}>Você ainda não tem reservas ativas.</p>
         )}
       </div>
@@ -98,10 +111,13 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
       </Modal>
     </div>
   );
+
 }
+
+
 DashboardPage.propTypes = {
-  isExpiredSession: PropTypes.bool.isRequired,
-  setIsExpiredSession: PropTypes.func.isRequired,
+  isExpiredSession: PropTypes.bool,
+  setIsExpiredSession: PropTypes.func,
 };
 
 export default DashboardPage;

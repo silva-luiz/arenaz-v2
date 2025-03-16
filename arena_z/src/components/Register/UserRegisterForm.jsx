@@ -116,7 +116,7 @@ const validatePasswords = () => {
               onChange={(e) => updateFieldHandler("password", e.target.value)}
               required
             />
-             <Icon class="absolute mr-10" icon={passwordVisibility.password.icon} size={22} onClick={() => handleToggle('password')} />
+             <Icon className="absolute mr-10" icon={passwordVisibility.password.icon} size={22} onClick={() => handleToggle('password')} />
           </div>
           <p className={styles.p}>
             <strong>Atenção: </strong>A senha deve ter pelo menos 8 caracteres, incluindo um número, uma letra maiúscula, uma letra minúscula e um caractere especial.
@@ -144,7 +144,7 @@ const validatePasswords = () => {
               className={passwordError ? styles.errorInput : ""} 
               required
             />
-             <Icon class="absolute mr-10" icon={passwordVisibility.confirmPassword.icon} size={22} onClick={() => handleToggle('confirmPassword')} />
+             <Icon className="absolute mr-10" icon={passwordVisibility.confirmPassword.icon} size={22} onClick={() => handleToggle('confirmPassword')} />
           </div>
           {passwordError && <p className={styles.errorText}>{passwordError}</p>}
 

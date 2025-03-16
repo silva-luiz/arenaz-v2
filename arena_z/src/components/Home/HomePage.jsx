@@ -2,6 +2,8 @@ import { Outlet, Link, NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import styles from '../Home/HomePage.module.css';
 import arenaZLogo from '/arenaz-logo.png';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser } from '@fortawesome/free-solid-svg-icons';
 
 function HomePage() {
   const [showModal, setShowModal] = useState(false);
@@ -16,13 +18,13 @@ function HomePage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <Link to="dashboard" className={styles.arenazMainButton}>
+        <Link to="/home/dashboard" className={styles.arenazMainButton}>
           <img src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
           <p>Arena Z</p>
         </Link>
 
-        <button 
-          className={styles.logoutBtn} 
+        <button
+          className={styles.logoutBtn}
           onClick={() => setShowModal(true)}
         >
           Sair
@@ -36,14 +38,14 @@ function HomePage() {
             <h3>Sair</h3>
             <p>Tem certeza que deseja sair?</p>
             <div className={styles.modalActions}>
-              <button 
-                className="outlinedButton" 
+              <button
+                className="outlinedButton"
                 onClick={() => setShowModal(false)}
               >
                 Cancelar
               </button>
-              <button 
-                className="primaryButton" 
+              <button
+                className="primaryButton"
                 onClick={handleLogout}
               >
                 Sair
@@ -55,17 +57,30 @@ function HomePage() {
 
       <div className={styles.content}>
         <aside className={styles.sidebar}>
-          <ul className={styles.navList}>
-            <li className={styles.navItem}>
-              <NavLink to="dashboard" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Início</NavLink>
-            </li>
-            <li className={styles.navItem}>
-              <NavLink to="reservations" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Reservas ativas</NavLink>
-            </li>
-            <li className={styles.navItem}>
-              <NavLink to="profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Perfil</NavLink>
-            </li>
-          </ul>
+          <div className={styles.asdas}>
+            <ul className={styles.navList}>
+              <li className={styles.navItem}>
+                <NavLink to="/home/dashboard" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Início</NavLink>
+              </li>
+              <li className={styles.navItem}>
+                <NavLink to="/home/reservations" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Reservas ativas</NavLink>
+              </li>
+              <li className={styles.navItem}>
+                <NavLink to="/home/establishment-info" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>Informações do estabelecimento</NavLink>
+              </li>
+              <li>
+                <NavLink to="/home/profile" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
+                  Perfil do usuário
+                </NavLink>
+              </li>
+<p>retirar esse navlink depois</p>
+              <li>
+                <NavLink to="/reservationss" className={({ isActive }) => isActive ? `${styles.navLink} ${styles.active}` : styles.navLink}>
+                  Criar reserva
+                </NavLink>
+              </li>
+            </ul>
+          </div>
         </aside>
         <main className={styles.mainContent}>
           <Outlet />

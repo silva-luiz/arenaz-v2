@@ -55,8 +55,8 @@ const RegisterPage = () => {
     const { currentStep, currentComponent, changeStep, isLastStep, isFirstStep } = useForm(formComponents);
 
     // UseFetch separado para usuários e estabelecimentos
-    const { userRequest } = useFetch(urlUsers);
-    const { establishmentRequest } = useFetch(urlEstablishments);
+    const { registerUser } = useFetch(urlUsers);
+    const { registerEstablishment } = useFetch(urlEstablishments);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -86,8 +86,9 @@ const RegisterPage = () => {
 
         try {
             const [userResponse, establishmentResponse] = await Promise.all([
-                userRequest(userData, 'POST'),
-                establishmentRequest(establishmentData, 'POST')
+                registerUser(userData, 'POST'),
+                registerEstablishment(establishmentData, 'POST'),
+                console.log('HOOK AQUI MEU PARÇA'),
             ]);
 
             const { res: userRes, jsonData: userJson } = userResponse;

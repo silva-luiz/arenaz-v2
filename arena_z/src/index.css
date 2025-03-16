@@ -16,6 +16,7 @@
   --success: #198754;
   --danger: #dc3545;
   --warning: #ffc107;
+  --orange: #ff7f07;
   --info: #0dcaf0;
 }
 
@@ -92,4 +93,87 @@ hr{
 .outlinedButton:hover {
   background-color: var(--background-color-hover);
   cursor: pointer;
+}
+
+
+/* apagar ou ajeitar */
+
+/* Estiliza a borda do calendário */
+.react-datepicker {
+  border: 2px solid var(--primary-color) !important;
+  border-radius: 10px !important;
+  background-color: var(--secondary-color) !important;
+  color: var(--primary-color) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Estiliza o cabeçalho */
+.react-datepicker__header {
+  background-color: var(--secondary-color) !important;
+  color: var(--secondary-color);
+  border-bottom: 1px solid #FFD700;
+}
+
+.react-datepicker__current-month {
+  background-color: var(--secondary-color);
+  color: var(--primary-color) !important;
+  font-weight: bold;
+}
+
+.react-datepicker__day-name {
+  background-color: var(--title-color);
+  color: var(--primary-color) !important;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* Estiliza os dias */
+.react-datepicker__day {
+  color: var(--secondary-title-color) !important;
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+/* Estiliza o dia atual */
+.react-datepicker__day--today {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+
+
+/* Estiliza o dia selecionado */
+.react-datepicker__day--selected {
+  background-color: var(--primary-color) !important;
+  color: var(--secondary-color) !important;
+  border-radius: 50% !important;
+}
+
+/* Estiliza os dias desabilitados */
+.react-datepicker__day--disabled {
+  color: var(--text-color);
+  background-color: #333;
+  cursor: not-allowed;
+}
+
+/* Estiliza as setas de navegação */
+.react-datepicker__navigation--previous,
+.react-datepicker__navigation--next {
+  border-color: var(--primary-color);
+}
+
+/* Estiliza o hover nas setas de navegação */
+.react-datepicker__navigation--previous:hover,
+.react-datepicker__navigation--next:hover {
+  background-color: var(--primary-color);
+  border-radius: 50%;
+}
+
+/* Estiliza o hover nos dias */
+.react-datepicker__day:hover {
+  background-color: var(--primary-color) !important;
+  color: var(--secondary-color) !important;
+  border-radius: 50%;
 }

@@ -1,0 +1,39 @@
+.tableResponsive {
+  width: 100%;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  border-radius: 12px !important;
+}
+
+.customTable {
+  background-color: #343a40;
+}
+
+.tableHeader {
+  background-color: #495057;
+  color: var(--primary-color) !important;
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 20px !important;
+}
+
+.tableRow {
+  transition: background-color 0.3s ease;
+}
+
+.tableRow:hover {
+  background-color: #565e64;
+}
+
+.tableData {
+  text-align: center;
+  color: var(--secondary-text-color);
+  padding: 10px !important;
+}
+
+.reservationPagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 0;
+}
+
