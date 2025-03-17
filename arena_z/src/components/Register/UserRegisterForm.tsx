@@ -1,18 +1,28 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import styles from '../Register/Register.module.css';
-import URLS from '../../api/routes';
+import URLS from '../../utils/apiRoutes';
 import { Icon } from 'react-icons-kit';
 import { eyeOff } from 'react-icons-kit/feather/eyeOff';
 import { eye } from 'react-icons-kit/feather/eye';
+import { IRegisterData } from 'types/formTemplate';
+
+interface IUserRegisterForm {
+  data: IRegisterData;
+  updateFieldHandler: (key: unknown, value: unknown) => void;
+  emailError: string;
+  setEmailError: Dispatch<SetStateAction<string>>;
+  passwordError: string;
+  setPasswordError: Dispatch<SetStateAction<string>>;
+}
 
 const UserRegisterForm = ({
   data,
   updateFieldHandler,
   emailError,
   setEmailError,
-}) => {
-  const [passwordError, setPasswordError] = useState('');
-
+  passwordError,
+  setPasswordError,
+}: IUserRegisterForm) => {
   const [passwordVisibility, setPasswordVisibility] = useState({
     password: { type: 'password', icon: eyeOff },
     confirmPassword: { type: 'password', icon: eyeOff },
@@ -136,7 +146,7 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="repassword">Confirme sua senha</span>
+          <label htmlFor="repassword">Confirme sua senha</label>
           <div className={styles.inputWrapper}>
             <input
               type={passwordVisibility.confirmPassword.type}
@@ -167,15 +177,5 @@ const UserRegisterForm = ({
     </div>
   );
 };
-
-// UserRegisterForm.propTypes = {
-//   data: PropTypes.shape({
-//     name: PropTypes.string,
-//     email: PropTypes.string,
-//     password: PropTypes.string,
-//     confirmPassword: PropTypes.string,
-//   }).isRequired,
-//   updateFieldHandler: PropTypes.func.isRequired,
-// };
 
 export default UserRegisterForm;

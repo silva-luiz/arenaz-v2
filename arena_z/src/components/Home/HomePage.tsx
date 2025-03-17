@@ -1,15 +1,14 @@
 'use client';
-import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import styles from '../Home/HomePage.module.css';
 import arenaZLogo from '../../../public/images/arenaz-logo.png';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 // import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // import { faUser } from '@fortawesome/free-solid-svg-icons';
 
-function HomePage() {
+function HomePage({ children }) {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
   const handleLogout = () => {
@@ -17,6 +16,7 @@ function HomePage() {
     setShowModal(false);
     router.push('/'); // Redireciona para a página inicial
   };
+  const pathname = usePathname();
 
   return (
     <div className={styles.container}>
@@ -59,8 +59,8 @@ function HomePage() {
               <li className={styles.navItem}>
                 <Link
                   href="/home/dashboard"
-                  className={({ isActive }) =>
-                    isActive
+                  className={
+                    pathname === '/home/dashboard'
                       ? `${styles.navLink} ${styles.active}`
                       : styles.navLink
                   }
@@ -71,8 +71,8 @@ function HomePage() {
               <li className={styles.navItem}>
                 <Link
                   href="/home/reservations"
-                  className={({ isActive }) =>
-                    isActive
+                  className={
+                    pathname === '/home/reservations'
                       ? `${styles.navLink} ${styles.active}`
                       : styles.navLink
                   }
@@ -83,8 +83,8 @@ function HomePage() {
               <li className={styles.navItem}>
                 <Link
                   href="/home/establishment-info"
-                  className={({ isActive }) =>
-                    isActive
+                  className={
+                    pathname === '/home/establishment-info'
                       ? `${styles.navLink} ${styles.active}`
                       : styles.navLink
                   }
@@ -95,8 +95,8 @@ function HomePage() {
               <li>
                 <Link
                   href="/home/profile"
-                  className={({ isActive }) =>
-                    isActive
+                  className={
+                    pathname === '/home/profile'
                       ? `${styles.navLink} ${styles.active}`
                       : styles.navLink
                   }
@@ -108,8 +108,8 @@ function HomePage() {
               <li>
                 <Link
                   href="/reservationss"
-                  className={({ isActive }) =>
-                    isActive
+                  className={
+                    pathname === '/reservationss'
                       ? `${styles.navLink} ${styles.active}`
                       : styles.navLink
                   }
@@ -120,9 +120,7 @@ function HomePage() {
             </ul>
           </div>
         </aside>
-        <main className={styles.mainContent}>
-          <Outlet />
-        </main>
+        <main className={styles.mainContent}>{children}</main>
       </div>
     </div>
   );

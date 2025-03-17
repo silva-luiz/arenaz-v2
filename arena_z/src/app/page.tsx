@@ -1,3 +1,4 @@
+'use client';
 import cta1 from '../../public/images/cta-1.png';
 import cta2 from '../../public/images/cta-2.png';
 

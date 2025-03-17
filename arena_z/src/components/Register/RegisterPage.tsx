@@ -1,34 +1,18 @@
 'use client';
-import NavbarSite from '../NavbarSite';
-import SiteFooter from '../SiteFooter';
 import UserRegisterForm from './UserRegisterForm';
 import EstablishmentRegisterForm from './EstablishmentRegisterForm';
 import Modal from 'react-modal';
 import styles from '../Register/Register.module.css';
-import URLS from '../../api/routes';
 import { useState } from 'react';
-import { useFetch } from '../Register/hooks/useFetch';
 
-const urlUsers = URLS.REGISTER_USER;
-const urlEstablishments = URLS.REGISTER_ESTABLISHMENT;
-
-import { useForm } from '../hooks/useForm';
+import { useForm } from '../../hooks/useForm';
 import Link from 'next/link';
-
-const formTemplate = {
-  usr_name: '',
-  usr_email: '',
-  usr_password: '',
-  confirmPassword: '',
-  establishmentName: '',
-  establishmentPhone: '',
-  establishmentCep: '',
-  establishmentAddress: '',
-  establishmentCity: '',
-};
+import { authService } from 'lib/api';
+import { IRegisterData } from 'types/formTemplate';
 
 const RegisterPage = () => {
-  const [data, setData] = useState(formTemplate);
+  const { registerUser, registerEstablishment } = authService;
+  const [data, setData] = useState<IRegisterData>();
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -46,7 +30,7 @@ const RegisterPage = () => {
       updateFieldHandler={updateFieldHandler}
       emailError={emailError}
       setEmailError={setEmailError}
-      password={passwordError}
+      passwordError={passwordError}
       setPasswordError={setPasswordError}
     />,
     <EstablishmentRegisterForm
@@ -59,11 +43,8 @@ const RegisterPage = () => {
   const { currentStep, currentComponent, changeStep, isLastStep, isFirstStep } =
     useForm(formComponents);
 
-  // UseFetch separado para usuários e estabelecimentos
-  const { registerUser } = useFetch(urlUsers);
-  const { registerEstablishment } = useFetch(urlEstablishments);
-
   const handleSubmit = async (e) => {
+    console.log('hello');
     e.preventDefault();
 
     const userData = {
@@ -77,6 +58,7 @@ const RegisterPage = () => {
       own_document: '',
       own_code: '',
       is_owner: true,
+      erro: 'TODO',
     };
 
     const establishmentData = {
@@ -87,12 +69,13 @@ const RegisterPage = () => {
       est_city: data.establishmentCity,
       usr_cod_cad: 3,
       own_id: 10,
+      erro: 'TODO',
     };
 
     try {
       const [userResponse, establishmentResponse] = await Promise.all([
-        registerUser(userData, 'POST'),
-        registerEstablishment(establishmentData, 'POST'),
+        registerUser(userData),
+        registerEstablishment(establishmentData),
         console.log('HOOK AQUI MEU PARÇA'),
       ]);
 
@@ -158,7 +141,7 @@ const RegisterPage = () => {
                 <button
                   className={styles.outlinedButton}
                   type="button"
-                  onClick={() => changeStep(currentStep - 1)}
+                  onClick={(e) => changeStep(currentStep - 1, e)}
                 >
                   Voltar
                 </button>

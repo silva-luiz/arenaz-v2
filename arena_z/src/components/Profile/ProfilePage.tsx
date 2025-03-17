@@ -1,3 +1,4 @@
+'use client';
 import styles from '../Profile/ProfilePage.module.css';
 import { useState } from 'react';
 import Button from '../Button';

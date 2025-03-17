@@ -3,9 +3,9 @@ import Button from '../Button';
 import styles from '../Dashboard/DashboardPage.module.css';
 import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
-import { useDashboardHooks } from './hooks/DashboardHooks';
+import { useDashboardHooks } from '../../hooks/useDashboardHooks';
 import { useState } from 'react';
-import URLS from '../../api/routes';
+import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
 
 const url = URLS.LOAD_DASHBOARD;
@@ -32,7 +32,7 @@ const DashboardPage = ({
     setModalIsOpen(false);
   };
 
-  console.log(dashboardData, '');
+  console.log('\t > Dashboard', dashboardData);
 
   return (
     <div className={styles.dashboardMainContent}>

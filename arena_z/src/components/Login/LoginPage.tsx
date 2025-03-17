@@ -2,7 +2,7 @@ import Button from '../Button';
 import { FaUser, FaLock } from 'react-icons/fa';
 // import Cookies from 'js-cookie';
 import { useState } from 'react';
-import URLS from '../../api/routes';
+import URLS from '../../utils/apiRoutes';
 
 const loginUrl = URLS.LOGIN;
 
@@ -11,12 +11,15 @@ import styles from './LoginPage.module.css';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { authService } from 'lib/api';
 
 const LoginPage = () => {
+  const { login } = authService;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [credentialsError, setCredentialsError] = useState('');
   const router = useRouter();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -26,17 +29,10 @@ const LoginPage = () => {
     };
 
     try {
-      const loginRes = await fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-      const jsonData = await loginRes.json();
+      const loginRes = await login(userData);
 
       if (loginRes.ok) {
-        sessionStorage.setItem('auth-token', jsonData.token);
+        // sessionStorage.setItem('auth-token', jsonData.token);
         router.push('../home/dashboard');
       } else {
         setCredentialsError(jsonData.message || 'Credenciais inválidas');

@@ -19,7 +19,6 @@ const ErrorPage = () => {
           </Link>
         </div>
       </div>
-      <SiteFooter />
     </div>
   );
 };

@@ -15,8 +15,8 @@ export default function RootLayout({ children }) {
         <div id="root">
           <NavbarSite />
           {children}
-          <SiteFaq />
-          <SiteFooter />
+          {/* <SiteFaq />
+          <SiteFooter /> */}
         </div>
       </body>
     </html>

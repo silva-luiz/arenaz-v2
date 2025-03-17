@@ -2,9 +2,9 @@ import styles from '../Register/ArenaRegisterForm.module.css';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useRegisterArena } from './hooks/registerArenaHook';
-import { useFetchEstablishmentInfo } from './hooks/useFetchEstId';
-import URLS from '../../api/routes';
+import { useRegisterArena } from '../../hooks/useRegisterArena';
+import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
+import URLS from '../../utils/apiRoutes';
 
 const url = URLS.REGISTER_ARENA;
 
