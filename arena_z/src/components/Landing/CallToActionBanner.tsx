@@ -12,7 +12,7 @@ const CallToActionBanner = ({
   return (
     <div
       className={styles.ctaBanner}
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      style={{ backgroundImage: `url(${backgroundImage.src})` }}
     >
       <div className={styles.ctaContainer}>
         <h3 className={styles.ctaMessage}>{message}</h3>

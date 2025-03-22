@@ -3,6 +3,14 @@ import './globals.scss';
 import SiteFaq from 'components/Landing/SiteFaq';
 import SiteFooter from 'components/SiteFooter';
 import Head from 'next/head';
+import { Roboto } from 'next/font/google';
+
+const roboto = Roboto({
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Create Next App',
@@ -11,7 +19,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={roboto.className}>
       <Head>
         <link
           rel="apple-touch-icon"

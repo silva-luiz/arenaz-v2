@@ -1,7 +1,7 @@
 'use client';
 import NavbarSite from 'components/NavbarSite';
-import cta1 from '../../public/images/cta-1.png';
-import cta2 from '../../public/images/cta-2.png';
+import cta1 from 'assets/cta-1.png';
+import cta2 from 'assets/cta-2.png';
 
 import CallToActionBanner from 'components/Landing/CallToActionBanner';
 import SiteDescription from 'components/Landing/SiteDescription';

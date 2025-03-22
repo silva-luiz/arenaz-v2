@@ -2,16 +2,16 @@ import Button from '../Button';
 import { FaUser, FaLock } from 'react-icons/fa';
 // import Cookies from 'js-cookie';
 import { useState } from 'react';
-import URLS from '../../utils/apiRoutes';
 
-const loginUrl = URLS.LOGIN;
-
-import arenaZLogo from '../../../public/images/arenaz-logo.png';
+import arenaZLogo from '/public/images/arenaz-logo.png';
 import styles from './LoginPage.module.scss';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authService } from 'lib/api';
+import URLS from 'utils/apiRoutes';
+
+const loginUrl = URLS.LOGIN;
 
 const LoginPage = () => {
   const { login } = authService;
@@ -39,7 +39,12 @@ const LoginPage = () => {
   return (
     <div className={styles.mainContainer}>
       <div className={styles.loginMainContainer}>
-        <div className={styles.loginWallpaper}></div>
+        <Image
+          src="/images/login-wallpaper.png"
+          width={661}
+          height={781}
+          alt="login image"
+        />
         <div className={styles.formContainer}>
           <form className={styles.loginForm} onSubmit={handleSubmit}>
             <Image src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
