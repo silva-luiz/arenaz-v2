@@ -1,15 +1,15 @@
-import styles from '../Register/ArenaRegisterForm.module.css';
+import styles from './ArenaRegisterForm.module.scss';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useRegisterArena } from '../../hooks/useRegisterArena';
 import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
 import URLS from '../../utils/apiRoutes';
+import { useRouter } from 'next/navigation';
 
 const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
-  const location = useLocation();
+  // const location = useLocation();
   const { establishmentInfo } = useFetchEstablishmentInfo(
     URLS.ESTABLISHMENT_INFO,
   );
@@ -19,7 +19,7 @@ const ArenaRegisterForm = () => {
   const [showModal, setShowModal] = useState(false);
 
   const { registerArena, loading, error } = useRegisterArena(url); // Chame o hook no nível superior
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const est_id = establishmentInfo ? establishmentInfo.est_id : null;
 
@@ -166,7 +166,7 @@ const ArenaRegisterForm = () => {
             <button
               className="primaryButton"
               onClick={() => {
-                navigate('/home/dashboard');
+                router.push('/home/dashboard');
                 setShowModal(false);
               }}
             >

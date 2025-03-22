@@ -1,4 +1,4 @@
-import styles from '../Profile/ProfilePage.module.css';
+import styles from '../Profile/ProfilePage.module.scss';
 import { useState } from 'react';
 import Button from '../Button';
 

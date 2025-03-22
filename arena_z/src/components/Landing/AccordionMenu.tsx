@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-import styles from './AccordionMenu.module.css';
+import styles from './AccordionMenu.module.scss';
 
 function AccordionMenu({ title, children }) {
   const [isActive, setIsActive] = useState(false);

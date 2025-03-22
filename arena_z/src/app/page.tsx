@@ -1,4 +1,5 @@
 'use client';
+import NavbarSite from 'components/NavbarSite';
 import cta1 from '../../public/images/cta-1.png';
 import cta2 from '../../public/images/cta-2.png';
 
@@ -8,6 +9,7 @@ import SiteDescription from 'components/Landing/SiteDescription';
 export default function Home() {
   return (
     <>
+      <NavbarSite />
       <CallToActionBanner
         message={
           'Cadastre sua arena e conecte-se com atletas de todos os esportes em sua região'

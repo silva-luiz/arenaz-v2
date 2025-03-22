@@ -1,4 +1,4 @@
-import styles from './SiteFooter.module.css';
+import styles from './SiteFooter.module.scss';
 
 const SiteFooter = () => {
   return (

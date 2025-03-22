@@ -2,7 +2,7 @@
 import UserRegisterForm from './UserRegisterForm';
 import EstablishmentRegisterForm from './EstablishmentRegisterForm';
 import Modal from 'react-modal';
-import styles from '../Register/Register.module.css';
+import styles from '../Register/Register.module.scss';
 import { useState } from 'react';
 
 import { useForm } from '../../hooks/useForm';

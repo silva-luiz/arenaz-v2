@@ -51,7 +51,7 @@
   border: 1px solid var(--background-color-hover);
   border-radius: 12px;
   padding: 10px;
-  background-color:var(--background-color);
+  background-color: var(--background-color);
 }
 
 .inputWrapper input {
@@ -62,16 +62,15 @@
   font-size: 14px;
 }
 
-span {
+/* span {
   text-align: left;
-}
+} */
 
-
-input[type="text"]:focus,
-input[type="number"]:focus {
+/* input[type='text']:focus,
+input[type='number']:focus {
   outline: none;
   border-color: var(--primary-color);
-}
+} */
 
 .radioContainer {
   display: flex;
@@ -86,18 +85,17 @@ input[type="number"]:focus {
   gap: 0.5rem;
 }
 
-input[type="radio"] {
+/* input[type='radio'] {
   width: 1.2rem;
   height: 1.2rem;
   accent-color: var(--primary-color);
-}
+} */
 
-label {
+/* label {
   font-size: 1rem;
   color: #333;
   cursor: pointer;
-}
-
+} */
 
 .actionButtonContainer {
   position: absolute;
@@ -128,7 +126,7 @@ label {
   height: 200px;
 }
 
-.modalSubtitle{
+.modalSubtitle {
   padding-bottom: 15px;
 }
 

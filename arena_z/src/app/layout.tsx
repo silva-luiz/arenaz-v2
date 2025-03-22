@@ -1,7 +1,8 @@
 import NavbarSite from 'components/NavbarSite';
-import './globals.css';
+import './globals.scss';
 import SiteFaq from 'components/Landing/SiteFaq';
 import SiteFooter from 'components/SiteFooter';
+import Head from 'next/head';
 
 export const metadata = {
   title: 'Create Next App',
@@ -11,9 +12,29 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <Head>
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/src/assets/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/src/assets/favicon-16x16.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </Head>
       <body>
         <div id="root">
-          <NavbarSite />
           {children}
           {/* <SiteFaq />
           <SiteFooter /> */}

@@ -1,6 +1,6 @@
 import arenaZLogo from '../../public/images/arenaz-logo.png';
 
-import styles from './NavbarSite.module.css';
+import styles from './NavbarSite.module.scss';
 import Button from './Button';
 import Image from 'next/image';
 import Link from 'next/link';

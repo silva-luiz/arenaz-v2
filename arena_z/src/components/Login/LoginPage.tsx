@@ -7,7 +7,7 @@ import URLS from '../../utils/apiRoutes';
 const loginUrl = URLS.LOGIN;
 
 import arenaZLogo from '../../../public/images/arenaz-logo.png';
-import styles from './LoginPage.module.css';
+import styles from './LoginPage.module.scss';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -29,18 +29,10 @@ const LoginPage = () => {
     };
 
     try {
-      const loginRes = await login(userData);
-
-      if (loginRes.ok) {
-        // sessionStorage.setItem('auth-token', jsonData.token);
-        router.push('../home/dashboard');
-      } else {
-        setCredentialsError(jsonData.message || 'Credenciais inválidas');
-      }
-
-      return { loginRes, jsonData };
+      await login(userData);
+      router.push('../home/dashboard');
     } catch (error) {
-      console.log('teste' + error);
+      console.error('Login Error' + error);
     }
   };
 

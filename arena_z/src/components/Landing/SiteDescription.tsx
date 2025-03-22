@@ -1,4 +1,4 @@
-import styles from './SiteDescription.module.css';
+import styles from './SiteDescription.module.scss';
 
 interface ISiteDescriptionProps {
   DescriptionTitle: string;

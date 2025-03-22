@@ -7,7 +7,7 @@ import TimePickerComponent from './TimePickerComponent';
 import useReservationHooks from '../../hooks/useReservationHooks';
 import Form from 'react-bootstrap/Form';
 
-import styles from '../Reservations/CreateReservationPage.module.css';
+import styles from '../Reservations/CreateReservationPage.module.scss';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';

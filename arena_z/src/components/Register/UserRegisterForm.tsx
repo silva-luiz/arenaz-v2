@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useState } from 'react';
-import styles from '../Register/Register.module.css';
+import styles from '../Register/Register.module.scss';
 import URLS from '../../utils/apiRoutes';
 import { Icon } from 'react-icons-kit';
 import { eyeOff } from 'react-icons-kit/feather/eyeOff';

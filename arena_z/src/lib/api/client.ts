@@ -48,7 +48,7 @@ class ApiClient {
       // Retorna os dados da resposta
       return await response.json()
     } catch (error) {
-      console.error("Erro na API:", error)
+      console.error("API Error:", error)
       throw error
     }
   }

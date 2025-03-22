@@ -1,5 +1,5 @@
 import { StaticImageData } from 'next/image';
-import styles from './CallToActionBanner.module.css';
+import styles from './CallToActionBanner.module.scss';
 import Link from 'next/link';
 
 const CallToActionBanner = ({

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import styles from '../Home/HomePage.module.css';
+import styles from '../Home/HomePage.module.scss';
 import arenaZLogo from '../../../public/images/arenaz-logo.png';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';

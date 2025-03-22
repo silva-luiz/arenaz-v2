@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import styles from '../Reservations/ConfirmReservationPage.module.css';
+import styles from '../Reservations/ConfirmReservationPage.module.scss';
 import Button from '../Button';
 import TimePickerComponent from './TimePickerComponent';
 import Link from 'next/link';

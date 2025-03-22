@@ -1,6 +1,6 @@
 'use client';
 import Button from '../Button';
-import styles from '../Dashboard/DashboardPage.module.css';
+import styles from '../Dashboard/DashboardPage.module.scss';
 import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { useDashboardHooks } from '../../hooks/useDashboardHooks';

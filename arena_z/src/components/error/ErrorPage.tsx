@@ -1,4 +1,4 @@
-import styles from '../error/ErrorPage.module.css';
+import styles from '../error/ErrorPage.module.scss';
 import SiteFooter from '../SiteFooter';
 import errorImg from '../../assets/404_img.jpg';
 import Image from 'next/image';
