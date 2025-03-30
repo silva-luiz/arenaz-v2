@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export const useRegisterArena = (url) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null);  
 
   const registerArena = async (arenaData) => { 
     const token = sessionStorage.getItem("auth-token");

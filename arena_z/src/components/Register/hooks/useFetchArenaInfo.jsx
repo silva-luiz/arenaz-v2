@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 
-export const useDashboardHooks = (url) => {
+export const useFetchArenaInfo = (url) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchDashboardData = async () => {
+    const fetchArenaInfo = async () => {
         const token = sessionStorage.getItem("auth-token");
-
+        
         setLoading(true);
         setError(null); 
 
@@ -21,12 +21,8 @@ export const useDashboardHooks = (url) => {
                 },
             });
 
-            if (!res.ok) {
-                throw new Error('Erro ao listar Arenas');
-            }
-
             const jsonData = await res.json();
-            console.log(jsonData);
+            console.log('\t > json Data', jsonData);
             setData(jsonData);
         } catch (err) {
             setError(err.message);
@@ -36,7 +32,9 @@ export const useDashboardHooks = (url) => {
     };
 
     useEffect(() => {
-        fetchDashboardData();
+        console.log('>>>>>> ARENA INFO')
+        
+        fetchArenaInfo();
     }, [url]);
 
     return { data, loading, error };

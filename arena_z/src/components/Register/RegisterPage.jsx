@@ -5,6 +5,7 @@ import EstablishmentRegisterForm from './EstablishmentRegisterForm';
 import Modal from 'react-modal';
 import styles from '../Register/Register.module.css';
 import URLS from '../routes/routes';
+import Cookies from 'js-cookie';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFetch } from '../Register/hooks/useFetch';
@@ -60,7 +61,7 @@ const RegisterPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+    
         const userData = {
             usr_name: data.name,
             usr_email: data.email,
@@ -73,51 +74,64 @@ const RegisterPage = () => {
             own_code: '',
             is_owner: true,
         };
-
-        const establishmentData = {
-            est_name: data.establishmentName,
-            est_phone: data.establishmentPhone,
-            est_zipcode: data.establishmentCep,
-            est_address: data.establishmentAddress,
-            est_city: data.establishmentCity,
-            usr_cod_cad: 3,
-            own_id: 10,
-        };
-
+    
         try {
-            const [userResponse, establishmentResponse] = await Promise.all([
-                registerUser(userData, 'POST'),
-                registerEstablishment(establishmentData, 'POST'),
-                console.log('HOOK AQUI MEU PARÇA'),
-            ]);
-
+            const userResponse = await registerUser(userData, 'POST');
             const { res: userRes, jsonData: userJson } = userResponse;
-            const { res: establishmentRes, jsonData: establishmentJson } = establishmentResponse;
-
+    
             if (!userRes.ok) {
                 setIsSuccess(false);
-                setModalMessage(userData.erro || 'Erro no cadastro de usuário!!!');
+                setModalMessage(userJson.erro || 'Erro no cadastro de usuário!!!');
                 setModalIsOpen(true);
                 return;
-            } else {
-                setIsSuccess(true);
-                setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
             }
 
+            if(userRes.ok){
+                console.log(`OK ${userJson.own_id}`);
+            }
+            const userId = userJson.user?.usr_id;
+            const ownerId = userJson.own_id;
+
+            // Agora cadastra o estabelecimento com o ID do usuário
+            const establishmentData = {
+                est_name: data.establishmentName,
+                est_phone: data.establishmentPhone,
+                est_zipcode: data.establishmentCep,
+                est_address: data.establishmentAddress,
+                est_city: data.establishmentCity,
+                usr_cod_cad: userId,
+                own_id: ownerId,
+            };
+
+            console.log(establishmentData);
+
+            if (userJson.token) {
+                sessionStorage.setItem("auth-token", userJson.token);
+                Cookies.set('auth_token', userJson.token, { expires: 1 });
+            }
+    
+            const establishmentResponse = await registerEstablishment(establishmentData, 'POST', userJson.token);
+            const { res: establishmentRes, jsonData: establishmentJson } = establishmentResponse;
+    
             if (!establishmentRes.ok) {
                 setIsSuccess(false);
-                setModalMessage(establishmentData.erro || 'Erro no cadastro de estabelecimento!!!');
-            } else {
-                setIsSuccess(true);
-                setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
+                setModalMessage(establishmentJson.erro || 'Erro no cadastro de estabelecimento!!!');
+                setModalIsOpen(true);
+                return;
             }
-
-            console.log("Cadastro realizado com sucesso!", userJson, establishmentJson);
+    
+            // Se tudo deu certo
+            setIsSuccess(true);
+            setModalMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
+            setModalIsOpen(true);
+    
         } catch (error) {
             console.error('Erro ao realizar as requisições:', error);
+            setIsSuccess(false);
+            setModalMessage('Ocorreu um erro durante o cadastro. Por favor, tente novamente.');
+            setModalIsOpen(true);
         }
-
-        setModalIsOpen(true);
+        
     };
 
 

@@ -1,5 +1,4 @@
 import { useParams } from "react-router-dom"
-import { useDashboardHooks } from "../Dashboard/hooks/DashboardHooks"
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";

@@ -5,9 +5,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useRegisterArena } from './hooks/registerArenaHook';
 import { useFetchEstablishmentInfo } from '../Register/hooks/useFetchEstId';
 import URLS from '../routes/routes';
+import { useFetchArenaInfo } from './hooks/useFetchArenaInfo';
 
 
 const url = URLS.REGISTER_ARENA;
+const arenaInfoUrl = URLS.GET_ARENA_INFO;
 
 const ArenaRegisterForm = () => {
   const location = useLocation();
@@ -16,13 +18,16 @@ const ArenaRegisterForm = () => {
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
- 
+  const { data: arenaInfo } = useFetchArenaInfo(arenaInfoUrl, 'GET');
+
   
   const { registerArena, loading, error } = useRegisterArena(url);  // Chame o hook no nível superior
   const navigate = useNavigate();
 
   const est_id = establishmentInfo ? establishmentInfo.est_id : null;
 
+
+  console.log("AQUI INSETO", arenaInfo);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -35,8 +40,8 @@ const ArenaRegisterForm = () => {
       are_name: arenaName,
       are_price: arenaPrice,
       are_category: arenaCategory,
-      usr_cod_cad: 25,
-      est_id: est_id,
+      usr_cod_cad: arenaInfo.usr_id,
+      est_id: arenaInfo.est_id,
     };
 
     // Envia a arena para a API

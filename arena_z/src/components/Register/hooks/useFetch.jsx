@@ -28,17 +28,15 @@ export const useFetch = (url) => {
         }
     };
     
-    const registerEstablishment = async (establishmentData, method) => {
-        const token = sessionStorage.getItem("auth-token");
-    
-        console.log('CHEGOU AQUI NO REGISTER ESTABLISHMENT');
-    
+    const registerEstablishment = async (establishmentData, method, token = null) => {
+        const authToken = token || sessionStorage.getItem("auth-token");
+        
         if (method === 'POST') {
             try {
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${token}`,
+                        "Authorization": `Bearer ${authToken}`,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(establishmentData),

@@ -32,6 +32,7 @@ export const useFetchEstablishmentInfo = (url) => {
     };
 
     fetchEstablishmentInfo();
+    return () => { console.log(); }
   }, [url]); // Dependência para que o fetch seja executado quando a URL mudar
 
   return { establishmentInfo, loading, error };

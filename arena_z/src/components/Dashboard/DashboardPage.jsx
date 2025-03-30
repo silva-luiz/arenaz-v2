@@ -3,7 +3,7 @@ import styles from '../Dashboard/DashboardPage.module.css';
 import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
-import { useDashboardHooks } from './hooks/DashboardHooks';
+import { useDashboardHooks } from './hooks/useDashboardHooks';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import URLS from '../routes/routes';
@@ -25,8 +25,6 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
   return (
     <div className={styles.dashboardMainContent}>
       <div>
-        <h3 className={styles.welcome}>Olá, bem vindo(a), <span className={styles.userName}>Luiz</span></h3>
-
         <div className={styles.actionButtonContainer}>
           <h2>Minhas Arenas</h2>
           <Link to={{
@@ -42,11 +40,11 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
           <p>Carregando...</p>
         ) : error ? (
           <p className={styles.errorMessage}>Erro ao carregar arenas: {error}</p>
-        ) : dashboardData && dashboardData.arenas.length === 0 ? (
+        ) : dashboardData && dashboardData?.arenas.length === 0 ? (
           <p className={styles.noArenasMessage}>Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!</p>
         ) : (
           <div className={styles.cardsContainer}>
-            {dashboardData && dashboardData.arenas.map((arena) => (
+            {dashboardData && dashboardData?.arenas.map((arena) => (
               <ArenaCard
                 key={arena.id}
                 arenaName={arena.are_name}
@@ -62,7 +60,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
 
       <h2>Reservas ativas</h2>
       <div className={styles.reservationStatusContainer}>
-        {dashboardData && dashboardData.arenas.length > 0 && (
+        {dashboardData && dashboardData?.arenas.length > 0 && (
           <>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Total de reservas</p>
@@ -79,7 +77,7 @@ const DashboardPage = ({ isExpiredSession, setIsExpiredSession }) => {
           </>
         )}
 
-        {dashboardData && dashboardData.arenas.length === 0 && (
+        {dashboardData && dashboardData?.arenas.length === 0 && (
           <p className={styles.noReservationsMessage}>Você ainda não tem reservas ativas.</p>
         )}
       </div>
