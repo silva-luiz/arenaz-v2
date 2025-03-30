@@ -1,0 +1,41 @@
+.siteFooter {
+  margin: 0 auto;
+  padding: 10px 0;
+  text-align: center;
+  max-width: 1200px;
+  align-items: center;
+  width: 100%;
+  color: var(--text-color);
+  position: relative;
+  bottom: 0;
+}
+
+/* html, body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+} */
+
+/* body > div {
+  flex: 1;
+} */
+
+@media (max-width: 768px) {
+  .siteFooter {
+    padding: 15px 10px;
+  }
+
+  .siteFooter p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .siteFooter {
+    padding: 20px 10px;
+  }
+
+  .siteFooter p {
+    font-size: 12px;
+  }
+}
