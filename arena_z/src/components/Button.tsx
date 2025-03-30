@@ -1,15 +1,15 @@
-const Button = ({ text, className, action }) => {
+interface IButton {
+  text: string;
+  className: string;
+  handleClick?: (e: any) => Promise<void>;
+}
+
+const Button = ({ text, className, handleClick }: IButton) => {
   return (
-    <button className={className} onClick={action}>
+    <button className={className} onClick={handleClick}>
       {text}
     </button>
   );
 };
-
-// Button.propTypes = {
-//   text: PropTypes.string.isRequired,
-//   className: PropTypes.string.isRequired,
-//   action: PropTypes.func,
-// };
 
 export default Button;

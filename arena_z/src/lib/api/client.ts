@@ -1,76 +1,81 @@
 interface FetchOptions extends RequestInit {
-  token?: boolean
-  data?: any
+  token?: boolean;
+  data?: unknown;
 }
 
 class ApiClient {
-  private async request<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    const { token = true, data, ...customOptions } = options
+  private async request<T>(
+    url: string,
+    options: FetchOptions = {},
+  ): Promise<T> {
+    const { token = true, data, ...customOptions } = options;
 
-    // Configuração padrão
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "69420",
-    }
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': '69420',
+    };
 
-    // Adiciona token de autenticação se necessário
     if (token) {
-      const authToken = typeof window !== "undefined" ? sessionStorage.getItem("auth-token") : null
+      const authToken =
+        typeof window !== 'undefined'
+          ? sessionStorage.getItem('auth-token')
+          : null;
       if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
     }
 
-    // Configuração final
     const config: RequestInit = {
       ...customOptions,
       headers: {
         ...headers,
         ...customOptions.headers,
       },
-    }
+    };
 
-    // Adiciona corpo da requisição se houver dados
     if (data) {
-      config.body = JSON.stringify(data)
+      config.body = JSON.stringify(data);
     }
 
     try {
-
-      const response = await fetch(url, config)
-      console.log(config, '\t fetch')
-      // Verifica se a resposta é bem-sucedida
+      const response = await fetch(url, config);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || `Erro na requisição: ${response.status}`)
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Erro na requisição: ${response.status}`,
+        );
       }
 
-      // Retorna os dados da resposta
-      return await response.json()
+      return await response.json();
     } catch (error) {
-      console.error("API Error:", error)
-      throw error
+      console.error('API Error:', error);
+      throw error;
     }
   }
 
-  // Métodos HTTP
   async get<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    return this.request<T>(url, { ...options, method: "GET" })
+    return this.request<T>(url, { ...options, method: 'GET' });
   }
 
-  async post<T>(url: string, data: any, options: FetchOptions = {}): Promise<T> {
-    return this.request<T>(url, { ...options, method: "POST", data })
+  async post<T>(
+    url: string,
+    data: unknown,
+    options: FetchOptions = {},
+  ): Promise<T> {
+    return this.request<T>(url, { ...options, method: 'POST', data });
   }
 
-  async put<T>(url: string, data: any, options: FetchOptions = {}): Promise<T> {
-    return this.request<T>(url, { ...options, method: "PUT", data })
+  async put<T>(
+    url: string,
+    data: unknown,
+    options: FetchOptions = {},
+  ): Promise<T> {
+    return this.request<T>(url, { ...options, method: 'PUT', data });
   }
 
   async delete<T>(url: string, options: FetchOptions = {}): Promise<T> {
-    return this.request<T>(url, { ...options, method: "DELETE" })
+    return this.request<T>(url, { ...options, method: 'DELETE' });
   }
 }
 
-// Exporta uma instância única do cliente de API
-export const apiClient = new ApiClient()
-
+export const apiClient = new ApiClient();

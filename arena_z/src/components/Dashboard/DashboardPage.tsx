@@ -11,7 +11,7 @@ import Link from 'next/link';
 const url = URLS.LOAD_DASHBOARD;
 
 interface IDashboardPageProps {
-  isExpiredSession: boolean;
+  isExpiredSession?: boolean;
   setIsExpiredSession?: () => void;
 }
 
@@ -31,8 +31,6 @@ const DashboardPage = ({
   const closeModal = () => {
     setModalIsOpen(false);
   };
-
-  console.log('\t > Dashboard', dashboardData);
 
   return (
     <div className={styles.dashboardMainContent}>
@@ -66,9 +64,9 @@ const DashboardPage = ({
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&
-              dashboardData.arenas.map((arena) => (
+              dashboardData.arenas.map((arena, index) => (
                 <ArenaCard
-                  key={arena.id}
+                  key={`${index}-${arena.id} `}
                   arenaName={arena.are_name}
                   arenaCategory={arena.are_category}
                   arenaPrice={arena.are_price}

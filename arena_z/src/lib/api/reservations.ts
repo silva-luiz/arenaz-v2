@@ -2,7 +2,7 @@
  * Serviços para gerenciamento de reservas
  */
 
-import { apiClient } from "./client"
+import { apiClient } from './client';
 
 // Aqui você pode adicionar endpoints específicos para reservas quando estiverem disponíveis
 export const reservationsService = {
@@ -11,7 +11,7 @@ export const reservationsService = {
    */
   async getAvailableTimes(arenaId: string): Promise<any> {
     // Este é um exemplo - ajuste conforme necessário quando a API estiver disponível
-    return apiClient.get(`/api/arenas/${arenaId}/available-times`)
+    return apiClient.get(`/api/arenas/${arenaId}/available-times`);
   },
 
   /**
@@ -19,15 +19,11 @@ export const reservationsService = {
    */
   async createReservation(data: any): Promise<any> {
     // Este é um exemplo - ajuste conforme necessário quando a API estiver disponível
-    return apiClient.post("/api/reservations", data)
+    return apiClient.post('/api/reservations', data);
   },
 
-  /**
-   * Obtém reservas ativas
-   */
   async getActiveReservations(): Promise<any> {
     // Este é um exemplo - ajuste conforme necessário quando a API estiver disponível
-    return apiClient.get("/api/reservations/active")
+    return apiClient.get('/api/reservations/active');
   },
-}
-
+};

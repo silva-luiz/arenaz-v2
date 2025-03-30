@@ -1,5 +1,5 @@
 
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://9545-170-231-235-156.ngrok-free.app/';
 
 const URLS = {
   // User

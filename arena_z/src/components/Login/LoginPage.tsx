@@ -9,9 +9,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authService } from 'lib/api';
-import URLS from 'utils/apiRoutes';
-
-const loginUrl = URLS.LOGIN;
 
 const LoginPage = () => {
   const { login } = authService;
@@ -30,78 +27,76 @@ const LoginPage = () => {
 
     try {
       await login(userData);
-      router.push('../home/dashboard');
+      router.push('home/dashboard');
     } catch (error) {
       console.error('Login Error' + error);
     }
   };
 
   return (
-    <div className={styles.mainContainer}>
-      <div className={styles.loginMainContainer}>
-        <Image
-          src="/images/login-wallpaper.png"
-          width={661}
-          height={781}
-          alt="login image"
-        />
-        <div className={styles.formContainer}>
-          <form className={styles.loginForm} onSubmit={handleSubmit}>
-            <Image src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
-            <div className={styles.loginTitle}>
-              <h1>
-                Olá, seja bem-vindo ao{' '}
-                <span className={styles.siteName}>ArenaZ</span>
-              </h1>
-            </div>
-            <div className={styles.inputContainer}>
-              <span>E-mail</span>
-              <div className={styles.inputWrapper}>
-                <input
-                  type="email"
-                  placeholder="E-mail"
-                  name="email"
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+    <div className={styles.loginMainContainer}>
+      <Image
+        src="/images/login-wallpaper.png"
+        width={661}
+        height={781}
+        alt="login image"
+      />
+      <div className={styles.formContainer}>
+        <form className={styles.loginForm} onSubmit={handleSubmit}>
+          <Image src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
+          <div className={styles.loginTitle}>
+            <h1>
+              Olá, seja bem-vindo ao{' '}
+              <span className={styles.siteName}>ArenaZ</span>
+            </h1>
+          </div>
+          <div className={styles.inputContainer}>
+            <span>E-mail</span>
+            <div className={styles.inputWrapper}>
+              <input
+                type="email"
+                placeholder="E-mail"
+                name="email"
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
 
-                <FaUser className={styles.faIcon} />
-              </div>
-              {credentialsError && (
-                <p className={styles.errorText}>{credentialsError}</p>
-              )}
+              <FaUser className={styles.faIcon} />
             </div>
-            <div className={styles.inputContainer}>
-              <span>Senha</span>
-              <div className={styles.inputWrapper}>
-                <input
-                  type="password"
-                  placeholder="Senha"
-                  name="password"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <FaLock className={styles.faIcon} />
-              </div>
+            {credentialsError && (
+              <p className={styles.errorText}>{credentialsError}</p>
+            )}
+          </div>
+          <div className={styles.inputContainer}>
+            <span>Senha</span>
+            <div className={styles.inputWrapper}>
+              <input
+                type="password"
+                placeholder="Senha"
+                name="password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <FaLock className={styles.faIcon} />
             </div>
-            <div className={styles.recallForget}>
-              <label>
-                <input type="checkbox" className={styles.checkbox} />
-                Lembrar login
-              </label>
-            </div>
-            <Button
-              className={styles.loginPrimaryButton}
-              text="Entrar"
-              action={handleSubmit}
-            />
-            <div className={styles.signUpLink}>
-              <p>Ainda não tem conta?</p>{' '}
-              <Link href="/register" className={styles.startNowLink}>
-                Comece agora mesmo!
-              </Link>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div className={styles.recallForget}>
+            <label>
+              <input type="checkbox" className={styles.checkbox} />
+              Lembrar login
+            </label>
+          </div>
+          <Button
+            className={styles.loginPrimaryButton}
+            text="Entrar"
+            handleClick={handleSubmit}
+          />
+          <div className={styles.signUpLink}>
+            <p>Ainda não tem conta?</p>{' '}
+            <Link href="/register" className={styles.startNowLink}>
+              Comece agora mesmo!
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );
