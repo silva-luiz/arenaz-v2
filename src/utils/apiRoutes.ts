@@ -1,5 +1,5 @@
 
-const BASE_URL = 'https://9545-170-231-235-156.ngrok-free.app/';
+const BASE_URL = 'http://127.0.0.1:8000/';
 
 const URLS = {
   // User
@@ -17,6 +17,7 @@ const URLS = {
   // Arena
   REGISTER_ARENA: `${BASE_URL}api/arena`,
   GET_USER_ARENAS: `${BASE_URL}api/arenas/user`,
+  GET_ARENA_INFO: `${BASE_URL}api/arena/get_arena`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,

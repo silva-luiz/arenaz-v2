@@ -35,5 +35,9 @@ export const arenasService = {
   async loadDashboard(): Promise<any> {
     return apiClient.get(URLS.LOAD_DASHBOARD)
   },
+
+  async getArenaInfo(): Promise<any> {
+    return apiClient.get(URLS.GET_ARENA_INFO);
+  }
 }
 
