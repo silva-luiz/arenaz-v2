@@ -43,7 +43,7 @@ const DashboardPage = ({
           <h2>Minhas Arenas</h2>
           <Link
             href={{
-              pathname: '../new-arena',
+              pathname: 'new-arena',
             }}
           >
             <Button text="+ Nova arena" className="secondaryButton" />
