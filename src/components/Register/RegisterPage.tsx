@@ -4,7 +4,7 @@ import EstablishmentRegisterForm from './EstablishmentRegisterForm';
 import Modal from 'react-modal';
 import styles from '../Register/Register.module.scss';
 import { useState } from 'react';
-
+import Cookies from 'js-cookie';
 import { useForm } from '../../hooks/useForm';
 import Link from 'next/link';
 import { authService } from 'lib/api';
@@ -44,7 +44,6 @@ const RegisterPage = () => {
     useForm(formComponents);
 
   const handleSubmit = async (e) => {
-    console.log('hello');
     e.preventDefault();
 
     const userData = {
@@ -58,65 +57,66 @@ const RegisterPage = () => {
       own_document: '',
       own_code: '',
       is_owner: true,
-      erro: 'TODO',
-    };
-
-    const establishmentData = {
-      est_name: data.establishmentName,
-      est_phone: data.establishmentPhone,
-      est_zipcode: data.establishmentCep,
-      est_address: data.establishmentAddress,
-      est_city: data.establishmentCity,
-      usr_cod_cad: 3,
-      own_id: 10,
-      erro: 'TODO',
     };
 
     try {
-      const [userResponse, establishmentResponse] = await Promise.all([
-        registerUser(userData),
-        registerEstablishment(establishmentData),
-        console.log('HOOK AQUI MEU PARÇA'),
-      ]);
+      const userResponse = await registerUser(userData);
+      console.log(userResponse);
 
-      const { res: userRes, jsonData: userJson } = userResponse;
-      const { res: establishmentRes, jsonData: establishmentJson } =
-        establishmentResponse;
-
-      if (!userRes.ok) {
+      if (!userResponse) {
         setIsSuccess(false);
-        setModalMessage(userData.erro || 'Erro no cadastro de usuário!!!');
+        setModalMessage(userResponse.erro || 'Erro no cadastro de usuário!!!');
         setModalIsOpen(true);
         return;
-      } else {
-        setIsSuccess(true);
-        setModalMessage(
-          'Cadastro realizado com sucesso! Faça o login para continuar.',
-        );
       }
 
-      if (!establishmentRes.ok) {
+      if (userResponse) {
+        console.log(`OK ${userResponse.own_id}`);
+      }
+      const userId = userResponse.user?.usr_id;
+      const ownerId = userResponse.own_id;
+
+      // Agora cadastra o estabelecimento com o ID do usuário
+      const establishmentData = {
+        est_name: data.establishmentName,
+        est_phone: data.establishmentPhone,
+        est_zipcode: data.establishmentCep,
+        est_address: data.establishmentAddress,
+        est_city: data.establishmentCity,
+        usr_cod_cad: userId,
+        own_id: ownerId,
+      };
+
+      if (userResponse.token) {
+        sessionStorage.setItem('auth-token', userResponse.token);
+        Cookies.set('auth_token', userResponse.token, { expires: 1 });
+      }
+
+      const establishmentResponse =
+        await registerEstablishment(establishmentData);
+
+      if (!establishmentResponse) {
         setIsSuccess(false);
         setModalMessage(
-          establishmentData.erro || 'Erro no cadastro de estabelecimento!!!',
+          establishmentResponse.erro ||
+            'Erro no cadastro de estabelecimento!!!',
         );
-      } else {
-        setIsSuccess(true);
-        setModalMessage(
-          'Cadastro realizado com sucesso! Faça o login para continuar.',
-        );
+        setModalIsOpen(true);
+        return;
       }
-
-      console.log(
-        'Cadastro realizado com sucesso!',
-        userJson,
-        establishmentJson,
+      setIsSuccess(true);
+      setModalMessage(
+        'Cadastro realizado com sucesso! Faça o login para continuar.',
       );
+      setModalIsOpen(true);
     } catch (error) {
       console.error('Erro ao realizar as requisições:', error);
+      setIsSuccess(false);
+      setModalMessage(
+        'Ocorreu um erro durante o cadastro. Por favor, tente novamente.',
+      );
+      setModalIsOpen(true);
     }
-
-    setModalIsOpen(true);
   };
 
   const closeModal = () => {
@@ -167,9 +167,6 @@ const RegisterPage = () => {
           </form>
         </div>
       </div>
-      {/* <SiteFooter /> */}
-
-      {/* Modal */}
 
       <Modal
         isOpen={modalIsOpen}
@@ -177,6 +174,7 @@ const RegisterPage = () => {
         contentLabel="Resultado do Cadastro"
         className={styles.modal}
         overlayClassName={styles.modalOverlay}
+        ariaHideApp={false}
       >
         <div className={styles.modalContent}>
           <h2 className={styles.header}>{isSuccess ? 'Sucesso' : 'Erro'}</h2>
