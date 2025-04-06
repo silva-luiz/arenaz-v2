@@ -1,5 +1,5 @@
 import styles from './ArenaRegisterForm.module.scss';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useRegisterArena } from '../../hooks/useRegisterArena';
 import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
@@ -10,9 +10,11 @@ const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
   // const location = useLocation();
+
   const { establishmentInfo } = useFetchEstablishmentInfo(
     URLS.ESTABLISHMENT_INFO,
   );
+
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
@@ -23,6 +25,12 @@ const ArenaRegisterForm = () => {
 
   const est_id = establishmentInfo ? establishmentInfo.est_id : null;
 
+  useEffect(() => {
+    console.log('📡 establishmentInfo:', establishmentInfo);
+    console.log('🧯 loading:', loading);
+    console.log('💥 error:', error);
+  }, [establishmentInfo, loading, error]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -30,12 +38,15 @@ const ArenaRegisterForm = () => {
       console.error('Establishment ID não disponível');
       return;
     }
+    console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
+
+    const userId = establishmentInfo.usr_id;
 
     const arena = {
       are_name: arenaName,
       are_price: arenaPrice,
       are_category: arenaCategory,
-      usr_cod_cad: 25,
+      usr_cod_cad: userId,
       est_id: est_id,
     };
 
@@ -61,7 +72,7 @@ const ArenaRegisterForm = () => {
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <span htmlFor="arenaName">Nome da Arena</span>
+              <label htmlFor="arenaName">Nome da Arena</label>
               <div className={styles.inputWrapper}>
                 <input
                   type="text"
@@ -78,7 +89,7 @@ const ArenaRegisterForm = () => {
 
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <span htmlFor="arenaPrice">Preço/hora</span>
+              <label htmlFor="arenaPrice">Preço/hora</label>
               <div className={styles.inputWrapper}>
                 <input
                   type="number"
