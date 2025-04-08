@@ -20,7 +20,7 @@ function HomePage({ children }) {
 
   return (
     <div className={styles.container}>
-      {/* <header className={styles.header}>
+      <header className={styles.header}>
         <Link href="/home/dashboard" className={styles.arenazMainButton}>
           <Image src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
           <p>Arena Z</p>
@@ -29,14 +29,14 @@ function HomePage({ children }) {
         <button className={styles.logoutBtn} onClick={() => setShowModal(true)}>
           Sair
         </button>
-      </header> */}
+      </header>
 
       {/* Modal de Confirmação de Logout */}
       {showModal && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
-            <h3>Sair</h3>
-            <p>Tem certeza que deseja sair?</p>
+            <h3 className={styles.modalTitle}>Sair</h3>
+            <p className={styles.modalSubtitle}>Tem certeza que deseja sair?</p>
             <div className={styles.modalActions}>
               <button
                 className="outlinedButton"

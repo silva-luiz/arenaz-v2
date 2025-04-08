@@ -71,10 +71,10 @@ const UserRegisterForm = ({
   };
 
   return (
-    <div>
+    <div className={styles.teste}>
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <label htmlFor="name">Nome completo</label>
+          <label htmlFor="name" className={styles.inputLabel}>Nome completo</label>
           <div className={styles.inputWrapper}>
             <input
               type="text"
@@ -91,7 +91,7 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <label htmlFor="email">E-mail</label>
+          <label htmlFor="email" className={styles.inputLabel}>E-mail</label>
           <div className={styles.inputWrapper}>
             <input
               type="email"
@@ -116,7 +116,7 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <label htmlFor="password">Senha</label>
+          <label htmlFor="password" className={styles.inputLabel}>Senha</label>
           <div className={styles.inputWrapper}>
             <input
               type={passwordVisibility.password.type}
@@ -130,7 +130,7 @@ const UserRegisterForm = ({
               required
             />
             <Icon
-              className="absolute mr-10"
+              className={styles.iconInsideInput}
               icon={passwordVisibility.password.icon}
               size={22}
               onClick={() => handleToggle('password')}
@@ -146,7 +146,7 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <label htmlFor="repassword">Confirme sua senha</label>
+          <label htmlFor="repassword" className={styles.inputLabel}>Confirme sua senha</label>
           <div className={styles.inputWrapper}>
             <input
               type={passwordVisibility.confirmPassword.type}
@@ -165,7 +165,7 @@ const UserRegisterForm = ({
               required
             />
             <Icon
-              className="absolute mr-10"
+              className={styles.iconInsideInput}
               icon={passwordVisibility.confirmPassword.icon}
               size={22}
               onClick={() => handleToggle('confirmPassword')}

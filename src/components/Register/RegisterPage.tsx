@@ -9,6 +9,7 @@ import { useForm } from '../../hooks/useForm';
 import Link from 'next/link';
 import { authService } from 'lib/api';
 import { IRegisterData } from 'types/formTemplate';
+import NavbarSite from 'components/NavbarSite';
 
 const RegisterPage = () => {
   const { registerUser, registerEstablishment } = authService;
@@ -125,17 +126,17 @@ const RegisterPage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* <NavbarSite /> */}
+      <NavbarSite />
       <div className={styles.contentWrapper}>
         <div className={styles.formHeader}>
-          <h2>Bem vindo ao ArenaZ</h2>
+          <h2 className={styles.welcome}>Bem vindo ao ArenaZ</h2>
           <p className={styles.registerSubtitle}>
             Para se cadastrar, por favor, preencha os dados a seguir:
           </p>
         </div>
         <div className={styles.formContainer}>
-          <form onSubmit={(e) => changeStep(currentStep + 1, e)}>
-            <div className="inputsContainer">{currentComponent}</div>
+          <form onSubmit={(e) => changeStep(currentStep + 1, e)} className={styles.forms}>
+            <div className={styles.mainFormContainer}>{currentComponent}</div>
             <div className={styles.actionButtonsContainer}>
               {!isFirstStep && (
                 <button
@@ -177,7 +178,7 @@ const RegisterPage = () => {
         ariaHideApp={false}
       >
         <div className={styles.modalContent}>
-          <h2 className={styles.header}>{isSuccess ? 'Sucesso' : 'Erro'}</h2>
+          <h2 className={styles.modalTitle}>{isSuccess ? 'Sucesso!' : 'Erro'}</h2>
           <p>{modalMessage}</p>
           {isSuccess ? (
             <div className={styles.modalActions}>
