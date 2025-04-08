@@ -36,7 +36,7 @@ export const useRegisterArena = (url) => {
     } catch (err) {
       setError(err.message);
       setLoading(false);
-      return { res: null, jsonData: null }; // Em caso de erro, retorne nulo
+      return { res: null, jsonData: null };
     }
   };
 
