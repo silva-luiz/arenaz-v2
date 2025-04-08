@@ -20,13 +20,13 @@ const ArenaRegisterForm = () => {
   const [arenaCategory, setArenaCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const { registerArena, loading, error } = useRegisterArena(url); // Chame o hook no nível superior
+  const { registerArena, loading, error } = useRegisterArena(url);
   const router = useRouter();
 
   const est_id = establishmentInfo ? establishmentInfo.est_id : null;
 
   useEffect(() => {
-    console.log('📡 establishmentInfo:', establishmentInfo);
+    console.log('📡 establishmentInfo:', est_id);
     console.log('🧯 loading:', loading);
     console.log('💥 error:', error);
   }, [establishmentInfo, loading, error]);
@@ -72,7 +72,7 @@ const ArenaRegisterForm = () => {
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <label htmlFor="arenaName">Nome da Arena</label>
+              <label htmlFor="arenaName" className={styles.inputLabel}>Nome da Arena</label>
               <div className={styles.inputWrapper}>
                 <input
                   type="text"
@@ -89,7 +89,7 @@ const ArenaRegisterForm = () => {
 
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <label htmlFor="arenaPrice">Preço/hora</label>
+              <label htmlFor="arenaPrice" className={styles.inputLabel}>Preço/hora</label>
               <div className={styles.inputWrapper}>
                 <input
                   type="number"
