@@ -45,13 +45,13 @@ const LoginPage = () => {
         <form className={styles.loginForm} onSubmit={handleSubmit}>
           <Image src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
           <div className={styles.loginTitle}>
-            <h1>
+            <h1 className={styles.loginWelcomeMessage}>
               Olá, seja bem-vindo ao{' '}
               <span className={styles.siteName}>ArenaZ</span>
             </h1>
           </div>
           <div className={styles.inputContainer}>
-            <span>E-mail</span>
+            <span className={styles.inputLabel}>E-mail</span>
             <div className={styles.inputWrapper}>
               <input
                 type="email"
@@ -68,7 +68,7 @@ const LoginPage = () => {
             )}
           </div>
           <div className={styles.inputContainer}>
-            <span>Senha</span>
+            <span className={styles.inputLabel}>Senha</span>
             <div className={styles.inputWrapper}>
               <input
                 type="password"
@@ -79,12 +79,12 @@ const LoginPage = () => {
               <FaLock className={styles.faIcon} />
             </div>
           </div>
-          <div className={styles.recallForget}>
+          {/* <div className={styles.recallForget}>
             <label>
               <input type="checkbox" className={styles.checkbox} />
               Lembrar login
             </label>
-          </div>
+          </div> */}
           <Button
             className={styles.loginPrimaryButton}
             text="Entrar"

@@ -20,7 +20,7 @@ const ArenaCard = ({
       <div className={styles.arenaInfos}>
         <p className={styles.arenaName}>{arenaName}</p>
         <p className={styles.arenaCategory}>{arenaCategory}</p>
-        <p className={styles.arenaPrice}>R$ {arenaPrice}</p>
+        <p className={styles.arenaPrice}>R$ {arenaPrice} /hora</p>
       </div>
       <Link className={styles.newReservationLink} href={goToReservation || ''}>
         <h5 className={styles.netReservationLinkText}>+ Nova reserva</h5>

@@ -7,6 +7,7 @@
   margin: 0 auto;
   gap: 40px;
   flex: 2;
+  max-width: 1200px;
 
   .formContainer {
     flex: 1;
@@ -36,10 +37,15 @@
     margin-bottom: 20px;
   }
 
+  .loginWelcomeMessage{
+    font-size: 1.4rem;
+    font-weight: bold;
+  }
+
   .siteName {
     color: var(--primary-color);
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.4rem;
   }
 
   .inputContainer {
@@ -63,6 +69,12 @@
     width: 100%;
     padding: 10px;
     font-size: 14px;
+  }
+
+  .inputLabel{
+    font-size: 1rem;
+    color: var(--text-color);
+    text-align: left;
   }
 
   .faIcon {

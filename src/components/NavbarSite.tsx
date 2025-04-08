@@ -14,7 +14,7 @@ const NavbarSite = () => {
       </Link>
 
       <div>
-        <Link href="/home">Go to home</Link>
+        {/* <Link href="/home">Go to home</Link> */}
 
         <Link href="/register">
           <Button className="primaryButton" text="Criar conta" />

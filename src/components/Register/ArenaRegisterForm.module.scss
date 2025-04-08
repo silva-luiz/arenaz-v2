@@ -140,6 +140,13 @@ input[type='number']:focus {
   padding-bottom: 15px;
 }
 
+.modalTitle{
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--title-color);
+  margin-bottom: 10px;
+}
+
 @media (max-width: 600px) {
   .modalContent {
     width: 90%;
