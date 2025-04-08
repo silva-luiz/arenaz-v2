@@ -72,7 +72,9 @@ const ArenaRegisterForm = () => {
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <label htmlFor="arenaName" className={styles.inputLabel}>Nome da Arena</label>
+              <label htmlFor="arenaName" className={styles.inputLabel}>
+                Nome da Arena
+              </label>
               <div className={styles.inputWrapper}>
                 <input
                   type="text"
@@ -89,7 +91,9 @@ const ArenaRegisterForm = () => {
 
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
-              <label htmlFor="arenaPrice" className={styles.inputLabel}>Preço/hora</label>
+              <label htmlFor="arenaPrice" className={styles.inputLabel}>
+                Preço/hora
+              </label>
               <div className={styles.inputWrapper}>
                 <input
                   type="number"

@@ -12,15 +12,15 @@ const EstablishmentProfilePage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <h2>Informaçõs do estabelecimento</h2>
-      <p>Aqui você pode alterar as informações de seu estabelecimento</p>
+      <h2 className={styles.pageTitle}>Informaçõs do estabelecimento</h2>
+      <p className={styles.pageSubtitle}>Aqui você pode alterar as informações de seu estabelecimento</p>
       <div className={styles.formContainer}>
         <form onSubmit="">
           <div className={styles.formColumns}>
             <div className={styles.column}>
-              <h3 className={styles.title}>Informações do estabelecimento</h3>
+              <h3 className={styles.subtitle}>Informações do estabelecimento</h3>
               <div className={styles.inputContainer}>
-                <span>Nome do estabelecimento</span>
+                <span className={styles.inputLabel}>Nome do estabelecimento</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
@@ -31,7 +31,7 @@ const EstablishmentProfilePage = () => {
                 </div>
               </div>
               <div className={styles.inputContainer}>
-                <span>CEP</span>
+                <span className={styles.inputLabel}>CEP</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
@@ -42,7 +42,7 @@ const EstablishmentProfilePage = () => {
                 </div>
               </div>
               <div className={styles.inputContainer}>
-                <span>Endereço</span>
+                <span className={styles.inputLabel}>Endereço</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
@@ -53,7 +53,7 @@ const EstablishmentProfilePage = () => {
                 </div>
               </div>
               <div className={styles.inputContainer}>
-                <span>Cidade</span>
+                <span className={styles.inputLabel}>Cidade</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"

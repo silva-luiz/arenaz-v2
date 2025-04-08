@@ -31,17 +31,27 @@
   }
 
   .formContainer {
-    width: 100%; /* Assegura que o formContainer ocupe 100% da largura do elemento pai */
+    width: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  /* span{
-      color: var(--text-color);
-  } */
-
-  .title {
+  .pageTitle {
     padding-bottom: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .pageSubtitle {
+    margin-bottom: 2rem;
+  text-align: left;
+  color: var(--text-color);
+  }
+
+  .subtitle {
+    padding-bottom: 10px;
+    font-size: 1.3rem;
+    font-weight: bold;
   }
 
   .formColumns {
@@ -56,6 +66,12 @@
     flex-direction: column;
     margin-bottom: 20px;
     width: 100%;
+  }
+
+  .inputLabel {
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
   }
 
   .inputWrapper {

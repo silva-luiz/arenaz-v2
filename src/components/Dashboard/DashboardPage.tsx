@@ -35,12 +35,8 @@ const DashboardPage = ({
   return (
     <div className={styles.dashboardMainContent}>
       <div>
-        <h3 className={styles.welcome}>
-          Olá, bem vindo(a), <span className={styles.userName}>Luiz</span>
-        </h3>
-
         <div className={styles.actionButtonContainer}>
-          <h2>Minhas Arenas</h2>
+          <h2 className={styles.dashboardTitle}>Minhas Arenas</h2>
           <Link
             href={{
               pathname: 'new-arena',
@@ -78,7 +74,7 @@ const DashboardPage = ({
         )}
       </div>
 
-      <h2>Reservas ativas</h2>
+      <h2 className={styles.dashboardTitle}>Reservas ativas</h2>
       <div className={styles.reservationStatusContainer}>
         {dashboardData && dashboardData.arenas.length > 0 && (
           <>

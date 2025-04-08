@@ -15,15 +15,15 @@ const ProfilePage = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <h2>Perfil e informações</h2>
-      <p>Aqui você pode alterar suas informações pessoais</p>
+      <h2 className={styles.pageTitle}>Perfil e informações</h2>
+      <p className={styles.pageSubtitle}>Aqui você pode alterar suas informações pessoais</p>
       <div className={styles.formContainer}>
         <form onSubmit={onSubmit}>
           <div className={styles.formColumns}>
             <div className={styles.column}>
-              <h3 className={styles.title}>Informações do Proprietário</h3>
+              <h3 className={styles.subtitle}>Informações do Proprietário</h3>
               <div className={styles.inputContainer}>
-                <span>Nome completo</span>
+                <span className={styles.inputLabel}>Nome completo</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
@@ -34,7 +34,7 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className={styles.inputContainer}>
-                <span>CNPJ</span>
+                <span className={styles.inputLabel}>CNPJ</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
@@ -45,7 +45,7 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className={styles.inputContainer}>
-                <span>E-mail</span>
+                <span className={styles.inputLabel}>E-mail</span>
                 <div className={styles.inputWrapper}>
                   <input
                     type="email"
