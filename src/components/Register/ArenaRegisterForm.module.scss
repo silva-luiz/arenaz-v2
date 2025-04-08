@@ -16,6 +16,8 @@
   margin-bottom: 1rem;
   text-align: left;
   color: var(--title-color);
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
 .arenaRegisterParagraph {
@@ -27,6 +29,8 @@
 .arenaRegisterSubtitle {
   margin-bottom: 1rem;
   color: var(--title-color);
+  font-size: 1.3rem;
+  font-weight: bold;
   text-align: left;
 }
 
@@ -42,6 +46,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.inputLabel{
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
 }
 
 .inputWrapper {
