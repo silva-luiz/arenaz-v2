@@ -23,12 +23,12 @@ export const useDashboardHooks = ({
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': '69420',
+          // 'ngrok-skip-browser-warning': '69420', // usar apenas quando Ngrok estiver sendo utilizado
         },
       });
 
       if (!res.ok) {
-        throw new Error('Erro ao listar Arenas');
+        throw new Error('Você ainda não tem nenhuma Arena cadastrada.');
       }
 
       const jsonData = await res.json();

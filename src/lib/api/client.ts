@@ -12,7 +12,7 @@ class ApiClient {
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': '69420',
+      // 'ngrok-skip-browser-warning': '69420', // usar apenas quando Ngrok estiver sendo utilizado
     };
 
     if (token) {
@@ -71,6 +71,13 @@ class ApiClient {
     options: FetchOptions = {},
   ): Promise<T> {
     return this.request<T>(url, { ...options, method: 'PUT', data });
+  }
+
+  async patch<T>(
+    url: string,
+    options: FetchOptions = {},
+  ): Promise<T> {
+    return this.request<T>(url, { ...options, method: 'PATCH'});
   }
 
   async delete<T>(url: string, options: FetchOptions = {}): Promise<T> {
