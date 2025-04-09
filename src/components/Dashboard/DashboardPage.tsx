@@ -80,15 +80,21 @@ const DashboardPage = ({
           <>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Total de reservas</p>
-              <p className={styles.reservationValue}>18</p>
+              <p className={styles.reservationValue}>
+                {dashboardData.indicators.total_reservations}
+              </p>
             </div>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Valor recebido</p>
-              <p className={styles.reservationValue}>R$ 1500,00</p>
+              <p className={styles.reservationValue}>
+                R$ {dashboardData.indicators.total_received},00
+              </p>
             </div>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Valor a receber</p>
-              <p className={styles.reservationValue}>R$ 300,00</p>
+              <p className={styles.reservationValue}>
+                R$ {dashboardData.indicators.total_pending},00
+              </p>
             </div>
           </>
         )}
