@@ -27,11 +27,11 @@ const DashboardPage = ({
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const arenas = dashboardData?.arenas ?? [];
 
   const closeModal = () => {
     setModalIsOpen(false);
   };
-
   return (
     <div className={styles.dashboardMainContent}>
       <div>
@@ -53,14 +53,14 @@ const DashboardPage = ({
           <p className={styles.errorMessage}>
             Erro ao carregar arenas: {error}
           </p>
-        ) : dashboardData && dashboardData.arenas.length === 0 ? (
+        ) : dashboardData && arenas.length === 0 ? (
           <p className={styles.noArenasMessage}>
             Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
           </p>
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&
-              dashboardData.arenas.map((arena, index) => (
+             arenas.map((arena, index) => (
                 <ArenaCard
                   key={`${index}-${arena.id} `}
                   arenaName={arena.are_name}
@@ -76,7 +76,7 @@ const DashboardPage = ({
 
       <h2 className={styles.dashboardTitle}>Reservas ativas</h2>
       <div className={styles.reservationStatusContainer}>
-        {dashboardData && dashboardData.arenas.length > 0 && (
+        {dashboardData && arenas.length > 0 && (
           <>
             <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Total de reservas</p>
@@ -99,7 +99,7 @@ const DashboardPage = ({
           </>
         )}
 
-        {dashboardData && dashboardData.arenas.length === 0 && (
+        {dashboardData && arenas.length === 0 && (
           <p className={styles.noReservationsMessage}>
             Você ainda não tem reservas ativas.
           </p>
