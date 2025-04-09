@@ -23,7 +23,7 @@ function HomePage({ children }) {
       <header className={styles.header}>
         <Link href="/home/dashboard" className={styles.arenazMainButton}>
           <Image src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
-          <p>Arena Z</p>
+          <p className={styles.logoName}>Arena Z</p>
         </Link>
 
         <button className={styles.logoutBtn} onClick={() => setShowModal(true)}>
@@ -102,19 +102,6 @@ function HomePage({ children }) {
                   }
                 >
                   Perfil do usuário
-                </Link>
-              </li>
-              <p>retirar esse navlink depois</p>
-              <li>
-                <Link
-                  href="/reservationss"
-                  className={
-                    pathname === '/reservationss'
-                      ? `${styles.navLink} ${styles.active}`
-                      : styles.navLink
-                  }
-                >
-                  Criar reserva
                 </Link>
               </li>
             </ul>
