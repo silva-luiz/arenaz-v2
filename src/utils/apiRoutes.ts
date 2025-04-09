@@ -1,10 +1,13 @@
 
 const BASE_URL = 'http://127.0.0.1:8000/';
+// const BASE_URL = 'https://572d-170-231-235-156.ngrok-free.app/';
 
 const URLS = {
   // User
-  REGISTER_USER: `${BASE_URL}api/user`,
   EMAIL_VALIDATION: `${BASE_URL}api/email-validation`,
+  REGISTER_USER: `${BASE_URL}api/user`,
+  GET_USER_INFO: `${BASE_URL}api/get-user`,
+  UPDATE_USER_INFO: `${BASE_URL}api/user/update`,
 
   // Establishment
   REGISTER_ESTABLISHMENT: `${BASE_URL}api/establishment`,
@@ -17,7 +20,7 @@ const URLS = {
   // Arena
   REGISTER_ARENA: `${BASE_URL}api/arena`,
   GET_USER_ARENAS: `${BASE_URL}api/arenas/user`,
-  GET_ARENA_INFO: `${BASE_URL}api/arena/get_arena`,
+  GET_ARENA_INFO: `${BASE_URL}api/arena/get-arena`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,
