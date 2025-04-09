@@ -10,7 +10,7 @@ const NavbarSite = () => {
     <div className={styles.siteNavbar}>
       <Link href="/" className={styles.arenazMainButton}>
         <Image src={arenaZLogo} alt="Logo" className={styles.arenazLogo} />
-        <p>Arena Z</p>
+        <p className={styles.logoName}>Arena Z</p>
       </Link>
 
       <div>
