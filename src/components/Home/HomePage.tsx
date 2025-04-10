@@ -68,6 +68,20 @@ function HomePage({ children }) {
                   Início
                 </Link>
               </li>
+
+              <li className={styles.navItem}>
+                <Link
+                  href="/home/all-arenas"
+                  className={
+                    pathname === '/home/all-arenas'
+                      ? `${styles.navLink} ${styles.active}`
+                      : styles.navLink
+                  }
+                >
+                  Todas as Arenas
+                </Link>
+              </li>
+
               <li className={styles.navItem}>
                 <Link
                   href="/home/reservations"

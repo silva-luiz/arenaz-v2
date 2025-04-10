@@ -1,24 +1,24 @@
 'use client';
 import Button from '../Button';
 import styles from '../Dashboard/DashboardPage.module.scss';
-import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { useDashboardHooks } from '../../hooks/useDashboardHooks';
 import { useState } from 'react';
 import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
+import ArenaCard from 'components/Dashboard/ArenaCard';
 
 const url = URLS.LOAD_DASHBOARD;
 
-interface IDashboardPageProps {
+interface IAllArenasPageProps {
   isExpiredSession?: boolean;
   setIsExpiredSession?: () => void;
 }
 
-const DashboardPage = ({
+const AllArenasPage = ({
   isExpiredSession,
   setIsExpiredSession,
-}: IDashboardPageProps) => {
+}: IAllArenasPageProps) => {
   const {
     data: dashboardData,
     loading,
@@ -36,15 +36,16 @@ const DashboardPage = ({
     <div className={styles.dashboardMainContent}>
       <div>
         <div className={styles.actionButtonContainer}>
-          <h2 className={styles.dashboardTitle}>Minhas Arenas</h2>
+          <h2 className={styles.dashboardTitle}>Todas as Arenas</h2>
           <Link
             href={{
               pathname: 'new-arena',
             }}
-          >
+            >
             <Button text="+ Nova arena" className="secondaryButton" />
           </Link>
         </div>
+            <p className={styles.subtitle}>Listagem completa de todas as Arenas de seu estabelecimento</p>
 
         {/* Verificação de carregamento e erro */}
         {loading ? (
@@ -60,7 +61,7 @@ const DashboardPage = ({
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&
-              arenas.slice(0, 5).map((arena, index) => (
+              arenas.map((arena, index) => (
                 <ArenaCard
                   key={`${index}-${arena.are_id} `}
                   arenaName={arena.are_name}
@@ -69,48 +70,9 @@ const DashboardPage = ({
                   goToReservation={`/reservations/arena/${arena.are_id}`}
                 />
               ))}
-            {arenas.length > 5 && (
-              <div className={styles.seeAllButtonContainer}>
-                <Link href="/home/all-arenas">
-                  <Button text="Ver todas" className="secondaryButton" />
-                </Link>
-              </div>
-            )}
           </div>
         )}
 
-      </div>
-
-      <h2 className={styles.dashboardTitle}>Reservas ativas</h2>
-      <div className={styles.reservationStatusContainer}>
-        {dashboardData && arenas.length > 0 && (
-          <>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Total de reservas</p>
-              <p className={styles.reservationValue}>
-                {dashboardData.indicators.total_reservations}
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Valor recebido</p>
-              <p className={styles.reservationValue}>
-                R$ {dashboardData.indicators.total_received},00
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Valor a receber</p>
-              <p className={styles.reservationValue}>
-                R$ {dashboardData.indicators.total_pending},00
-              </p>
-            </div>
-          </>
-        )}
-
-        {dashboardData && arenas.length === 0 && (
-          <p className={styles.noReservationsMessage}>
-            Você ainda não tem reservas ativas.
-          </p>
-        )}
       </div>
 
       <Modal
@@ -144,4 +106,4 @@ const DashboardPage = ({
   );
 };
 
-export default DashboardPage;
+export default AllArenasPage;
