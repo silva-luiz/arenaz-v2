@@ -11,7 +11,7 @@ const url = URLS.REGISTER_ARENA;
 const ArenaRegisterForm = () => {
   // const location = useLocation();
 
-  const { establishmentInfo } = useFetchEstablishmentInfo(
+  const { data } = useFetchEstablishmentInfo(
     URLS.ESTABLISHMENT_INFO,
   );
 
@@ -23,13 +23,13 @@ const ArenaRegisterForm = () => {
   const { registerArena, loading, error } = useRegisterArena(url);
   const router = useRouter();
 
-  const est_id = establishmentInfo ? establishmentInfo.est_id : null;
+  const est_id = data ? data.est_id : null;
 
   useEffect(() => {
     console.log('📡 establishmentInfo:', est_id);
     console.log('🧯 loading:', loading);
     console.log('💥 error:', error);
-  }, [establishmentInfo, loading, error]);
+  }, [data, loading, error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ const ArenaRegisterForm = () => {
     }
     console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
 
-    const userId = establishmentInfo.usr_id;
+    const userId = data.usr_id;
 
     const arena = {
       are_name: arenaName,
@@ -115,7 +115,7 @@ const ArenaRegisterForm = () => {
                 type="radio"
                 id="society"
                 name="category"
-                value="society"
+                value="Society"
                 required
                 onChange={(e) => setArenaCategory(e.target.value)}
               />
@@ -126,7 +126,7 @@ const ArenaRegisterForm = () => {
                 type="radio"
                 id="beachSports"
                 name="category"
-                value="beachSports"
+                value="Beach Sports"
                 required
                 onChange={(e) => setArenaCategory(e.target.value)}
               />
@@ -137,7 +137,7 @@ const ArenaRegisterForm = () => {
                 type="radio"
                 id="tennis"
                 name="category"
-                value="tennis"
+                value="Tênis"
                 required
                 onChange={(e) => setArenaCategory(e.target.value)}
               />
@@ -148,7 +148,7 @@ const ArenaRegisterForm = () => {
                 type="radio"
                 id="other"
                 name="category"
-                value="other"
+                value="Outra"
                 required
                 onChange={(e) => setArenaCategory(e.target.value)}
               />
