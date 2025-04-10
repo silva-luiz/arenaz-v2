@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export const useFetchEstablishmentInfo = (url) => {
-  const [establishmentInfo, setEstablishmentInfo] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,7 +29,7 @@ export const useFetchEstablishmentInfo = (url) => {
         }
         const data = await response.json();
         console.log('Conteúdo da resposta: ', data);
-        setEstablishmentInfo(data);
+        setData(data);
       } catch (err) {
         console.error('Erro no fetch:', err.message);
         setError(err.message);
@@ -44,5 +44,5 @@ export const useFetchEstablishmentInfo = (url) => {
   }, [url]);
   // Dependência para que o fetch seja executado quando a URL mudar
 
-  return { establishmentInfo, loading, error };
+  return { data, loading, error };
 };
