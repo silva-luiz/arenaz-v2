@@ -5,7 +5,6 @@ import Button from '../Button';
 import { useFetchUserInfo } from 'hooks/useFetchUserInfo';
 import { useUpdateUserInfo } from 'hooks/useUpdateUserInfo';
 import { isValidCNPJ } from 'utils/cnpjValidator';
-import Modal from 'react-modal';
 import { useRouter } from 'next/navigation';
 import URLS from 'utils/apiRoutes';
 
@@ -30,11 +29,13 @@ const ProfilePage = ({
   const [ownerEmail, setOwnerEmail] = useState('');
 
   const { data, error } = useFetchUserInfo(url);
+
   const {
     updateUserInfo: sendUpdate,
     loading,
     error: updateError,
   } = useUpdateUserInfo(urlUpdateUserInfo);
+
   const router = useRouter();
 
   const [showModal, setShowModal] = useState(false);
