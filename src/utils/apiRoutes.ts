@@ -12,6 +12,7 @@ const URLS = {
   // Establishment
   REGISTER_ESTABLISHMENT: `${BASE_URL}api/establishment`,
   GET_ESTABLISHMENT: `${BASE_URL}api/establishment/user/`,
+  GET_ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/get-establishment/`,
   ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/info/`,
   GET_ALL_ESTABLISHMENTS: `${BASE_URL}api/establishments`,
   UPDATE_ESTABLISHMENT: `${BASE_URL}api/establishments/cad/`,
