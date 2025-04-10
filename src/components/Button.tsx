@@ -1,7 +1,7 @@
 interface IButton {
   text: string;
   className: string;
-  handleClick?: (e: any) => Promise<void>;
+  handleClick?: (e: any) => void | Promise<void>;
   type?: 'button' | 'submit' | 'reset';
 }
 

@@ -101,6 +101,7 @@ const EstablishmentProfilePage = ({
                     name="establishmentName"
                     value={establishmentName}
                     onChange={(e) => setEstablishmentName(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -115,6 +116,7 @@ const EstablishmentProfilePage = ({
                     name="establishmentPhone"
                     value={establishmentPhone}
                     onChange={(e) => setEstablishmentPhone(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -127,6 +129,7 @@ const EstablishmentProfilePage = ({
                     name="establishmentCep"
                     value={establishmentCep}
                     onChange={(e) => setEstablishmentCep(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -139,6 +142,7 @@ const EstablishmentProfilePage = ({
                     name="establishmentAddress"
                     value={establishmentAddress}
                     onChange={(e) => setEstablishmentAddress(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -151,13 +155,14 @@ const EstablishmentProfilePage = ({
                     name="establishmentCity"
                     value={establishmentCity}
                     onChange={(e) => setEstablishmentCity(e.target.value)}
+                    required
                   />
                 </div>
               </div>
             </div>
           </div>
           <div className={styles.actionButtonsContainer}>
-            <Button text="Cancelar" className="outlinedButton" />
+            <Button text="Cancelar" className="outlinedButton" handleClick={() => router.push('/home/dashboard')}/>
             <Button
               text="Salvar alterações"
               className="primaryButton"
