@@ -22,10 +22,6 @@ const ProfilePage = ({
 }: IProfilePageProps) => {
   const [ownerName, setOwnerName] = useState('');
   const [ownerDocument, setOwnerDocument] = useState('');
-  const [ownerCellphone, setOwnerCellphone] = useState('');
-  const [ownerZipCode, setOwnerZipCode] = useState('');
-  const [ownerAddress, setOwnerAddress] = useState('');
-  const [ownerCity, setOwnerCity] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
 
   const { data, error } = useFetchUserInfo(url);
@@ -48,10 +44,6 @@ const ProfilePage = ({
 
       setOwnerName(user.usr_name);
       setOwnerDocument(owner.own_document || owner.document || '');
-      setOwnerCellphone(user.usr_cell_phone);
-      setOwnerZipCode(user.usr_zipcode);
-      setOwnerAddress(user.usr_address);
-      setOwnerCity(user.usr_city);
       setOwnerEmail(user.usr_email);
     }
   }, [data]);
@@ -70,10 +62,6 @@ const ProfilePage = ({
     const userData = {
       usr_name: ownerName,
       own_document: cleanCNPJ,
-      usr_cell_phone: ownerCellphone,
-      usr_zipcode: ownerZipCode,
-      usr_address: ownerAddress,
-      usr_city: ownerCity,
     };
 
     const { res, jsonData } = await sendUpdate(userData);
@@ -133,62 +121,6 @@ const ProfilePage = ({
                 </div>
 
                 <div className={styles.inputContainer}>
-                  <span className={styles.inputLabel}>Celular</span>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="Celular"
-                      name="cellphone"
-                      value={ownerCellphone}
-                      onChange={(e) => setOwnerCellphone(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.inputContainer}>
-                  <span className={styles.inputLabel}>CEP</span>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="CEP"
-                      name="cep"
-                      value={ownerZipCode}
-                      onChange={(e) => setOwnerZipCode(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.inputContainer}>
-                  <span className={styles.inputLabel}>Endereço</span>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="Endereço"
-                      name="address"
-                      value={ownerAddress}
-                      onChange={(e) => setOwnerAddress(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.inputContainer}>
-                  <span className={styles.inputLabel}>Cidade</span>
-                  <div className={styles.inputWrapper}>
-                    <input
-                      type="text"
-                      placeholder="Cidade"
-                      name="city"
-                      value={ownerCity}
-                      onChange={(e) => setOwnerCity(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.inputContainer}>
                   <span className={styles.inputLabel}>E-mail</span>
                   <div className={styles.inputWrapper}>
                     <input
@@ -206,8 +138,8 @@ const ProfilePage = ({
             </div>
 
             <div className={styles.actionButtonsContainer}>
-              <Button text="Cancelar" className="outlinedButton" />
-              <Button text="Salvar alterações" className="primaryButton" />
+              <Button text="Cancelar" className="outlinedButton" handleClick={() => router.push('/home/dashboard')}/>
+              <Button text="Salvar alterações" className="primaryButton" type='submit'/>
             </div>
           </form>
         </div>
