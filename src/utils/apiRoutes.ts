@@ -15,8 +15,8 @@ const URLS = {
   GET_ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/get-establishment/`,
   ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/info/`,
   GET_ALL_ESTABLISHMENTS: `${BASE_URL}api/establishments`,
-  UPDATE_ESTABLISHMENT: `${BASE_URL}api/establishments/cad/`,
-  DELETE_ESTABLISHMENT: `${BASE_URL}api/establishments/del/`,
+  UPDATE_ESTABLISHMENT: `${BASE_URL}api/establishment/update/`,
+  DELETE_ESTABLISHMENT: `${BASE_URL}api/establishment/del/`,
 
   // Arena
   REGISTER_ARENA: `${BASE_URL}api/arena`,
