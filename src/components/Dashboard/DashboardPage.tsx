@@ -5,11 +5,13 @@ import ArenaCard from './ArenaCard';
 import Modal from 'react-modal';
 import { useDashboardHooks } from '../../hooks/useDashboardHooks';
 import { useDeleteArena } from '../../hooks/useDeleteArena';
-import { useState } from 'react';
+import { useUpdateArenaInfo } from '../../hooks/useUpdateArenaInfo';
+import { useState, useEffect } from 'react';
 import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
 
 const url = URLS.LOAD_DASHBOARD;
+const urlUpdateArena = URLS.UPDATE_ARENA_INFO;
 const urlDeleteArena = URLS.DELETE_ARENA;
 
 interface IDashboardPageProps {
@@ -17,18 +19,22 @@ interface IDashboardPageProps {
   setIsExpiredSession?: () => void;
 }
 
-const DashboardPage = ({
-  isExpiredSession,
-  setIsExpiredSession,
-}: IDashboardPageProps) => {
+const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
   const {
     data: dashboardData,
     loading,
     error,
   } = useDashboardHooks({ url, method: 'GET' });
 
+  const [arenaName, setArenaName] = useState('');
+  const [arenaPrice, setArenaPrice] = useState('');
+  const [arenaCategory, setArenaCategory] = useState('');
+
   const { deleteArena: deleteArenaRequest, loadingDelete } =
     useDeleteArena(urlDeleteArena);
+
+  const { updateArenaInfo, loadingArenaInfo } =
+    useUpdateArenaInfo(urlUpdateArena);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
@@ -50,6 +56,49 @@ const DashboardPage = ({
 
   const closeModal = () => {
     setModalIsOpen(false);
+  };
+
+  useEffect(() => {
+    if (editArena) {
+      setArenaName(editArena.are_name || '');
+      setArenaPrice(String(editArena.are_price || ''));
+      setArenaCategory(editArena.are_category || '');
+    }
+  }, [editArena]);
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!editArena) return;
+
+    const updatedArenaData = {
+      usr_cod_alt: dashboardData.usr_id,
+      are_id: editArena.are_id,
+      are_name: arenaName,
+      are_price: Number(arenaPrice),
+      are_category: arenaCategory,
+    };
+
+    const { res, jsonData } = await updateArenaInfo(updatedArenaData);
+
+    if (res && res.ok) {
+      const updatedArena = jsonData.arena;
+
+      const updatedArenas = arenas.map((arena) =>
+        arena.are_id === updatedArena.are_id ? updatedArena : arena,
+      );
+
+      dashboardData.arenas = updatedArenas;
+
+      setModalMessage('Arena atualizada com sucesso!');
+      setModalIsOpen(true);
+      setEditModalOpen(false);
+    } else {
+      setModalMessage(
+        jsonData?.message || 'Erro ao atualizar a arena. Tente novamente.',
+      );
+      setModalIsOpen(true);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -166,9 +215,7 @@ const DashboardPage = ({
         overlayClassName={styles.modalOverlay}
       >
         <div className={styles.modalContent}>
-          <h2 className={styles.modalTitle}>
-            {isExpiredSession ? 'Sucesso' : 'Erro'}
-          </h2>
+          <h2 className={styles.modalTitle}>Aviso</h2>
           <p>{modalMessage}</p>
           {isExpiredSession ? (
             <div className={styles.modalActions}>
@@ -194,25 +241,76 @@ const DashboardPage = ({
         overlayClassName={styles.modalOverlay}
       >
         <div className={styles.modalContent}>
-          <h2 className={styles.modalTitle}>Editar Arena</h2>
-          <p>
-            Editar dados da arena <strong>{editArena?.are_name}</strong>
+          <h2 className={styles.modalTitle}>Editar dados da Arena</h2>
+          <p className={styles.modalSubtitle}>
+            Arena: <strong>{editArena?.are_name}</strong>
           </p>
-          {/* Você pode adicionar aqui um formulário de edição futuramente */}
-          <div className={styles.modalActions}>
-            <button
-              onClick={() => setEditModalOpen(false)}
-              className="outlinedButton"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => setEditModalOpen(false)}
-              className="primaryButton"
-            >
-              Salvar alterações
-            </button>
-          </div>
+          <form onSubmit={handleEditSubmit}>
+            <div className={styles.formContainer}>
+              <div className={styles.inputContainer}>
+                <label htmlFor="arenaName" className={styles.inputLabel}>
+                  Nome da Arena
+                </label>
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="text"
+                    id="arenaName"
+                    value={arenaName}
+                    onChange={(e) => setArenaName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.formContainer}>
+              <div className={styles.inputContainer}>
+                <label htmlFor="arenaPrice" className={styles.inputLabel}>
+                  Preço/hora
+                </label>
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="number"
+                    id="arenaPrice"
+                    value={arenaPrice}
+                    onChange={(e) => setArenaPrice(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <h3 className={styles.modalSubtitle}>Categoria</h3>
+            <div className={styles.radioContainer}>
+              {['Society', 'Beach Sports', 'Tênis', 'Outra'].map((option) => (
+                <div className={styles.radioItem} key={option}>
+                  <input
+                    type="radio"
+                    id={option}
+                    name="category"
+                    value={option}
+                    checked={arenaCategory === option}
+                    onChange={(e) => setArenaCategory(e.target.value)}
+                    required
+                  />
+                  <label htmlFor={option}>{option}</label>
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                onClick={() => setEditModalOpen(false)}
+                className="outlinedButton"
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="primaryButton">
+                {loadingArenaInfo ? 'Atualizando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
 

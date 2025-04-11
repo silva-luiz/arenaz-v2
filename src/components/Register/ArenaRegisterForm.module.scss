@@ -72,15 +72,6 @@
   font-size: 14px;
 }
 
-/* span {
-  text-align: left;
-} */
-
-/* input[type='text']:focus,
-input[type='number']:focus {
-  outline: none;
-  border-color: var(--primary-color);
-} */
 
 .radioContainer {
   display: flex;
@@ -95,17 +86,9 @@ input[type='number']:focus {
   gap: 0.5rem;
 }
 
-/* input[type='radio'] {
-  width: 1.2rem;
-  height: 1.2rem;
+.radioItem input[type='radio']:checked {
   accent-color: var(--primary-color);
-} */
-
-/* label {
-  font-size: 1rem;
-  color: #333;
-  cursor: pointer;
-} */
+}
 
 .actionButtonContainer {
   position: absolute;

@@ -38,12 +38,10 @@
 
 .modalContent {
   background-color: white;
-  padding: 20px;
+  padding: 50px 100px;
   border-radius: 12px;
   text-align: center;
   max-width: 90%;
-  width: 600px;
-  height: 200px;
 }
 
 .modalTitle{
@@ -54,7 +52,68 @@
 }
 
 .modalSubtitle {
-  padding-bottom: 15px;
+  margin-bottom: 1rem;
+  color: var(--title-color);
+  font-size: 1.3rem;
+  padding: 10px 0;
+  font-weight: bold;
+  text-align: left;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputLabel{
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-color-hover);
+  border-radius: 12px;
+  padding: 10px;
+  background-color: var(--background-color);
+}
+
+.inputWrapper input {
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+}
+
+
+.radioContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radioItem input[type='radio']:checked {
+  accent-color: var(--primary-color);
 }
 
 .modalActions {
