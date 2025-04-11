@@ -1,17 +1,25 @@
 import Link from 'next/link';
-import ArenaCardImg from '../../assets/arena_card_img.jpg';
-
-import styles from '../Dashboard/DashboardPage.module.scss';
 import Image from 'next/image';
+import { FaEdit, FaTrash } from 'react-icons/fa';
+
+import ArenaCardImg from '../../assets/arena_card_img.jpg';
+import styles from '../Dashboard/DashboardPage.module.scss';
 
 const ArenaCard = ({
   arenaName,
   arenaCategory,
   arenaPrice,
   goToReservation,
+  onEdit,
+  onDelete,
 }) => {
   return (
     <div className={styles.arenaCard}>
+      <div className={styles.actionIcons}>
+        <FaEdit className={styles.iconEdit} onClick={onEdit} title="Editar arena" />
+        <FaTrash className={styles.iconDelete} onClick={onDelete} title="Excluir arena" />
+      </div>
+
       <Image
         src={ArenaCardImg}
         alt="Arena Card Image"
@@ -28,12 +36,5 @@ const ArenaCard = ({
     </div>
   );
 };
-
-// ArenaCard.propTypes = {
-//   arenaName: PropTypes.string.isRequired,
-//   arenaCategory: PropTypes.string.isRequired,
-//   goToReservation: PropTypes.string.isRequired,
-//   arenaPrice: PropTypes.string.isRequired,
-// };
 
 export default ArenaCard;
