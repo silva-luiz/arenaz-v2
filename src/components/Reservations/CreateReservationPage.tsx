@@ -1,63 +1,43 @@
-import { useParams } from 'react-router-dom';
-import { useDashboardHooks } from '../../hooks/useDashboardHooks';
+'use client';
+
+import { registerLocale } from 'react-datepicker';
 import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import TimePickerComponent from './TimePickerComponent';
-import useReservationHooks from '../../hooks/useReservationHooks';
+import DatePicker from 'react-datepicker';
 import Form from 'react-bootstrap/Form';
 
 import styles from '../Reservations/CreateReservationPage.module.scss';
 import 'react-datepicker/dist/react-datepicker.css';
-
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 
 registerLocale('pt-BR', ptBR);
 
 const CreateReservationPage = () => {
-  // const { id } = useParams();
-
-  const timePickerUrl = 'http://localhost:3000/reservationTime';
-
-  // const url = `http://localhost:3000/arenas/${id}`;
-  const url = `http://localhost:3000/arenas/`;
-
-  // const { data: arena, loading, error } = useDashboardHooks(url);
-  const { data: timepickers } = useReservationHooks(timePickerUrl); // Pega os dados de horarios a partir do hook
-  const { data: arena } = useReservationHooks(url); // Pega os dados de horarios a partir do hook
-  const [startTime, setStartTime] = useState();
-  const [endTime, setEndTime] = useState();
   const [startDate, setStartDate] = useState(new Date());
-
-  const options = {
-    weekday: 'short',
-    year: 'numeric',
-    month: '2-digit',
-    day: 'numeric',
-  };
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   const handleStartTimeChange = (e) => {
-    const selectedTime = e.target.value;
-    setStartTime(selectedTime);
-    console.log('Horário de início selecionado:', selectedTime);
+    setStartTime(e.target.value);
+    console.log('Horário de início selecionado:', e.target.value);
   };
 
   const handleEndTimeChange = (e) => {
-    const selectedTime = e.target.value;
-    setEndTime(selectedTime);
-    console.log('Horário de término selecionado:', selectedTime);
+    setEndTime(e.target.value);
+    console.log('Horário de término selecionado:', e.target.value);
   };
 
-  // Função para verificar se o horário está no intervalo entre início e fim
-  const isTimeInRange = (time) => {
-    if (startTime && endTime) {
-      return time >= startTime && time <= endTime;
-    }
-    return false;
-  };
+  const timeOptions = Array.from({ length: 30 }, (_, i) => {
+    const totalMinutes = 8 * 60 + i * 30; // começa às 08:00
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const formatted = `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}`;
+    return formatted;
+  });
 
-  if (!arena) return <p>Carregando detalhes...</p>;
-  if (!timepickers) return <p>Carregando horários...</p>;
+  console.log(`PERMANENCIA: ${startTime}-${endTime}`);
 
   return (
     <div>
@@ -65,92 +45,75 @@ const CreateReservationPage = () => {
       <div className={styles.arenaInfosContainer}>
         <div className={styles.singleInfoContainer}>
           <h4>Nome da Arena</h4>
-          <p>{arena.arenaName}</p>
+          <p>Arena name 1</p>
         </div>
         <div className={styles.singleInfoContainer}>
           <h4>Categoria</h4>
-          <p
-            className={`${styles.arenaCategory} ${
-              arena.arenaCategory === 'society'
-                ? styles.arenaCategorySoccer
-                : arena.arenaCategory === 'beachSports'
-                  ? styles.arenaCategoryBeach
-                  : arena.arenaCategory === 'tennis'
-                    ? styles.arenaCategoryTennis
-                    : styles.arenaCategoryOther
-            }`}
-          >
-            {arena.arenaCategory}
-          </p>
+          <p className={styles.arenaCategory}>Society</p>
         </div>
         <div className={styles.singleInfoContainer}>
           <h4>Valor / hora</h4>
-          <p>R$ {arena.arenaPrice}/hora</p>
+          <p>R$ 100/hora</p>
         </div>
       </div>
+
       <h2>Datas e horários disponíveis</h2>
       <p>
         Escolha o dia, horário de início e horário de término para o seu
         agendamento:
       </p>
+
       <div className={styles.arenaInfosContainer}>
-        <DatePicker
-          locale="pt-BR"
-          selected={startDate}
-          onChange={(date) => {
-            setStartDate(date);
-            const formattedDate = date.toLocaleDateString('pt-BR', options);
-            console.log(formattedDate);
-          }}
-          inline
-        />
         <div className={styles.reservationContainer}>
+          <div className={styles.timePickerContainer}>
+            <h4>Escolha a data</h4>
+            <DatePicker
+              selected={startDate}
+              onChange={(date) => setStartDate(date)}
+              dateFormat="dd/MM/yyyy"
+              locale="pt-BR"
+              minDate={new Date()}
+              className="form-control"
+              wrapperClassName={styles.datePickerWrapper}
+            />
+          </div>
+
           <div className={styles.selectTimeContainer}>
             <div className={styles.timePickerContainer}>
               <h4>Horário de início</h4>
               <Form.Select
-                aria-label="Default select example"
+                aria-label="Selecione o horário de início"
                 onChange={handleStartTimeChange}
+                value={startTime}
               >
-                <option>Selecione um horário...</option>
-                {timepickers &&
-                  timepickers.map((timepicker) => (
-                    <option key={timepicker.id} value={timepicker.timePicked}>
-                      {timepicker.timePicked}
-                    </option>
-                  ))}
+                <option value="">Selecione um horário...</option>
+                {timeOptions.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
               </Form.Select>
             </div>
             <div className={styles.timePickerContainer}>
               <h4>Horário de saída</h4>
               <Form.Select
-                aria-label="Default select example"
+                aria-label="Selecione o horário de término"
                 onChange={handleEndTimeChange}
+                value={endTime}
+                disabled={!startTime}
               >
-                <option>Selecione um horário</option>
-                {timepickers &&
-                  timepickers.map((timepicker) => (
-                    <option key={timepicker.id} value={timepicker.timePicked}>
-                      {timepicker.timePicked}
+                <option value="">Selecione um horário...</option>
+                {timeOptions
+                  .filter((time) => time > startTime)
+                  .map((time) => (
+                    <option key={time} value={time}>
+                      {time}
                     </option>
                   ))}
               </Form.Select>
             </div>
           </div>
-          <div className={styles.timePickerContainer}>
-            {timepickers &&
-              timepickers.map((timepicker) => (
-                <TimePickerComponent
-                  key={timepicker.id}
-                  timePicked={timepicker.timePicked}
-                  className={`${styles.timeOption} ${
-                    isTimeInRange(timepicker.timePicked)
-                      ? styles.timeInRange
-                      : ''
-                  }`}
-                />
-              ))}
-          </div>
+
           <button className="primaryButton">Prosseguir para agendamento</button>
         </div>
       </div>
