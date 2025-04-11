@@ -27,7 +27,8 @@ const DashboardPage = ({
     error,
   } = useDashboardHooks({ url, method: 'GET' });
 
-  const { deleteArena: deleteArenaRequest } = useDeleteArena(urlDeleteArena);
+  const { deleteArena: deleteArenaRequest, loadingDelete } =
+    useDeleteArena(urlDeleteArena);
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
@@ -243,8 +244,7 @@ const DashboardPage = ({
                 setDeleteArena(null);
               }}
             >
-              {/* {deleteLoading ? 'Excluindo...' : 'Excluir'} */}
-              Excluir
+              {loadingDelete ? 'Excluindo...' : 'Excluir'}
             </button>
           </div>
         </div>

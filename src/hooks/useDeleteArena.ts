@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export const useDeleteArena = (url) => {
-  const [loading, setLoading] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
   const [error, setError] = useState(null);
 
   const deleteArena = async (arenaId) => {
@@ -12,7 +12,7 @@ export const useDeleteArena = (url) => {
       return;
     }
 
-    setLoading(true);
+    setLoadingDelete(true);
     let res = null;
     try {
       res = await fetch(`${url}/${arenaId}`, {
@@ -24,7 +24,7 @@ export const useDeleteArena = (url) => {
       });
 
       const jsonData = await res.json();
-      setLoading(false);
+      setLoadingDelete(false);
 
       if (!res.ok) {
         throw new Error(jsonData.message || 'Erro ao deletar Arena');
@@ -33,11 +33,11 @@ export const useDeleteArena = (url) => {
       return { res, jsonData };
     } catch (err) {
       setError(err.message);
-      setLoading(false);
+      setLoadingDelete(false);
       return { res: null, jsonData: null };
     }
   };
 
 
-  return { deleteArena, loading, error };
+  return { deleteArena, loadingDelete, error };
 };
