@@ -22,6 +22,7 @@ const URLS = {
   REGISTER_ARENA: `${BASE_URL}api/arena`,
   GET_USER_ARENAS: `${BASE_URL}api/arenas/user`,
   GET_ARENA_INFO: `${BASE_URL}api/arena/get-arena`,
+  DELETE_ARENA: `${BASE_URL}api/arena`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,
