@@ -7,6 +7,7 @@ import { useState } from 'react';
 import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
 import Button from 'components/Button';
+import WarningIcon from '@mui/icons-material/Warning';
 import { CircularProgress } from '@mui/material';
 
 const url = URLS.LOAD_DASHBOARD;
@@ -58,9 +59,12 @@ const DashboardPage = ({
             Erro ao carregar arenas: {error}
           </p>
         ) : dashboardData && arenas.length === 0 ? (
+          <div className={styles.noArenasContainer}>
+          <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
           <p className={styles.noArenasMessage}>
             Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
           </p>
+        </div>
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&

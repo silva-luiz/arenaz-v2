@@ -8,6 +8,7 @@ import { useDeleteArena } from '../../hooks/useDeleteArena';
 import { useUpdateArenaInfo } from '../../hooks/useUpdateArenaInfo';
 import { useState, useEffect } from 'react';
 import URLS from '../../utils/apiRoutes';
+import WarningIcon from '@mui/icons-material/Warning';
 import Link from 'next/link';
 import { CircularProgress } from '@mui/material';
 
@@ -149,9 +150,13 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
             Erro ao carregar arenas: {error}
           </p>
         ) : dashboardData && arenas.length === 0 ? (
-          <p className={styles.noArenasMessage}>
-            Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
-          </p>
+          <div className={styles.noArenasContainer}>
+            <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+            <p className={styles.noArenasMessage}>
+              Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
+            </p>
+          </div>
+
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&

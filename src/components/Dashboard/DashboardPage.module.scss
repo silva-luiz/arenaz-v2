@@ -25,6 +25,13 @@
   align-items: center;
 }
 
+.noArenasContainer{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .loadingText{
   padding: 10px;
   color: var(--text-color);

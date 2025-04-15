@@ -9,6 +9,8 @@ import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
 import ArenaCard from 'components/Dashboard/ArenaCard';
 import { CircularProgress } from '@mui/material';
+import WarningIcon from '@mui/icons-material/Warning';
+
 
 const url = URLS.LOAD_DASHBOARD;
 const urlDeleteArena = URLS.DELETE_ARENA;
@@ -102,9 +104,12 @@ const AllArenasPage = ({
             Erro ao carregar arenas: {error}
           </p>
         ) : dashboardData && arenas.length === 0 ? (
-          <p className={styles.noArenasMessage}>
-            Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
-          </p>
+          <div className={styles.noArenasContainer}>
+            <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+            <p className={styles.noArenasMessage}>
+              Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
+            </p>
+          </div>
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&

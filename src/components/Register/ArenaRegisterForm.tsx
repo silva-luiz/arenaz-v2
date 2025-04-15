@@ -5,6 +5,7 @@ import { useRegisterArena } from '../../hooks/useRegisterArena';
 import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
 import URLS from '../../utils/apiRoutes';
 import { useRouter } from 'next/navigation';
+import { CircularProgress } from '@mui/material';
 
 const url = URLS.REGISTER_ARENA;
 
@@ -33,7 +34,6 @@ const ArenaRegisterForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!est_id) {
       console.error('Establishment ID não disponível');
       return;
@@ -159,7 +159,7 @@ const ArenaRegisterForm = () => {
           <div className={styles.actionButtonContainer}>
             {loading && (
               <button className="primaryButton" type="submit" disabled>
-                Criando...
+                <CircularProgress color="inherit" size="20px"/>
               </button>
             )}
             {!loading && (
