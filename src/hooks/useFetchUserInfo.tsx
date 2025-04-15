@@ -29,7 +29,6 @@ export const useFetchUserInfo = <T = any>(url: string): UseFetchUserInfoResult<T
             // 'ngrok-skip-browser-warning': '69420', // usar apenas quando Ngrok estiver sendo utilizado
           },
         });
-
         console.log('Resposta status:', response.status);
 
         if (!response.ok) {

@@ -15,10 +15,13 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [credentialsError, setCredentialsError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setLoading(true);
 
     const userData = {
       email: email,
@@ -30,6 +33,8 @@ const LoginPage = () => {
       router.push('home/dashboard');
     } catch (error) {
       console.error('Login Error' + error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,8 +92,9 @@ const LoginPage = () => {
           </div> */}
           <Button
             className={styles.loginPrimaryButton}
-            text="Entrar"
+            text={loading ? 'Entrando...' : 'Entrar'}
             handleClick={handleSubmit}
+            disabled={loading}
           />
           <div className={styles.signUpLink}>
             <p>Ainda não tem conta?</p>{' '}
