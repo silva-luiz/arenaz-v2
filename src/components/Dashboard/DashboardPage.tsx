@@ -9,6 +9,7 @@ import { useUpdateArenaInfo } from '../../hooks/useUpdateArenaInfo';
 import { useState, useEffect } from 'react';
 import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
+import { CircularProgress } from '@mui/material';
 
 const url = URLS.LOAD_DASHBOARD;
 const urlUpdateArena = URLS.UPDATE_ARENA_INFO;
@@ -115,7 +116,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
     } else {
       setModalMessage(
         jsonData?.message ||
-          'Erro ao excluir a arena. Tente novamente mais tarde.',
+        'Erro ao excluir a arena. Tente novamente mais tarde.',
       );
       setModalIsOpen(true);
     }
@@ -139,7 +140,10 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
 
         {/* Verificação de carregamento e erro */}
         {loading ? (
-          <p>Carregando...</p>
+          <div className={styles.loadingContainer}>
+            <CircularProgress color="warning" />
+            <p className={styles.loadingText}>Carregando dados...</p>
+          </div>
         ) : error ? (
           <p className={styles.errorMessage}>
             Erro ao carregar arenas: {error}

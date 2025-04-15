@@ -7,6 +7,7 @@ import { useState } from 'react';
 import URLS from '../../utils/apiRoutes';
 import Link from 'next/link';
 import Button from 'components/Button';
+import { CircularProgress } from '@mui/material';
 
 const url = URLS.LOAD_DASHBOARD;
 
@@ -48,7 +49,10 @@ const DashboardPage = ({
 
         {/* Verificação de carregamento e erro */}
         {loading ? (
-          <p>Carregando...</p>
+          <div>
+            <CircularProgress color="warning" />
+            <p>Carregando dados...</p>
+          </div>
         ) : error ? (
           <p className={styles.errorMessage}>
             Erro ao carregar arenas: {error}

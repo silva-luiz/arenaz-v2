@@ -18,9 +18,18 @@
   color: var(--text-color);
 }
 
-.userName {
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.loadingText{
+  padding: 10px;
+  color: var(--text-color);
+  font-size: 1.2rem;
   font-weight: bold;
-  color: var(--title-color);
 }
 
 .modal {
