@@ -9,12 +9,32 @@ const reservations = [
   {
     arena: 'Arena 1',
     categoria: 'Society',
-    locador: 'José da Silva',
+    locador: 'José Aldo',
     contato: '(12)99123-4456',
     data: '00/00/0000',
     horarioEntrada: '00:00',
     horarioSaida: '02:00',
     valor: 'R$ 130,00',
+  },
+  {
+    arena: 'Arena 2',
+    categoria: 'Tênis',
+    locador: 'Anderson Silva',
+    contato: '(12)99123-4456',
+    data: '00/00/0000',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
+    valor: 'R$ 140,00',
+  },
+  {
+    arena: 'Arena 3',
+    categoria: 'Beach Sports',
+    locador: 'Connor McGregor',
+    contato: '(12)99123-4456',
+    data: '00/00/0000',
+    horarioEntrada: '00:00',
+    horarioSaida: '02:00',
+    valor: 'R$ 200,00',
   },
   // ... outras reservas
 ];
