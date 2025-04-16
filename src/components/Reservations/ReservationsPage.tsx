@@ -1,16 +1,9 @@
+'use client';
 import Table from 'react-bootstrap/Table';
 import Pagination from 'react-bootstrap/Pagination';
 import styles from '../Reservations/ReservationsPage.module.scss';
-
-const active = 1;
-const items = [];
-for (let number = 1; number <= 5; number++) {
-  items.push(
-    <Pagination.Item key={number} active={number === active}>
-      {number}
-    </Pagination.Item>
-  );
-}
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const reservations = [
   {
@@ -23,70 +16,40 @@ const reservations = [
     horarioSaida: '02:00',
     valor: 'R$ 130,00',
   },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José da Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  // ... repita ou traga seus dados reais aqui
+  // ... outras reservas
 ];
 
-const ReservationsPage = () => {
+interface IReservationsPageProps {
+  isExpiredSession?: boolean;
+  setIsExpiredSession?: () => void;
+}
+
+const ReservationsPage = ({
+  isExpiredSession,
+  setIsExpiredSession,
+}: IReservationsPageProps) => {
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [selectedReservation, setSelectedReservation] = useState<any>(null);
+
+  const router = useRouter();
+
+  const handleCancelClick = (reservation: any) => {
+    setSelectedReservation(reservation);
+    setModalMessage('Deseja realmente cancelar essa reserva?');
+    setShowModal(true);
+  };
+
+  const confirmCancel = () => {
+    // Aqui você pode chamar sua API de cancelamento
+    setShowModal(false);
+    setModalMessage('Reserva cancelada com sucesso!');
+    setTimeout(() => {
+      setModalMessage('');
+      setSelectedReservation(null);
+    }, 2000);
+  };
+
   return (
     <>
       <h2 className={styles.reservationsTitle}>Reservas ativas</h2>
@@ -94,7 +57,7 @@ const ReservationsPage = () => {
         Confira aqui as informações de todas as suas reservas ativas
       </p>
 
-      {/* Tabela para telas maiores */}
+      {/* Tabela para desktop */}
       <div className={styles.tableResponsive}>
         <Table
           striped
@@ -129,7 +92,12 @@ const ReservationsPage = () => {
                 </td>
                 <td className={styles.tableData}>{reserva.valor}</td>
                 <td className={styles.tableData}>
-                  <button className={styles.cancelButton}>Cancelar reserva</button>
+                  <button
+                    className={styles.cancelButton}
+                    onClick={() => handleCancelClick(reserva)}
+                  >
+                    Cancelar reserva
+                  </button>
                 </td>
               </tr>
             ))}
@@ -148,16 +116,52 @@ const ReservationsPage = () => {
             <p><strong>Data:</strong> {reserva.data}</p>
             <p><strong>Horário:</strong> {reserva.horarioEntrada} - {reserva.horarioSaida}</p>
             <p><strong>Valor:</strong> {reserva.valor}</p>
-            <button className={styles.cancelButton}>Cancelar</button>
+            <button
+              className={styles.cancelButton}
+              onClick={() => handleCancelClick(reserva)}
+            >
+              Cancelar
+            </button>
           </div>
         ))}
       </div>
 
-      
-      {/* Pagination - confirmar se teremos ou nao */}
-      {/* <div className={styles.reservationPagination}>
-        <Pagination>{items}</Pagination>
-      </div> */}
+      {/* Modal de confirmação */}
+      {showModal && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>{modalMessage}</h2>
+
+            {modalMessage === 'Deseja realmente cancelar essa reserva?' && (
+              <div className={styles.modalActions}>
+                <p className={styles.modalSubtitle}>Essa ação não poderá ser desfeita</p>
+                <button
+                  className="outlinedButton"
+                  onClick={() => setShowModal(false)}
+                >
+                  Voltar
+                </button>
+                <button className="primaryButton" onClick={confirmCancel}>
+                  Confirmar
+                </button>
+
+              </div>
+            )}
+
+            {modalMessage === 'Reserva cancelada com sucesso!' && (
+              <>
+                <p className={styles.modalSubtitle}>A reserva foi cancelada.</p>
+                <button
+                  className="primaryButton"
+                  onClick={() => setShowModal(false)}
+                >
+                  Fechar
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };
