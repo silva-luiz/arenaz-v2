@@ -28,7 +28,7 @@ export const useDashboardHooks = ({
       });
 
       if (!res.ok) {
-        throw new Error('Você ainda não tem nenhuma Arena cadastrada.');
+        throw new Error('Erro ao listar Arenas.');
       }
 
       const jsonData = await res.json();
