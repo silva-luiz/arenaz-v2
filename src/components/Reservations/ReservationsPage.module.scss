@@ -1,20 +1,31 @@
+.reservationsTitle {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.reservationsSubtitle {
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+}
+
 .tableResponsive {
   width: 100%;
-  margin-bottom: 1rem;
   overflow-x: auto;
-  border-radius: 12px !important;
+  border-radius: 12px;
 }
 
 .customTable {
   background-color: #343a40;
+  border-radius: 12px;
 }
 
 .tableHeader {
   background-color: #495057;
-  color: var(--primary-color) !important;
-  font-size: 1.2rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
   text-align: center;
-  padding: 20px !important;
+  padding: 16px !important;
 }
 
 .tableRow {
@@ -27,13 +38,87 @@
 
 .tableData {
   text-align: center;
-  color: var(--secondary-text-color);
-  padding: 10px !important;
+  color: var(--secondary-title-color);
+  padding: 12px !important;
+  vertical-align: middle;
+}
+
+.tableHeaderRow {
+  th:first-child {
+    border-top-left-radius: 12px;
+  }
+
+  th:last-child {
+    border-top-right-radius: 12px;
+  }
+}
+
+
+.cancelButton {
+  background-color: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: var(--danger);
+    color: var(--secondary-title-color);
+  }
 }
 
 .reservationPagination {
   display: flex;
   justify-content: flex-end;
   padding: 1rem 0;
+}
+
+/* Estilo para os cards no mobile */
+.mobileCardsContainer {
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mobileCard {
+  background-color: #343a40;
+  border: 1px solid #495057;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  color: var(--secondary-title-color);
+  p {
+    margin: 0.3rem 0;
+    font-size: 0.95rem;
+
+    strong {
+      color: var(--primary-color);
+    }
+  }
+
+  .cancelButton {
+    margin-top: 0.5rem;
+  }
+}
+
+
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .tableResponsive {
+    display: none;
+  }
+
+  .mobileCardsContainer {
+    display: flex;
+  }
+
+  .reservationPagination {
+    justify-content: center;
+  }
 }
 
