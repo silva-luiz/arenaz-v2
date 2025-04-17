@@ -1,9 +1,9 @@
 'use client';
 import Table from 'react-bootstrap/Table';
-import Pagination from 'react-bootstrap/Pagination';
 import styles from '../Reservations/ReservationsPage.module.scss';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 const reservations = [
   {
@@ -36,12 +36,19 @@ const reservations = [
     horarioSaida: '02:00',
     valor: 'R$ 200,00',
   },
-  // ... outras reservas
 ];
 
 interface IReservationsPageProps {
   isExpiredSession?: boolean;
   setIsExpiredSession?: () => void;
+  arena: string;
+  categoria: string;
+  locador: string;
+  contato: string;
+  data: string;
+  horarioEntrada: string;
+  horarioSaida: string;
+  valor: string;
 }
 
 const ReservationsPage = ({
@@ -51,17 +58,28 @@ const ReservationsPage = ({
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [reservationPlayerName, setReservationPlayerName] = useState('');
+  const [reservationPlayerPhone, setReservationPlayerPhone] = useState('');
+  const [reservationAmount, setReservationAmount] = useState('');
 
   const router = useRouter();
 
-  const handleCancelClick = (reservation: any) => {
+  const handleEditClick = (reservation: any) => {
     setSelectedReservation(reservation);
-    setModalMessage('Deseja realmente cancelar essa reserva?');
+    setModalMessage('Editar reserva');
+    setIsEditMode(true);
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (reservation: any) => {
+    setSelectedReservation(reservation);
+    setModalMessage('Deseja excluir essa reserva?');
+    setIsEditMode(false);
     setShowModal(true);
   };
 
   const confirmCancel = () => {
-    // Aqui você pode chamar sua API de cancelamento
     setShowModal(false);
     setModalMessage('Reserva cancelada com sucesso!');
     setTimeout(() => {
@@ -77,7 +95,7 @@ const ReservationsPage = ({
         Confira aqui as informações de todas as suas reservas ativas
       </p>
 
-      {/* Tabela para desktop */}
+      {/* Tabela desktop */}
       <div className={styles.tableResponsive}>
         <Table
           striped
@@ -96,7 +114,8 @@ const ReservationsPage = ({
               <th className={styles.tableHeader}>Data</th>
               <th className={styles.tableHeader}>Horário</th>
               <th className={styles.tableHeader}>Valor</th>
-              <th className={styles.tableHeader}>Cancelar reserva</th>
+              <th className={styles.tableHeader}>Editar</th>
+              <th className={styles.tableHeader}>Excluir</th>
             </tr>
           </thead>
           <tbody>
@@ -112,12 +131,18 @@ const ReservationsPage = ({
                 </td>
                 <td className={styles.tableData}>{reserva.valor}</td>
                 <td className={styles.tableData}>
-                  <button
-                    className={styles.cancelButton}
-                    onClick={() => handleCancelClick(reserva)}
-                  >
-                    Cancelar reserva
-                  </button>
+                  <FaEdit
+                    className={styles.iconButton}
+                    onClick={() => handleEditClick(reserva)}
+                    title="Editar"
+                  />
+                </td>
+                <td className={styles.tableData}>
+                  <FaTrash
+                    className={styles.iconButtonTrash}
+                    onClick={() => handleDeleteClick(reserva)}
+                    title="Cancelar"
+                  />
                 </td>
               </tr>
             ))}
@@ -129,56 +154,160 @@ const ReservationsPage = ({
       <div className={styles.mobileCardsContainer}>
         {reservations.map((reserva, index) => (
           <div key={index} className={styles.mobileCard}>
-            <p><strong>Arena:</strong> {reserva.arena}</p>
-            <p><strong>Categoria:</strong> {reserva.categoria}</p>
-            <p><strong>Locador:</strong> {reserva.locador}</p>
-            <p><strong>Contato:</strong> {reserva.contato}</p>
-            <p><strong>Data:</strong> {reserva.data}</p>
-            <p><strong>Horário:</strong> {reserva.horarioEntrada} - {reserva.horarioSaida}</p>
-            <p><strong>Valor:</strong> {reserva.valor}</p>
-            <button
-              className={styles.cancelButton}
-              onClick={() => handleCancelClick(reserva)}
-            >
-              Cancelar
-            </button>
+            <p>
+              <strong>Arena:</strong> {reserva.arena}
+            </p>
+            <p>
+              <strong>Categoria:</strong> {reserva.categoria}
+            </p>
+            <p>
+              <strong>Locador:</strong> {reserva.locador}
+            </p>
+            <p>
+              <strong>Contato:</strong> {reserva.contato}
+            </p>
+            <p>
+              <strong>Data:</strong> {reserva.data}
+            </p>
+            <p>
+              <strong>Horário:</strong> {reserva.horarioEntrada} -{' '}
+              {reserva.horarioSaida}
+            </p>
+            <p>
+              <strong>Valor:</strong> {reserva.valor}
+            </p>
+            <div className={styles.mobileActions}>
+              <FaEdit
+                className={styles.iconButton}
+                onClick={() => handleEditClick(reserva)}
+                title="Editar"
+              />
+              <FaTrash
+                className={styles.iconButton}
+                onClick={() => handleDeleteClick(reserva)}
+                title="Cancelar"
+              />
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Modal de confirmação */}
+      {/* Modal de edição ou cancelamento */}
       {showModal && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
             <h2 className={styles.modalTitle}>{modalMessage}</h2>
 
-            {modalMessage === 'Deseja realmente cancelar essa reserva?' && (
+            {isEditMode && selectedReservation && (
               <div className={styles.modalActions}>
-                <p className={styles.modalSubtitle}>Essa ação não poderá ser desfeita</p>
+                <p className={styles.modalSubtitle}>
+                  <strong>Arena:</strong> {selectedReservation.arena}
+                </p>
+                <p className={styles.modalSubtitle}>
+                  <strong>Categoria:</strong> {selectedReservation.categoria}
+                </p>
+                <div className={styles.formContainer}>
+                  <div className={styles.inputContainer}>
+                    <label htmlFor="playerName" className={styles.inputLabel}>
+                      Jogador locador
+                    </label>
+                    <div className={styles.inputWrapper}>
+                      <input
+                        type="text"
+                        id="playerName"
+                        value={reservationPlayerName}
+                        onChange={(e) =>
+                          setReservationPlayerName(e.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.formContainer}>
+                  <div className={styles.inputContainer}>
+                    <label htmlFor="playerPhone" className={styles.inputLabel}>
+                      Telefone de contato
+                    </label>
+                    <div className={styles.inputWrapper}>
+                      <input
+                        type="text"
+                        id="playerPhone"
+                        value={reservationPlayerPhone}
+                        onChange={(e) =>
+                          setReservationPlayerPhone(e.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.formContainer}>
+                  <div className={styles.inputContainer}>
+                    <label
+                      htmlFor="reservationAmount"
+                      className={styles.inputLabel}
+                    >
+                      Valor da reserva
+                    </label>
+                    <div className={styles.inputWrapper}>
+                      <input
+                        type="text"
+                        id="reservationAmount"
+                        value={reservationAmount}
+                        onChange={(e) => setReservationAmount(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
                 <button
                   className="outlinedButton"
                   onClick={() => setShowModal(false)}
                 >
-                  Voltar
+                  Cancelar
                 </button>
-                <button className="primaryButton" onClick={confirmCancel}>
-                  Confirmar
-                </button>
-
-              </div>
-            )}
-
-            {modalMessage === 'Reserva cancelada com sucesso!' && (
-              <>
-                <p className={styles.modalSubtitle}>A reserva foi cancelada.</p>
                 <button
                   className="primaryButton"
                   onClick={() => setShowModal(false)}
                 >
-                  Fechar
+                  Salvar
                 </button>
-              </>
+              </div>
             )}
+
+            {!isEditMode &&
+              modalMessage === 'Deseja excluir essa reserva?' && (
+                <div className={styles.modalActions}>
+                  <p className={styles.modalSubtitle}>
+                    Essa ação não poderá ser desfeita
+                  </p>
+                  <button
+                    className="outlinedButton"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Voltar
+                  </button>
+                  <button className="primaryButton" onClick={confirmCancel}>
+                    Confirmar
+                  </button>
+                </div>
+              )}
+
+            {!isEditMode &&
+              modalMessage === 'Reserva cancelada com sucesso!' && (
+                <>
+                  <p className={styles.modalSubtitle}>
+                    A reserva foi cancelada.
+                  </p>
+                  <button
+                    className="primaryButton"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Fechar
+                  </button>
+                </>
+              )}
           </div>
         </div>
       )}

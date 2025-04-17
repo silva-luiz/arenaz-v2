@@ -89,7 +89,6 @@
   text-align: center;
   max-width: 90%;
   width: 400px;
-  height: 220px;
 }
 
 .modalSubtitle {
@@ -103,12 +102,44 @@
   margin-bottom: 10px;
 }
 
-
-.reservationPagination {
+.formContainer {
   display: flex;
-  justify-content: flex-end;
-  padding: 1rem 0;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
 }
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputLabel{
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-color-hover);
+  border-radius: 12px;
+  padding: 10px;
+  background-color: var(--background-color);
+}
+
+.inputWrapper input {
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+}
+
 
 /* Estilo para os cards no mobile */
 .mobileCardsContainer {
@@ -138,6 +169,35 @@
     margin-top: 0.5rem;
   }
 }
+
+.iconButton {
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #ccc;
+  transition: color 0.3s;
+
+  &:hover {
+    color: var(--primary-color)
+  }
+}
+
+.iconButtonTrash {
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #ccc;
+  transition: color 0.3s;
+
+  &:hover {
+    color: var(--danger);
+  }
+}
+
+.mobileActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 
 
 
