@@ -336,6 +336,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
             Deseja realmente excluir a arena{' '}
             <strong>{deleteArena?.are_name}</strong>?
           </p>
+          <p>Essa ação nao poderá ser desfeita</p>
           <div className={styles.modalActions}>
             <button
               className="secondaryButton"
