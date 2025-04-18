@@ -41,14 +41,6 @@ const reservations = [
 interface IReservationsPageProps {
   isExpiredSession?: boolean;
   setIsExpiredSession?: () => void;
-  arena: string;
-  categoria: string;
-  locador: string;
-  contato: string;
-  data: string;
-  horarioEntrada: string;
-  horarioSaida: string;
-  valor: string;
 }
 
 const ReservationsPage = ({
