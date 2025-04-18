@@ -54,6 +54,8 @@ const CreateReservationPage = () => {
     // const userId = data.usr_id;
     const userId = 1;
 
+    const formattedDate = format(startDate, 'yyyy-MM-dd');
+
     const reservation = {
       are_id: '18', // TODO: PEGAR OS DADOS DA ARENA
       usr_cod_cad: userId, // TODO: PEGAR OS DADOS DA ARENA
@@ -61,7 +63,7 @@ const CreateReservationPage = () => {
       res_player_name: playerName,
       res_cel_phone: playerPhone,
       res_value: price,
-      res_date: format(startDate, 'dd-MM-yyyy'),
+      res_date: formattedDate,
       res_start_time: startTime,
       res_end_time: endTime,
       res_qrcode: '', // vazio por enquanto
