@@ -24,6 +24,10 @@ const URLS = {
   GET_ARENA_INFO: `${BASE_URL}api/arena/get-arena`,
   UPDATE_ARENA_INFO: `${BASE_URL}api/arena/update`,
   DELETE_ARENA: `${BASE_URL}api/arena`,
+  GET_SINGLE_ARENA_INFO: `${BASE_URL}api/arena/{id}`,
+
+  // Reservation
+  CREATE_RESERVATION: `${BASE_URL}api/reservation`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,

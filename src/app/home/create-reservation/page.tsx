@@ -3,7 +3,7 @@
 import CreateReservationPage from "components/Reservations/CreateReservationPage";
 
 
-export default function Reservations() {
+export default function CreateReservations() {
   return (
     <>
       <CreateReservationPage />

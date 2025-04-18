@@ -5,19 +5,31 @@ import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import Form from 'react-bootstrap/Form';
+import { format } from 'date-fns';
 
 import styles from '../Reservations/CreateReservationPage.module.scss';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 import { Link } from 'react-router-dom';
 import Button from 'components/Button';
+import URLS from 'utils/apiRoutes';
+import { useCreateReservation } from 'hooks/useCreateReservation';
 
 registerLocale('pt-BR', ptBR);
+
+const reservationUrl = URLS.CREATE_RESERVATION;
 
 const CreateReservationPage = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [playerName, setPlayerName] = useState('');
+  const [playerPhone, setPlayerPhone] = useState('');
+  const [price, setPrice] = useState('');
+  const [showModal, setShowModal] = useState(false);
+
+  const { createReservation, loadingReservation, reservationError } =
+    useCreateReservation(reservationUrl);
 
   const handleStartTimeChange = (e) => {
     setStartTime(e.target.value);
@@ -27,6 +39,43 @@ const CreateReservationPage = () => {
   const handleEndTimeChange = (e) => {
     setEndTime(e.target.value);
     console.log('Horário de término selecionado:', e.target.value);
+  };
+
+  const are_id = '18'; // ALTERAR PARA PEGAR O ID DA ARENA SELECIONADA
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!are_id) {
+      console.error('Arena ID not available');
+      return;
+    }
+    console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
+
+    // const userId = data.usr_id;
+    const userId = 1;
+
+    const reservation = {
+      are_id: '18', // TODO: PEGAR OS DADOS DA ARENA
+      usr_cod_cad: userId, // TODO: PEGAR OS DADOS DA ARENA
+      usr_id: userId, // TODO: PEGAR OS DADOS DA ARENA
+      res_player_name: playerName,
+      res_cel_phone: playerPhone,
+      res_value: price,
+      res_date: format(startDate, 'dd-MM-yyyy'),
+      res_start_time: startTime,
+      res_end_time: endTime,
+      res_qrcode: '', // vazio por enquanto
+    };
+
+    // Envia a arena para a API
+    const { res, jsonData } = await createReservation(reservation);
+
+    if (res.ok) {
+      setShowModal(true);
+    } else {
+      setShowModal(true);
+      console.error('Erro ao registrar reserva:', jsonData);
+    }
   };
 
   const timeOptions = Array.from({ length: 30 }, (_, i) => {
@@ -67,10 +116,10 @@ const CreateReservationPage = () => {
 
       <div className={styles.arenaInfosContainer}>
         <div className={styles.reservationContainer}>
-          <form action="" className={styles.reservationForm}>
+          <form onSubmit={handleSubmit} className={styles.reservationForm}>
+            {/* Data da reserva */}
             <div className={styles.timePickerContainer}>
               <h4 className={styles.arenaInfo}>Data da reserva</h4>
-
               <DatePicker
                 selected={startDate}
                 onChange={(date) => setStartDate(date)}
@@ -82,6 +131,7 @@ const CreateReservationPage = () => {
               />
             </div>
 
+            {/* Horário de início */}
             <div className={styles.selectTimeContainer}>
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de início</h4>
@@ -106,6 +156,7 @@ const CreateReservationPage = () => {
                 </Form.Select>
               </div>
 
+              {/* Horário de término */}
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de saída</h4>
                 <Form.Select
@@ -133,6 +184,7 @@ const CreateReservationPage = () => {
               </div>
             </div>
 
+            {/* Nome do jogador */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Jogador responsável</label>
               <div className={styles.inputWrapper}>
@@ -141,10 +193,13 @@ const CreateReservationPage = () => {
                   placeholder="Nome"
                   name="responsiblePlayer"
                   className={styles.inputText}
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* Telefone */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
@@ -153,10 +208,13 @@ const CreateReservationPage = () => {
                   placeholder="Telefone para contato"
                   name="contactPhone"
                   className={styles.inputText}
+                  value={playerPhone}
+                  onChange={(e) => setPlayerPhone(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* Valor */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Valor (R$)</label>
               <div className={styles.inputWrapper}>
@@ -165,12 +223,17 @@ const CreateReservationPage = () => {
                   placeholder="Valor"
                   name="price"
                   className={styles.inputText}
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* Botão */}
             <div className={styles.formActions}>
-              <button className="primaryButton">Confirmar agendamento</button>
+              <button type="submit" className="primaryButton">
+                Confirmar agendamento
+              </button>
             </div>
           </form>
         </div>

@@ -173,7 +173,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
                 arenaName={arena.are_name}
                 arenaCategory={arena.are_category}
                 arenaPrice={arena.are_price}
-                goToReservation={`/reservations/arena/${arena.are_id}`}
+                goToReservation={`/create-reservation/`}
                 onEdit={() => handleEditArena(arena)}
                 onDelete={() => handleDeleteArena(arena)}
               />
