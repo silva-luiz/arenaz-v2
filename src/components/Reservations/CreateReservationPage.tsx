@@ -10,10 +10,11 @@ import { format } from 'date-fns';
 import styles from '../Reservations/CreateReservationPage.module.scss';
 import 'react-datepicker/dist/react-datepicker.css';
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';
-import { Link } from 'react-router-dom';
 import Button from 'components/Button';
+import Link from 'next/link';
 import URLS from 'utils/apiRoutes';
 import { useCreateReservation } from 'hooks/useCreateReservation';
+import { useRouter } from 'next/navigation';
 
 registerLocale('pt-BR', ptBR);
 
@@ -31,6 +32,8 @@ const CreateReservationPage = () => {
   const { createReservation, loadingReservation, reservationError } =
     useCreateReservation(reservationUrl);
 
+  const router = useRouter();
+
   const handleStartTimeChange = (e) => {
     setStartTime(e.target.value);
     console.log('Horário de início selecionado:', e.target.value);
@@ -45,40 +48,47 @@ const CreateReservationPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (loadingReservation) return; // Evita múltiplos envios
+
     if (!are_id) {
       console.error('Arena ID not available');
       return;
     }
-    console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
 
-    // const userId = data.usr_id;
-    const userId = 1;
+    try {
+      const userId = 1; //TODO: PEGAR ID DO USUÁRIO
 
-    const formattedDate = format(startDate, 'dd-MM-yyyy');
+      const formattedDate = format(startDate, 'dd-MM-yyyy');
 
-    const reservation = {
-      are_id: '18', // TODO: PEGAR OS DADOS DA ARENA
-      usr_cod_cad: userId, // TODO: PEGAR OS DADOS DA ARENA
-      usr_id: userId, // TODO: PEGAR OS DADOS DA ARENA
-      res_player_name: playerName,
-      res_cel_phone: playerPhone,
-      res_value: price,
-      res_date: formattedDate,
-      res_start_time: startTime,
-      res_end_time: endTime,
-      res_qrcode: '', // vazio por enquanto
-    };
+      const reservation = {
+        are_id: '18', // Substituir futuramente com o dado da arena selecionada
+        usr_cod_cad: userId,
+        usr_id: userId,
+        res_player_name: playerName,
+        res_cel_phone: playerPhone,
+        res_value: price,
+        res_date: formattedDate,
+        res_start_time: startTime,
+        res_end_time: endTime,
+        res_qrcode: '',
+      };
 
-    // Envia a arena para a API
-    const { res, jsonData } = await createReservation(reservation);
+      // Envia a reserva
+      const { res, jsonData } = await createReservation(reservation);
 
-    if (res.ok) {
-      setShowModal(true);
-    } else {
-      setShowModal(true);
-      console.error('Erro ao registrar reserva:', jsonData);
+      if (res.ok) {
+        setShowModal(true);
+        console.log('Reserva criada com sucesso!');
+      } else {
+        setShowModal(true);
+        console.error('Erro ao registrar reserva:', jsonData);
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao registrar reserva:', error);
     }
   };
+
 
   const timeOptions = Array.from({ length: 30 }, (_, i) => {
     const totalMinutes = 8 * 60 + i * 30; // começa às 08:00
@@ -119,7 +129,7 @@ const CreateReservationPage = () => {
       <div className={styles.arenaInfosContainer}>
         <div className={styles.reservationContainer}>
           <form onSubmit={handleSubmit} className={styles.reservationForm}>
-            {/* Data da reserva */}
+
             <div className={styles.timePickerContainer}>
               <h4 className={styles.arenaInfo}>Data da reserva</h4>
               <DatePicker
@@ -133,7 +143,6 @@ const CreateReservationPage = () => {
               />
             </div>
 
-            {/* Horário de início */}
             <div className={styles.selectTimeContainer}>
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de início</h4>
@@ -158,7 +167,6 @@ const CreateReservationPage = () => {
                 </Form.Select>
               </div>
 
-              {/* Horário de término */}
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de saída</h4>
                 <Form.Select
@@ -186,11 +194,11 @@ const CreateReservationPage = () => {
               </div>
             </div>
 
-            {/* Nome do jogador */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Jogador responsável</label>
               <div className={styles.inputWrapper}>
                 <input
+                  required
                   type="text"
                   placeholder="Nome"
                   name="responsiblePlayer"
@@ -201,11 +209,11 @@ const CreateReservationPage = () => {
               </div>
             </div>
 
-            {/* Telefone */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
                 <input
+                  required
                   type="text"
                   placeholder="Telefone para contato"
                   name="contactPhone"
@@ -216,14 +224,15 @@ const CreateReservationPage = () => {
               </div>
             </div>
 
-            {/* Valor */}
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Valor (R$)</label>
               <div className={styles.inputWrapper}>
                 <input
+                  required
                   type="text"
                   placeholder="Valor"
                   name="price"
+                  step="0.01"
                   className={styles.inputText}
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
@@ -231,15 +240,34 @@ const CreateReservationPage = () => {
               </div>
             </div>
 
-            {/* Botão */}
             <div className={styles.formActions}>
-              <button type="submit" className="primaryButton">
-                Confirmar agendamento
+              <button type="submit" className="primaryButton" disabled={loadingReservation}>
+              {loadingReservation ? 'Reservando...' : 'Criar reserva'}
               </button>
             </div>
           </form>
         </div>
       </div>
+
+      {showModal && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>Reserva criada com sucesso!</h2>
+            <p className={styles.modalSubtitle}>
+              Você pode retornar para a tela principal.
+            </p>
+            <button
+              className="primaryButton"
+              onClick={() => {
+                router.push('/home/dashboard');
+                setShowModal(false);
+              }}
+            >
+              Ir para o Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
