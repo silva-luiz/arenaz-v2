@@ -36,6 +36,8 @@ const ReservationsPage = ({
     [],
   );
   const [reservationEndTime, setReservationEndTime] = useState<string[]>([]);
+  const [reservationArenaNames, setReservationArenaNames] = useState<string[]>([]);
+  const [reservationArenaCategories, setReservationArenaCategories] = useState<string[]>([]);
 
   const { data, loadingReservations, error } =
     useFetchReservations(urlFetchReservations);
@@ -53,9 +55,9 @@ const ReservationsPage = ({
       const dates = data.reservations.map((reserva) => reserva.res_date);
       const values = data.reservations.map((reserva) => reserva.res_value);
       const ids = data.reservations.map((reserva) => reserva.res_id);
-      const arenas = data.reservations.map((reserva) => reserva.res_arena);
+      const arenas = data.reservations.map((reserva) => reserva.are_name);
       const categories = data.reservations.map(
-        (reserva) => reserva.res_category,
+        (reserva) => reserva.are_category,
       );
       const phones = data.reservations.map((reserva) => reserva.res_cel_phone);
       const startTimes = data.reservations.map(
@@ -71,6 +73,9 @@ const ReservationsPage = ({
       setReservationIds(ids);
       setReservationStartTime(startTimes);
       setReservationEndTime(endTimes);
+      setReservationArenaNames(arenas);
+      setReservationArenaCategories(categories);
+
     }
   }, [data]);
 
@@ -156,10 +161,8 @@ const ReservationsPage = ({
           <tbody>
             {data?.reservations?.map((reserva, index) => (
               <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableData}>{reserva.arena}</td>{' '}
-                {/* TODO: Colocar nome e categoria da arena quando forem retornados do backend */}
-                <td className={styles.tableData}>{reserva.categoria}</td>{' '}
-                {/* TODO: Colocar nome e categoria da arena quando forem retornados do backend */}
+                <td className={styles.tableData}>{reservationArenaNames[index]}</td>{' '}
+                <td className={styles.tableData}>{reservationArenaCategories[index]}</td>{' '}
                 <td className={styles.tableData}>
                   {reservationPlayerNames[index]}
                 </td>
