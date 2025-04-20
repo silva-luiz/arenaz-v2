@@ -2,41 +2,14 @@
 import Table from 'react-bootstrap/Table';
 import styles from '../Reservations/ReservationsPage.module.scss';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import URLS from 'utils/apiRoutes';
+import { useFetchReservations } from 'hooks/useFetchReservations';
+import { useDeleteReservation } from 'hooks/useDeleteReservation';
 
-const reservations = [
-  {
-    arena: 'Arena 1',
-    categoria: 'Society',
-    locador: 'José Aldo',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 130,00',
-  },
-  {
-    arena: 'Arena 2',
-    categoria: 'Tênis',
-    locador: 'Anderson Silva',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 140,00',
-  },
-  {
-    arena: 'Arena 3',
-    categoria: 'Beach Sports',
-    locador: 'Connor McGregor',
-    contato: '(12)99123-4456',
-    data: '00/00/0000',
-    horarioEntrada: '00:00',
-    horarioSaida: '02:00',
-    valor: 'R$ 200,00',
-  },
-];
+const urlFetchReservations = URLS.GET_RESERVATIONS;
+const urlDeleteReservation = URLS.DELETE_RESERVATION;
 
 interface IReservationsPageProps {
   isExpiredSession?: boolean;
@@ -51,9 +24,55 @@ const ReservationsPage = ({
   const [modalMessage, setModalMessage] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [reservationPlayerName, setReservationPlayerName] = useState('');
-  const [reservationPlayerPhone, setReservationPlayerPhone] = useState('');
-  const [reservationAmount, setReservationAmount] = useState('');
+
+  const [reservationPlayerNames, setReservationPlayerNames] = useState<
+    string[]
+  >([]);
+  const [reservationPhones, setReservationPhones] = useState<string[]>([]);
+  const [reservationDates, setReservationDates] = useState<string[]>([]);
+  const [reservationValues, setReservationValues] = useState<number[]>([]);
+  const [reservationIds, setReservationIds] = useState<number[]>([]);
+  const [reservationStartTime, setReservationStartTime] = useState<string[]>(
+    [],
+  );
+  const [reservationEndTime, setReservationEndTime] = useState<string[]>([]);
+
+  const { data, loadingReservations, error } =
+    useFetchReservations(urlFetchReservations);
+
+  const { deleteReservation: deleteReservationRequest, loadingDelete } =
+    useDeleteReservation(urlDeleteReservation);
+
+  const reservations = data?.reservations || [];
+  useEffect(() => {
+    if (data?.reservations) {
+      // Mapeando as propriedades de cada reserva
+      const playerNames = data.reservations.map(
+        (reserva) => reserva.res_player_name,
+      );
+      const dates = data.reservations.map((reserva) => reserva.res_date);
+      const values = data.reservations.map((reserva) => reserva.res_value);
+      const ids = data.reservations.map((reserva) => reserva.res_id);
+      const arenas = data.reservations.map((reserva) => reserva.res_arena);
+      const categories = data.reservations.map(
+        (reserva) => reserva.res_category,
+      );
+      const phones = data.reservations.map((reserva) => reserva.res_cel_phone);
+      const startTimes = data.reservations.map(
+        (reserva) => reserva.res_start_time,
+      );
+      const endTimes = data.reservations.map((reserva) => reserva.res_end_time);
+
+      // Salvando no estado
+      setReservationPlayerNames(playerNames);
+      setReservationPhones(phones);
+      setReservationDates(dates);
+      setReservationValues(values);
+      setReservationIds(ids);
+      setReservationStartTime(startTimes);
+      setReservationEndTime(endTimes);
+    }
+  }, [data]);
 
   const router = useRouter();
 
@@ -69,6 +88,30 @@ const ReservationsPage = ({
     setModalMessage('Deseja excluir essa reserva?');
     setIsEditMode(false);
     setShowModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedReservation) return;
+
+    const { res, jsonData } = await deleteReservationRequest(
+      selectedReservation.res_id,
+    );
+
+    console.log('Resposta da API:', res, jsonData);
+
+    if (res && res.ok) {
+      setModalMessage('Reserva excluída com sucesso!');
+      setShowModal(true);
+      window.location.reload();
+    } else {
+      setModalMessage(
+        jsonData?.message ||
+          'Erro ao excluir a reserva. Tente novamente mais tarde.',
+      );
+      setShowModal(true);
+    }
+
+    setShowModal(false);
   };
 
   const confirmCancel = () => {
@@ -111,17 +154,25 @@ const ReservationsPage = ({
             </tr>
           </thead>
           <tbody>
-            {reservations.map((reserva, index) => (
+            {data?.reservations?.map((reserva, index) => (
               <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableData}>{reserva.arena}</td>
-                <td className={styles.tableData}>{reserva.categoria}</td>
-                <td className={styles.tableData}>{reserva.locador}</td>
-                <td className={styles.tableData}>{reserva.contato}</td>
-                <td className={styles.tableData}>{reserva.data}</td>
+                <td className={styles.tableData}>{reserva.arena}</td>{' '}
+                {/* TODO: Colocar nome e categoria da arena quando forem retornados do backend */}
+                <td className={styles.tableData}>{reserva.categoria}</td>{' '}
+                {/* TODO: Colocar nome e categoria da arena quando forem retornados do backend */}
                 <td className={styles.tableData}>
-                  {reserva.horarioEntrada} - {reserva.horarioSaida}
+                  {reservationPlayerNames[index]}
                 </td>
-                <td className={styles.tableData}>{reserva.valor}</td>
+                <td className={styles.tableData}>{reservationPhones[index]}</td>
+                <td className={styles.tableData}>
+                  {reservationDates[index] || 'Data não disponível'}
+                </td>
+                <td className={styles.tableData}>
+                  {reservationStartTime[index]} - {reservationEndTime[index]}
+                </td>
+                <td className={styles.tableData}>
+                  R$ {reservationValues[index] || 'Valor não disponível'}
+                </td>
                 <td className={styles.tableData}>
                   <FaEdit
                     className={styles.iconButton}
@@ -144,7 +195,7 @@ const ReservationsPage = ({
 
       {/* Versão mobile: cards */}
       <div className={styles.mobileCardsContainer}>
-        {reservations.map((reserva, index) => (
+        {data?.reservations?.map((reserva, index) => (
           <div key={index} className={styles.mobileCard}>
             <p>
               <strong>Arena:</strong> {reserva.arena}
@@ -153,20 +204,22 @@ const ReservationsPage = ({
               <strong>Categoria:</strong> {reserva.categoria}
             </p>
             <p>
-              <strong>Locador:</strong> {reserva.locador}
+              <strong>Locador:</strong> {reservationPlayerNames[index]}
             </p>
             <p>
-              <strong>Contato:</strong> {reserva.contato}
+              <strong>Contato:</strong> {reservationPhones[index]}
             </p>
             <p>
-              <strong>Data:</strong> {reserva.data}
+              <strong>Data:</strong>{' '}
+              {reservationDates[index] || 'Data não disponível'}
             </p>
             <p>
-              <strong>Horário:</strong> {reserva.horarioEntrada} -{' '}
-              {reserva.horarioSaida}
+              <strong>Horário:</strong> {reservationStartTime[index]} -{' '}
+              {reservationEndTime[index]}
             </p>
             <p>
-              <strong>Valor:</strong> {reserva.valor}
+              <strong>Valor:</strong> R${' '}
+              {reservationValues[index] || 'Valor não disponível'}
             </p>
             <div className={styles.mobileActions}>
               <FaEdit
@@ -268,26 +321,27 @@ const ReservationsPage = ({
               </div>
             )}
 
-            {!isEditMode &&
-              modalMessage === 'Deseja excluir essa reserva?' && (
-                <div className={styles.modalActions}>
-                  <p className={styles.modalSubtitle}>
-                    Essa ação não poderá ser desfeita
-                  </p>
-                  <button
-                    className="outlinedButton"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Voltar
-                  </button>
-                  <button className="primaryButton" onClick={confirmCancel}>
-                    Confirmar
-                  </button>
-                </div>
-              )}
+            {!isEditMode && modalMessage === 'Deseja excluir essa reserva?' && (
+              <div className={styles.modalActions}>
+                <p className={styles.modalSubtitle}>
+                  Essa ação não poderá ser desfeita
+                </p>
+                <button className="outlinedButton" onClick={confirmCancel}>
+                  Voltar
+                </button>
+                <button
+                  className="primaryButton"
+                  onClick={async () => {
+                    handleConfirmDelete();
+                  }}
+                >
+                  Confirmar
+                </button>
+              </div>
+            )}
 
             {!isEditMode &&
-              modalMessage === 'Reserva cancelada com sucesso!' && (
+              modalMessage === 'Reserva excluída com sucesso!' && (
                 <>
                   <p className={styles.modalSubtitle}>
                     A reserva foi cancelada.
