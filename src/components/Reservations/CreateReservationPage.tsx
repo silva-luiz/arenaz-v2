@@ -1,26 +1,32 @@
 'use client';
 
+import Form from 'react-bootstrap/Form';
+import DatePicker from 'react-datepicker';
 import { registerLocale } from 'react-datepicker';
 import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
-import DatePicker from 'react-datepicker';
-import Form from 'react-bootstrap/Form';
 import { format } from 'date-fns';
 
-import styles from '../Reservations/CreateReservationPage.module.scss';
-import 'react-datepicker/dist/react-datepicker.css';
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';
-import Button from 'components/Button';
-import Link from 'next/link';
+import 'react-datepicker/dist/react-datepicker.css';
+import styles from '../Reservations/CreateReservationPage.module.scss';
 import URLS from 'utils/apiRoutes';
 import { useCreateReservation } from 'hooks/useCreateReservation';
 import { useRouter } from 'next/navigation';
+import { useFetchArenaInfo } from 'hooks/useFetchArenaInfo';
+import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
 
 registerLocale('pt-BR', ptBR);
 
 const reservationUrl = URLS.CREATE_RESERVATION;
+const arenaInfoUrl = URLS.GET_SINGLE_ARENA_INFO;
+const availableHoursURL = URLS.FETCH_AVAILABLE_HOURS;
 
-const CreateReservationPage = () => {
+interface Props {
+  arenaId: number;
+}
+
+const CreateReservationPage = ({ arenaId }: Props) => {
   const [startDate, setStartDate] = useState(new Date());
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -29,8 +35,14 @@ const CreateReservationPage = () => {
   const [price, setPrice] = useState('');
   const [showModal, setShowModal] = useState(false);
 
+  const { arenaData, loadingArena, error } = useFetchArenaInfo(
+    `${arenaInfoUrl}/${arenaId}`,
+  );
+
   const { createReservation, loadingReservation, reservationError } =
     useCreateReservation(reservationUrl);
+
+  const { fetchAvailableHours } = useFetchAvailableHours(availableHoursURL);
 
   const router = useRouter();
 
@@ -44,7 +56,38 @@ const CreateReservationPage = () => {
     console.log('Horário de término selecionado:', e.target.value);
   };
 
-  const are_id = '18'; // ALTERAR PARA PEGAR O ID DA ARENA SELECIONADA
+  const handleDateChange = async (date) => {
+    if (!arenaId) {
+      console.error('Arena ID not available');
+      return;
+    }
+
+    const reservationHoursData = {
+      are_id: arenaId,
+      res_date: format(date, 'dd-MM-yyyy'),
+    };
+
+    try {
+      const { res, jsonData } = await fetchAvailableHours(reservationHoursData);
+      if (res.ok) {
+        console.log('Horários disponíveis:', jsonData);
+      } else {
+        console.error('Erro ao buscar horários disponíveis:', res.statusText);
+      }
+    } catch (err) {
+      console.error('Erro na requisição de horários:', err);
+    }
+  };
+
+
+  const arena = arenaData?.arena;
+
+  const arenaName = arena?.are_name || 'Arena não encontrada';
+  const arenaCategory = arena?.are_category || 'Categoria não encontrada';
+  const arenaPrice = arena?.are_price || 'Preço não encontrado';
+  const userId = arenaData?.usr_id || 'Usuário não encontrado';
+
+  const are_id = arenaId;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,12 +100,9 @@ const CreateReservationPage = () => {
     }
 
     try {
-      const userId = 1; //TODO: PEGAR ID DO USUÁRIO
-
       const formattedDate = format(startDate, 'dd-MM-yyyy');
-
       const reservation = {
-        are_id: '18', // Substituir futuramente com o dado da arena selecionada
+        are_id: arenaId,
         usr_cod_cad: userId,
         usr_id: userId,
         res_player_name: playerName,
@@ -74,21 +114,17 @@ const CreateReservationPage = () => {
         res_qrcode: '',
       };
 
-      // Envia a reserva
       const { res, jsonData } = await createReservation(reservation);
 
       if (res.ok) {
         setShowModal(true);
-        console.log('Reserva criada com sucesso!');
       } else {
         setShowModal(true);
-        console.error('Erro ao registrar reserva:', jsonData);
       }
     } catch (error) {
       console.error('Erro inesperado ao registrar reserva:', error);
     }
   };
-
 
   const timeOptions = Array.from({ length: 30 }, (_, i) => {
     const totalMinutes = 8 * 60 + i * 30; // começa às 08:00
@@ -104,19 +140,20 @@ const CreateReservationPage = () => {
 
   return (
     <div>
+      <h2 className={styles.pageTitle}>Criar nova reserva</h2>
       <h2 className={styles.pageTitle}>Informações da Arena</h2>
       <div className={styles.arenaInfosContainer}>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Nome da Arena</h4>
-          <p>Arena name 1</p>
+          <p>{arenaName}</p>
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Categoria</h4>
-          <p className={styles.arenaCategory}>Society</p>
+          <p className={styles.arenaCategory}>{arenaCategory}</p>
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Valor / hora</h4>
-          <p>R$ 100/hora</p>
+          <p>R$ {arenaPrice}/hora</p>
         </div>
       </div>
 
@@ -129,12 +166,14 @@ const CreateReservationPage = () => {
       <div className={styles.arenaInfosContainer}>
         <div className={styles.reservationContainer}>
           <form onSubmit={handleSubmit} className={styles.reservationForm}>
-
             <div className={styles.timePickerContainer}>
               <h4 className={styles.arenaInfo}>Data da reserva</h4>
               <DatePicker
                 selected={startDate}
-                onChange={(date) => setStartDate(date)}
+                onChange={(date) => {
+                  setStartDate(date);
+                  handleDateChange(date);
+                }}
                 dateFormat="dd/MM/yyyy"
                 locale="pt-BR"
                 minDate={new Date()}
@@ -241,8 +280,12 @@ const CreateReservationPage = () => {
             </div>
 
             <div className={styles.formActions}>
-              <button type="submit" className="primaryButton" disabled={loadingReservation}>
-              {loadingReservation ? 'Reservando...' : 'Criar reserva'}
+              <button
+                type="submit"
+                className="primaryButton"
+                disabled={loadingReservation}
+              >
+                {loadingReservation ? 'Reservando...' : 'Criar reserva'}
               </button>
             </div>
           </form>

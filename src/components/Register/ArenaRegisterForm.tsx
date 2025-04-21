@@ -6,6 +6,7 @@ import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo
 import URLS from '../../utils/apiRoutes';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@mui/material';
+import { Form } from 'react-bootstrap';
 
 const url = URLS.REGISTER_ARENA;
 
@@ -19,12 +20,36 @@ const ArenaRegisterForm = () => {
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
+  const [arenaStartHour, setArenaStartHour] = useState('');
+  const [arenaClosingHour, setArenaClosingHour] = useState('');
   const [showModal, setShowModal] = useState(false);
+
+  const arenaOpeningHours = `${arenaStartHour}-${arenaClosingHour}`;
 
   const { registerArena, loading, error } = useRegisterArena(url);
   const router = useRouter();
 
   const est_id = data ? data.est_id : null;
+
+  const timeOptions = Array.from({ length: 48 }, (_, i) => {
+    const totalMinutes = i * 30;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const formatted = `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}`;
+    return formatted;
+  });
+
+  const handleStartTimeChange = (e) => {
+    setArenaStartHour(e.target.value);
+    console.log('Horário de início selecionado:', e.target.value);
+  };
+
+  const handleEndTimeChange = (e) => {
+    setArenaClosingHour(e.target.value);
+    console.log('Horário de término selecionado:', e.target.value);
+  };
 
   useEffect(() => {
     console.log('📡 establishmentInfo:', est_id);
@@ -48,6 +73,7 @@ const ArenaRegisterForm = () => {
       are_category: arenaCategory,
       usr_cod_cad: userId,
       est_id: est_id,
+      are_opening_hours: arenaOpeningHours,
     };
 
     // Envia a arena para a API
@@ -155,6 +181,59 @@ const ArenaRegisterForm = () => {
               <label htmlFor="other">Outra</label>
             </div>
           </div>
+
+          <h3 className={styles.arenaRegisterSubtitle}>Horário de funcionamento</h3>
+
+          <div className={styles.selectTimeContainer}>
+              <div className={styles.timePickerContainer}>
+                <h4 className={styles.arenaInfo}>Horário de início</h4>
+                <Form.Select
+                  aria-label="Selecione o horário de início"
+                  onChange={handleStartTimeChange}
+                  value={arenaStartHour}
+                  className={styles.selectTime}
+                >
+                  <option value="" className={styles.optionDefault}>
+                    Selecione um horário...
+                  </option>
+                  {timeOptions.map((time) => (
+                    <option
+                      key={time}
+                      value={time}
+                      className={styles.optionTime}
+                    >
+                      {time}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+
+              <div className={styles.timePickerContainer}>
+                <h4 className={styles.arenaInfo}>Horário final</h4>
+                <Form.Select
+                  aria-label="Selecione o horário de término"
+                  onChange={handleEndTimeChange}
+                  value={arenaClosingHour}
+                  disabled={!arenaStartHour}
+                  className={styles.selectTime}
+                >
+                  <option value="" className={styles.optionDefault}>
+                    Selecione um horário...
+                  </option>
+                  {timeOptions
+                    .filter((time) => time > arenaStartHour)
+                    .map((time) => (
+                      <option
+                        key={time}
+                        value={time}
+                        className={styles.optionTime}
+                      >
+                        {time}
+                      </option>
+                    ))}
+                </Form.Select>
+              </div>
+            </div>
 
           <div className={styles.actionButtonContainer}>
             {loading && (

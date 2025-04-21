@@ -117,7 +117,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
     } else {
       setModalMessage(
         jsonData?.message ||
-        'Erro ao excluir a arena. Tente novamente mais tarde.',
+          'Erro ao excluir a arena. Tente novamente mais tarde.',
       );
       setModalIsOpen(true);
     }
@@ -156,7 +156,6 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
               Você ainda não tem nenhuma Arena cadastrada. Adicione uma nova!
             </p>
           </div>
-
         ) : (
           <div className={styles.cardsContainer}>
             {dashboardData &&
@@ -168,7 +167,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
                     arenaName={arena.are_name}
                     arenaCategory={arena.are_category}
                     arenaPrice={arena.are_price}
-                    goToReservation={`/home/create-reservation`}
+                    goToReservation={`/home/create-reservation/${arena.are_id}`}
                     onEdit={() => handleEditArena(arena)}
                     onDelete={() => handleDeleteArena(arena)}
                   />
