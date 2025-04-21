@@ -24,13 +24,13 @@ const URLS = {
   GET_ARENA_INFO: `${BASE_URL}api/arena/get-arena`,
   UPDATE_ARENA_INFO: `${BASE_URL}api/arena/update`,
   DELETE_ARENA: `${BASE_URL}api/arena`,
-  GET_SINGLE_ARENA_INFO: `${BASE_URL}api/arena/{id}`,
+  GET_SINGLE_ARENA_INFO: `${BASE_URL}api/arena`, // enviar ID
 
   // Reservation
   GET_RESERVATIONS: `${BASE_URL}api/reservation`,
   CREATE_RESERVATION: `${BASE_URL}api/reservation`,
-  DELETE_RESERVATION: `${BASE_URL}api/reservation/del`,
-
+  DELETE_RESERVATION: `${BASE_URL}api/reservation/del`, // enviar ID
+  FETCH_AVAILABLE_HOURS: `${BASE_URL}api/reservation/arena`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,
