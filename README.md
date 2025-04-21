@@ -4,7 +4,7 @@ O ArenaZ é um sistema de gerenciamento de reservas de horários para proprietá
 
 ## Funcionalidades Principais
 
-- **Gerenciamento de Reservas**: Os proprietários podem cadastrar seus espaços esportivos e disponibilizar horários para reserva. 
+- **Gerenciamento de Reservas**: Os proprietários podem cadastrar seus espaços esportivos e disponibilizar horários para reserva.
 - **Controle de Disponibilidade**: O ArenaZ oferece um calendário interativo onde os proprietários podem visualizar os horários já reservados e os disponíveis, permitindo uma gestão mais eficiente.
 - **Relatórios e Estatísticas**: Os proprietários podem acessar informações detalhadas de utilização do espaço, histórico de reservas, faturamento e outras métricas para auxiliar na gestão do negócio.
 
@@ -21,7 +21,7 @@ O ArenaZ foi desenvolvido utilizando as seguintes tecnologias:
 
 - **Prototipação**: Figma
 - **Backend**: Laravel
-- **Frontend**: React JS
+- **Frontend**: Next JS
 - **Banco de Dados**: PostgreSQL
 
 ## Executando o projeto

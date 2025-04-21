@@ -1,9 +1,27 @@
 # ArenaZ Changelog
 
+### 21/04/25
+
+- Update de reservas [TODO]
+- Criação de reservas [DONE]
+- Fetch dos horários disponíveis por data nas reservas [DONE]
+- Listar todas as reservas [DONE]
+- Excluir reservas [DONE]
+
+### 15/04/2025
+
+- Mudanças visuais [DONE]
+- Responsividade ajustada [DONE]
+
+### 11/04/2025
+
+- Excluir arenas [DONE]
+- Editar arenas [DONE]
+
 ### 10/04/25
 
 - Fetch e update de Perfil do estabelecimento criado [DONE]
-- Refatorar update de perfil de usuário (Remover campos que não serão utilizados) [TODO]
+- Refatorar update de perfil de usuário (Remover campos que não serão utilizados) [DONE]
 
 ### 09/04/25
 
