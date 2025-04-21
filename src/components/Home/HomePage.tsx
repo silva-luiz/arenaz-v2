@@ -103,7 +103,7 @@ function HomePage({ children }) {
                       : styles.navLink
                   }
                 >
-                  Informações do estabelecimento
+                  Estabelecimento
                 </Link>
               </li>
               <li>
