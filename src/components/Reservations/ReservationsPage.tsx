@@ -7,6 +7,7 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 import URLS from 'utils/apiRoutes';
 import { useFetchReservations } from 'hooks/useFetchReservations';
 import { useDeleteReservation } from 'hooks/useDeleteReservation';
+import Link from 'next/link';
 
 const urlFetchReservations = URLS.GET_RESERVATIONS;
 const urlDeleteReservation = URLS.DELETE_RESERVATION;
@@ -36,8 +37,12 @@ const ReservationsPage = ({
     [],
   );
   const [reservationEndTime, setReservationEndTime] = useState<string[]>([]);
-  const [reservationArenaNames, setReservationArenaNames] = useState<string[]>([]);
-  const [reservationArenaCategories, setReservationArenaCategories] = useState<string[]>([]);
+  const [reservationArenaNames, setReservationArenaNames] = useState<string[]>(
+    [],
+  );
+  const [reservationArenaCategories, setReservationArenaCategories] = useState<
+    string[]
+  >([]);
 
   const { data, loadingReservations, error } =
     useFetchReservations(urlFetchReservations);
@@ -75,7 +80,6 @@ const ReservationsPage = ({
       setReservationEndTime(endTimes);
       setReservationArenaNames(arenas);
       setReservationArenaCategories(categories);
-
     }
   }, [data]);
 
@@ -161,8 +165,12 @@ const ReservationsPage = ({
           <tbody>
             {data?.reservations?.map((reserva, index) => (
               <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableData}>{reservationArenaNames[index]}</td>{' '}
-                <td className={styles.tableData}>{reservationArenaCategories[index]}</td>{' '}
+                <td className={styles.tableData}>
+                  {reservationArenaNames[index]}
+                </td>{' '}
+                <td className={styles.tableData}>
+                  {reservationArenaCategories[index]}
+                </td>{' '}
                 <td className={styles.tableData}>
                   {reservationPlayerNames[index]}
                 </td>
@@ -177,11 +185,13 @@ const ReservationsPage = ({
                   R$ {reservationValues[index] || 'Valor não disponível'}
                 </td>
                 <td className={styles.tableData}>
-                  <FaEdit
-                    className={styles.iconButton}
-                    onClick={() => handleEditClick(reserva)}
-                    title="Editar"
-                  />
+                  <Link href={`/home/update-reservation/${reserva.res_id}`}>
+                    <FaEdit
+                      className={styles.iconButton}
+                      // onClick={() => handleEditClick(reserva)}
+                      title="Editar"
+                    />
+                  </Link>
                 </td>
                 <td className={styles.tableData}>
                   <FaTrash
