@@ -90,6 +90,60 @@
   accent-color: var(--primary-color);
 }
 
+.selectTimeContainer {
+  display: flex;
+  gap: 20px;
+  padding: 10px 0;
+  justify-content: stretch;
+
+  .timePickerContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+    align-items: start;
+
+    h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-title-color);
+      margin: 0 0 4px;
+    }
+
+    select.selectTime {
+      appearance: none;
+      background-color: #fff;
+      border: 2px solid var(--primary-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      color: #333;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.1);
+      }
+
+      &:disabled {
+        background-color: #f1f1f1;
+        color: #aaa;
+        cursor: not-allowed;
+      }
+
+      option {
+        padding: 8px;
+      }
+
+      .optionDefault {
+        color: #888;
+      }
+    }
+  }
+
+}
+
 .actionButtonContainer {
   position: absolute;
   right: 20px;
