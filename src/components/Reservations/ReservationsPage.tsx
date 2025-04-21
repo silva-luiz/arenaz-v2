@@ -130,9 +130,9 @@ const ReservationsPage = ({
 
   return (
     <>
-      <h2 className={styles.reservationsTitle}>Reservas ativas</h2>
+      <h2 className={styles.reservationsTitle}>Reservas</h2>
       <p className={styles.reservationsSubtitle}>
-        Confira aqui as informações de todas as suas reservas ativas
+        Confira aqui as informações de todas as suas reservas.
       </p>
 
       {/* Tabela desktop */}

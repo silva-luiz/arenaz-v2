@@ -34,6 +34,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   const [playerPhone, setPlayerPhone] = useState('');
   const [price, setPrice] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [availableTimes, setAvailableTimes] = useState([]);
 
   const { arenaData, loadingArena, error } = useFetchArenaInfo(
     `${arenaInfoUrl}/${arenaId}`,
@@ -57,6 +58,8 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   };
 
   const handleDateChange = async (date) => {
+    setStartDate(date); // salva a data selecionada
+
     if (!arenaId) {
       console.error('Arena ID not available');
       return;
@@ -71,6 +74,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       const { res, jsonData } = await fetchAvailableHours(reservationHoursData);
       if (res.ok) {
         console.log('Horários disponíveis:', jsonData);
+        setAvailableTimes(jsonData.available_hours);
       } else {
         console.error('Erro ao buscar horários disponíveis:', res.statusText);
       }
@@ -78,7 +82,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       console.error('Erro na requisição de horários:', err);
     }
   };
-
 
   const arena = arenaData?.arena;
 
@@ -194,7 +197,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {timeOptions.map((time) => (
+                  {availableTimes.map((time) => (
                     <option
                       key={time}
                       value={time}
@@ -218,7 +221,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {timeOptions
+                  {availableTimes
                     .filter((time) => time > startTime)
                     .map((time) => (
                       <option

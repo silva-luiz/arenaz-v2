@@ -91,7 +91,7 @@ function HomePage({ children }) {
                       : styles.navLink
                   }
                 >
-                  Reservas ativas
+                  Reservas
                 </Link>
               </li>
               <li className={styles.navItem}>
