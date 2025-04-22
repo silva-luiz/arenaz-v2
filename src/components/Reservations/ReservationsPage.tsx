@@ -8,6 +8,8 @@ import URLS from 'utils/apiRoutes';
 import { useFetchReservations } from 'hooks/useFetchReservations';
 import { useDeleteReservation } from 'hooks/useDeleteReservation';
 import Link from 'next/link';
+import WarningIcon from '@mui/icons-material/Warning';
+import { CircularProgress } from '@mui/material';
 
 const urlFetchReservations = URLS.GET_RESERVATIONS;
 const urlDeleteReservation = URLS.DELETE_RESERVATION;
@@ -24,7 +26,7 @@ const ReservationsPage = ({
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
 
   const [reservationPlayerNames, setReservationPlayerNames] = useState<
     string[]
@@ -85,17 +87,10 @@ const ReservationsPage = ({
 
   const router = useRouter();
 
-  const handleEditClick = (reservation: any) => {
-    setSelectedReservation(reservation);
-    setModalMessage('Editar reserva');
-    setIsEditMode(true);
-    setShowModal(true);
-  };
-
   const handleDeleteClick = (reservation: any) => {
     setSelectedReservation(reservation);
     setModalMessage('Deseja excluir essa reserva?');
-    setIsEditMode(false);
+    setIsDeleteMode(true);
     setShowModal(true);
   };
 
@@ -140,71 +135,86 @@ const ReservationsPage = ({
       </p>
 
       {/* Tabela desktop */}
-      <div className={styles.tableResponsive}>
-        <Table
-          striped
-          bordered
-          hover
-          variant="dark"
-          size="sm"
-          className={styles.customTable}
-        >
-          <thead>
-            <tr className={styles.tableHeaderRow}>
-              <th className={styles.tableHeader}>Arena</th>
-              <th className={styles.tableHeader}>Categoria</th>
-              <th className={styles.tableHeader}>Locador</th>
-              <th className={styles.tableHeader}>Contato</th>
-              <th className={styles.tableHeader}>Data</th>
-              <th className={styles.tableHeader}>Horário</th>
-              <th className={styles.tableHeader}>Valor</th>
-              <th className={styles.tableHeader}>Editar</th>
-              <th className={styles.tableHeader}>Excluir</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data?.reservations?.map((reserva, index) => (
-              <tr key={index} className={styles.tableRow}>
-                <td className={styles.tableData}>
-                  {reservationArenaNames[index]}
-                </td>{' '}
-                <td className={styles.tableData}>
-                  {reservationArenaCategories[index]}
-                </td>{' '}
-                <td className={styles.tableData}>
-                  {reservationPlayerNames[index]}
-                </td>
-                <td className={styles.tableData}>{reservationPhones[index]}</td>
-                <td className={styles.tableData}>
-                  {reservationDates[index] || 'Data não disponível'}
-                </td>
-                <td className={styles.tableData}>
-                  {reservationStartTime[index]} - {reservationEndTime[index]}
-                </td>
-                <td className={styles.tableData}>
-                  R$ {reservationValues[index] || 'Valor não disponível'}
-                </td>
-                <td className={styles.tableData}>
-                  <Link href={`/home/update-reservation/${reserva.res_id}`}>
-                    <FaEdit
-                      className={styles.iconButton}
-                      // onClick={() => handleEditClick(reserva)}
-                      title="Editar"
-                    />
-                  </Link>
-                </td>
-                <td className={styles.tableData}>
-                  <FaTrash
-                    className={styles.iconButtonTrash}
-                    onClick={() => handleDeleteClick(reserva)}
-                    title="Cancelar"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </div>
+      {loadingReservations ? (
+        <div className={styles.loadingContainer}>
+          <CircularProgress color="warning" />
+          <p className={styles.loadingText}>Carregando reservas...</p>
+        </div>
+      ) : (
+        <div className={styles.tableResponsive}>
+          {data?.reservations?.length > 0 ? (
+            <Table
+              striped
+              bordered
+              hover
+              variant="dark"
+              size="sm"
+              className={styles.customTable}
+            >
+              <thead>
+                <tr className={styles.tableHeaderRow}>
+                  <th className={styles.tableHeader}>Arena</th>
+                  <th className={styles.tableHeader}>Categoria</th>
+                  <th className={styles.tableHeader}>Locador</th>
+                  <th className={styles.tableHeader}>Contato</th>
+                  <th className={styles.tableHeader}>Data</th>
+                  <th className={styles.tableHeader}>Horário</th>
+                  <th className={styles.tableHeader}>Valor</th>
+                  <th className={styles.tableHeader}>Editar</th>
+                  <th className={styles.tableHeader}>Excluir</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.reservations.map((reserva, index) => (
+                  <tr key={index} className={styles.tableRow}>
+                    <td className={styles.tableData}>
+                      {reservationArenaNames[index]}
+                    </td>
+                    <td className={styles.tableData}>
+                      {reservationArenaCategories[index]}
+                    </td>
+                    <td className={styles.tableData}>
+                      {reservationPlayerNames[index]}
+                    </td>
+                    <td className={styles.tableData}>
+                      {reservationPhones[index]}
+                    </td>
+                    <td className={styles.tableData}>
+                      {reservationDates[index] || 'Data não disponível'}
+                    </td>
+                    <td className={styles.tableData}>
+                      {reservationStartTime[index]} -{' '}
+                      {reservationEndTime[index]}
+                    </td>
+                    <td className={styles.tableData}>
+                      R$ {reservationValues[index] || 'Valor não disponível'}
+                    </td>
+                    <td className={styles.tableData}>
+                      <Link href={`/home/update-reservation/${reserva.res_id}`}>
+                        <FaEdit className={styles.iconButton} title="Editar" />
+                      </Link>
+                    </td>
+                    <td className={styles.tableData}>
+                      <FaTrash
+                        className={styles.iconButtonTrash}
+                        onClick={() => handleDeleteClick(reserva)}
+                        title="Cancelar"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <div className={styles.noReservationsContainer}>
+              <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+              <p className={styles.noReservationsMessage}>
+                Você ainda não tem reservas cadastradas.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Versão mobile: cards */}
       <div className={styles.mobileCardsContainer}>
@@ -235,11 +245,9 @@ const ReservationsPage = ({
               {reservationValues[index] || 'Valor não disponível'}
             </p>
             <div className={styles.mobileActions}>
-              <FaEdit
-                className={styles.iconButton}
-                onClick={() => handleEditClick(reserva)}
-                title="Editar"
-              />
+              <Link href={`/home/update-reservation/${reserva.res_id}`}>
+                <FaEdit className={styles.iconButton} title="Editar" />
+              </Link>
               <FaTrash
                 className={styles.iconButton}
                 onClick={() => handleDeleteClick(reserva)}
@@ -250,110 +258,32 @@ const ReservationsPage = ({
         ))}
       </div>
 
-      {/* Modal de edição ou cancelamento */}
+      {/* Modal de cancelamento */}
       {showModal && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
             <h2 className={styles.modalTitle}>{modalMessage}</h2>
-
-            {isEditMode && selectedReservation && (
-              <div className={styles.modalActions}>
-                <p className={styles.modalSubtitle}>
-                  <strong>Arena:</strong> {selectedReservation.arena}
-                </p>
-                <p className={styles.modalSubtitle}>
-                  <strong>Categoria:</strong> {selectedReservation.categoria}
-                </p>
-                <div className={styles.formContainer}>
-                  <div className={styles.inputContainer}>
-                    <label htmlFor="playerName" className={styles.inputLabel}>
-                      Jogador locador
-                    </label>
-                    <div className={styles.inputWrapper}>
-                      <input
-                        type="text"
-                        id="playerName"
-                        value={reservationPlayerName}
-                        onChange={(e) =>
-                          setReservationPlayerName(e.target.value)
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
+            {isDeleteMode &&
+              modalMessage === 'Deseja excluir essa reserva?' && (
+                <div className={styles.modalActions}>
+                  <p className={styles.modalSubtitle}>
+                    Essa ação não poderá ser desfeita
+                  </p>
+                  <button className="outlinedButton" onClick={confirmCancel}>
+                    Voltar
+                  </button>
+                  <button
+                    className="primaryButton"
+                    onClick={async () => {
+                      handleConfirmDelete();
+                    }}
+                  >
+                    Confirmar
+                  </button>
                 </div>
-                <div className={styles.formContainer}>
-                  <div className={styles.inputContainer}>
-                    <label htmlFor="playerPhone" className={styles.inputLabel}>
-                      Telefone de contato
-                    </label>
-                    <div className={styles.inputWrapper}>
-                      <input
-                        type="text"
-                        id="playerPhone"
-                        value={reservationPlayerPhone}
-                        onChange={(e) =>
-                          setReservationPlayerPhone(e.target.value)
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.formContainer}>
-                  <div className={styles.inputContainer}>
-                    <label
-                      htmlFor="reservationAmount"
-                      className={styles.inputLabel}
-                    >
-                      Valor da reserva
-                    </label>
-                    <div className={styles.inputWrapper}>
-                      <input
-                        type="text"
-                        id="reservationAmount"
-                        value={reservationAmount}
-                        onChange={(e) => setReservationAmount(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                <button
-                  className="outlinedButton"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="primaryButton"
-                  onClick={() => setShowModal(false)}
-                >
-                  Salvar
-                </button>
-              </div>
-            )}
+              )}
 
-            {!isEditMode && modalMessage === 'Deseja excluir essa reserva?' && (
-              <div className={styles.modalActions}>
-                <p className={styles.modalSubtitle}>
-                  Essa ação não poderá ser desfeita
-                </p>
-                <button className="outlinedButton" onClick={confirmCancel}>
-                  Voltar
-                </button>
-                <button
-                  className="primaryButton"
-                  onClick={async () => {
-                    handleConfirmDelete();
-                  }}
-                >
-                  Confirmar
-                </button>
-              </div>
-            )}
-
-            {!isEditMode &&
+            {isDeleteMode &&
               modalMessage === 'Reserva excluída com sucesso!' && (
                 <>
                   <p className={styles.modalSubtitle}>

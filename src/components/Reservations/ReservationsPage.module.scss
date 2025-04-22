@@ -1,3 +1,32 @@
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  .loadingText{
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-top: 1rem;
+  }
+}
+
+.noReservationsContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  .noReservationsMessage {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-top: 20px;
+  }
+
+}
+
+
 .reservationsTitle {
   font-size: 1.8rem;
   font-weight: bold;
