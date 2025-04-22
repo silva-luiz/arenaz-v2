@@ -221,6 +221,39 @@
   }
 }
 
+.society {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  background-color: var(--success);
+  color: var(--secondary-title-color);
+}
+
+.tenis {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  background-color: var(--warning);
+  color: var(--secondary-title-color);
+}
+
+.beach {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  background-color: var(--primary-color);
+  color: var(--title-color);
+}
+
+.outra {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  background-color: var(--title-color);
+  color: var(--secondary-title-color);
+}
+
+
 // Tabela
 .table-responsive {
   margin: 20px 0;
@@ -239,7 +272,7 @@
 
   th {
     background-color: #2c2c2e;
-    color: #fff;
+    color: var(--secondary-title-color);
   }
 
   tbody {
@@ -259,7 +292,7 @@
     }
 
     td {
-      color: #ddd;
+      color: var(--secondary-title-color);
       font-size: 14px;
     }
   }

@@ -15,6 +15,7 @@ import { useCreateReservation } from 'hooks/useCreateReservation';
 import { useRouter } from 'next/navigation';
 import { useFetchArenaInfo } from 'hooks/useFetchArenaInfo';
 import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
+import { CategoryLabel } from './CategoryLabel';
 
 registerLocale('pt-BR', ptBR);
 
@@ -152,7 +153,8 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Categoria</h4>
-          <p className={styles.arenaCategory}>{arenaCategory}</p>
+            <CategoryLabel category={arenaCategory} />
+
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Valor / hora</h4>
