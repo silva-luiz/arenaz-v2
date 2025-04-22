@@ -13,9 +13,7 @@ const url = URLS.REGISTER_ARENA;
 const ArenaRegisterForm = () => {
   // const location = useLocation();
 
-  const { data } = useFetchEstablishmentInfo(
-    URLS.ESTABLISHMENT_INFO,
-  );
+  const { data } = useFetchEstablishmentInfo(URLS.ESTABLISHMENT_INFO);
 
   const [arenaName, setArenaName] = useState('');
   const [arenaPrice, setArenaPrice] = useState('');
@@ -78,6 +76,8 @@ const ArenaRegisterForm = () => {
 
     // Envia a arena para a API
     const { res, jsonData } = await registerArena(arena);
+
+    console.log(`RES AQUI ${res}`);
 
     if (res.ok) {
       setShowModal(true);
@@ -182,21 +182,45 @@ const ArenaRegisterForm = () => {
             </div>
           </div>
 
-          <h3 className={styles.arenaRegisterSubtitle}>Horário de funcionamento</h3>
+          <h3 className={styles.arenaRegisterSubtitle}>
+            Horário de funcionamento
+          </h3>
 
           <div className={styles.selectTimeContainer}>
-              <div className={styles.timePickerContainer}>
-                <h4 className={styles.arenaInfo}>Horário de início</h4>
-                <Form.Select
-                  aria-label="Selecione o horário de início"
-                  onChange={handleStartTimeChange}
-                  value={arenaStartHour}
-                  className={styles.selectTime}
-                >
-                  <option value="" className={styles.optionDefault}>
-                    Selecione um horário...
+            <div className={styles.timePickerContainer}>
+              <h4 className={styles.arenaInfo}>Horário de início</h4>
+              <Form.Select
+                aria-label="Selecione o horário de início"
+                onChange={handleStartTimeChange}
+                value={arenaStartHour}
+                className={styles.selectTime}
+              >
+                <option value="" className={styles.optionDefault}>
+                  Selecione um horário...
+                </option>
+                {timeOptions.map((time) => (
+                  <option key={time} value={time} className={styles.optionTime}>
+                    {time}
                   </option>
-                  {timeOptions.map((time) => (
+                ))}
+              </Form.Select>
+            </div>
+
+            <div className={styles.timePickerContainer}>
+              <h4 className={styles.arenaInfo}>Horário final</h4>
+              <Form.Select
+                aria-label="Selecione o horário de término"
+                onChange={handleEndTimeChange}
+                value={arenaClosingHour}
+                disabled={!arenaStartHour}
+                className={styles.selectTime}
+              >
+                <option value="" className={styles.optionDefault}>
+                  Selecione um horário...
+                </option>
+                {timeOptions
+                  .filter((time) => time > arenaStartHour)
+                  .map((time) => (
                     <option
                       key={time}
                       value={time}
@@ -205,40 +229,14 @@ const ArenaRegisterForm = () => {
                       {time}
                     </option>
                   ))}
-                </Form.Select>
-              </div>
-
-              <div className={styles.timePickerContainer}>
-                <h4 className={styles.arenaInfo}>Horário final</h4>
-                <Form.Select
-                  aria-label="Selecione o horário de término"
-                  onChange={handleEndTimeChange}
-                  value={arenaClosingHour}
-                  disabled={!arenaStartHour}
-                  className={styles.selectTime}
-                >
-                  <option value="" className={styles.optionDefault}>
-                    Selecione um horário...
-                  </option>
-                  {timeOptions
-                    .filter((time) => time > arenaStartHour)
-                    .map((time) => (
-                      <option
-                        key={time}
-                        value={time}
-                        className={styles.optionTime}
-                      >
-                        {time}
-                      </option>
-                    ))}
-                </Form.Select>
-              </div>
+              </Form.Select>
             </div>
+          </div>
 
           <div className={styles.actionButtonContainer}>
             {loading && (
               <button className="primaryButton" type="submit" disabled>
-                <CircularProgress color="inherit" size="20px"/>
+                <CircularProgress color="inherit" size="20px" />
               </button>
             )}
             {!loading && (

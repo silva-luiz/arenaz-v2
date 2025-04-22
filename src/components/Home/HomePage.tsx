@@ -1,22 +1,28 @@
-'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '../Home/HomePage.module.scss';
 import arenaZLogo from '../../../public/images/arenaz-logo.png';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// import { faUser } from '@fortawesome/free-solid-svg-icons';
+import { authService } from 'lib/api';
 
 function HomePage({ children }) {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
-  const handleLogout = () => {
-    // Lógica de logout, como limpar o token ou o estado do usuário.
-    setShowModal(false);
-    router.push('/'); // Redireciona para a página inicial
-  };
   const pathname = usePathname();
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('auth-token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    authService.logout();
+    setShowModal(false);
+    router.push('/login');
+  };
 
   return (
     <div className={styles.container}>
@@ -30,7 +36,6 @@ function HomePage({ children }) {
           Sair
         </button>
       </header>
-
       {/* Modal de Confirmação de Logout */}
       {showModal && (
         <div className={styles.modal}>
