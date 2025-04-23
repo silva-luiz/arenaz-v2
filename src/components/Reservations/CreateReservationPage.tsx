@@ -115,7 +115,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         res_date: formattedDate,
         res_start_time: startTime,
         res_end_time: endTime,
-        res_qrcode: '',
+        // res_qrcode: '',
       };
 
       const { res, jsonData } = await createReservation(reservation);
