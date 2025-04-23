@@ -115,7 +115,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         res_date: formattedDate,
         res_start_time: startTime,
         res_end_time: endTime,
-
       };
 
       const { res, jsonData } = await createReservation(reservation);
@@ -153,8 +152,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Categoria</h4>
-            <CategoryLabel category={arenaCategory} />
-
+          <CategoryLabel category={arenaCategory} />
         </div>
         <div className={styles.singleInfoContainer}>
           <h4 className={styles.arenaInfo}>Valor / hora</h4>
