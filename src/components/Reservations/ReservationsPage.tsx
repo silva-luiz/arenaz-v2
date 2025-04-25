@@ -34,6 +34,9 @@ const ReservationsPage = ({
   const [reservationPhones, setReservationPhones] = useState<string[]>([]);
   const [reservationDates, setReservationDates] = useState<string[]>([]);
   const [reservationValues, setReservationValues] = useState<number[]>([]);
+  const [paymentAdvanceValues, setPaymentAdvanceValues] = useState<number[]>(
+    [],
+  );
   const [reservationIds, setReservationIds] = useState<number[]>([]);
   const [reservationStartTime, setReservationStartTime] = useState<string[]>(
     [],
@@ -61,6 +64,9 @@ const ReservationsPage = ({
       );
       const dates = data.reservations.map((reserva) => reserva.res_date);
       const values = data.reservations.map((reserva) => reserva.res_value);
+      const paymentAdvance = data.reservations.map(
+        (reserva) => reserva.res_payment_advance,
+      );
       const ids = data.reservations.map((reserva) => reserva.res_id);
       const arenas = data.reservations.map((reserva) => reserva.are_name);
       const categories = data.reservations.map(
@@ -77,6 +83,7 @@ const ReservationsPage = ({
       setReservationPhones(phones);
       setReservationDates(dates);
       setReservationValues(values);
+      setPaymentAdvanceValues(paymentAdvance);
       setReservationIds(ids);
       setReservationStartTime(startTimes);
       setReservationEndTime(endTimes);
@@ -160,6 +167,7 @@ const ReservationsPage = ({
                   <th className={styles.tableHeader}>Data</th>
                   <th className={styles.tableHeader}>Horário</th>
                   <th className={styles.tableHeader}>Valor</th>
+                  <th className={styles.tableHeader}>Valor adiantado</th>
                   <th className={styles.tableHeader}>Editar</th>
                   <th className={styles.tableHeader}>Excluir</th>
                 </tr>
@@ -188,6 +196,9 @@ const ReservationsPage = ({
                     </td>
                     <td className={styles.tableData}>
                       R$ {reservationValues[index] || 'Valor não disponível'}
+                    </td>
+                    <td className={styles.tableData}>
+                      R$ {paymentAdvanceValues[index] || 0}
                     </td>
                     <td className={styles.tableData}>
                       <Link href={`/home/update-reservation/${reserva.res_id}`}>
@@ -243,6 +254,10 @@ const ReservationsPage = ({
             <p>
               <strong>Valor:</strong> R${' '}
               {reservationValues[index] || 'Valor não disponível'}
+            </p>
+            <p>
+              <strong>Valor adiantado:</strong> R${' '}
+              {paymentAdvanceValues[index] || 0}
             </p>
             <div className={styles.mobileActions}>
               <Link href={`/home/update-reservation/${reserva.res_id}`}>
