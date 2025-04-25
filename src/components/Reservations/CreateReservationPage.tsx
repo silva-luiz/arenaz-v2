@@ -34,6 +34,8 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   const [playerName, setPlayerName] = useState('');
   const [playerPhone, setPlayerPhone] = useState('');
   const [price, setPrice] = useState('');
+  const [advancePayment, setAdvancePayment] = useState('');
+  const [advanceAmount, setAdvanceAmount] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
 
@@ -115,6 +117,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         res_date: formattedDate,
         res_start_time: startTime,
         res_end_time: endTime,
+        res_payment_advance: advanceAmount ?? 0,
       };
 
       const { res, jsonData } = await createReservation(reservation);
@@ -281,6 +284,60 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 />
               </div>
             </div>
+
+            <h3 className={styles.arenaInfo}>Pagamento adiantado?</h3>
+            <div className={styles.radioContainer}>
+              <div className={styles.radioItem}>
+                <input
+                  type="radio"
+                  id="yes"
+                  name="advancePayment"
+                  value="yes"
+                  required
+                  onChange={(e) => setAdvancePayment(e.target.value)}
+                />
+                <label htmlFor="yes">Sim</label>
+              </div>
+              <div className={styles.radioItem}>
+                <input
+                  type="radio"
+                  id="no"
+                  name="advancePayment"
+                  value="Não"
+                  required
+                  onChange={(e) => setAdvancePayment(e.target.value)}
+                />
+                <label htmlFor="no">Não</label>
+              </div>
+            </div>
+
+            {advancePayment === "yes" && (
+              <>
+                <h3 className={styles.arenaInfo}>Valor adiantado</h3>
+
+                <div className={styles.formContainer}>
+                  <div className={styles.inputContainer}>
+                    <label
+                      htmlFor="advanceAmount"
+                      className={styles.inputLabel}
+                    >
+                      Valor adiantado
+                    </label>
+                    <div className={styles.inputWrapper}>
+                      <input
+                        type="number"
+                        name="advanceAmount"
+                        id="advanceAmount"
+                        placeholder="Valor adiantado"
+                        value={advanceAmount || ''}
+                        onChange={(e) => setAdvanceAmount(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className={styles.formActions}>
               <button
