@@ -11,10 +11,27 @@
 }
 
 .arenaInfo {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: bold;
   padding-bottom: 5px;
   color: var(--title-color);
+}
+
+.radioContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radioItem input[type='radio']:checked {
+  accent-color: var(--primary-color);
 }
 
 .reservationContainer{
