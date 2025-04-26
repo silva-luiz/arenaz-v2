@@ -26,6 +26,7 @@ const EstablishmentProfilePage = ({
   const [establishmentCep, setEstablishmentCep] = useState('');
   const [establishmentAddress, setEstablishmentAddress] = useState('');
   const [establishmentCity, setEstablishmentCity] = useState('');
+  const [pixKey, setPixKey] = useState('');
 
   const { data, error } = useFetchEstablishmentInfo(url);
 
@@ -44,12 +45,14 @@ const EstablishmentProfilePage = ({
     console.log('Dados recebidos:', data);
     if (data?.establishment) {
       const establishment = data.establishment;
+      const ownCode = data.own_code;
 
       setEstablishmentName(establishment.est_name);
       setEstablishmentPhone(establishment.est_phone);
       setEstablishmentCep(establishment.est_zipcode);
       setEstablishmentAddress(establishment.est_address);
       setEstablishmentCity(establishment.est_city);
+      setPixKey(ownCode);
     }
   }, [data]);
 
@@ -63,6 +66,7 @@ const EstablishmentProfilePage = ({
       est_zipcode: establishmentCep,
       est_address: establishmentAddress,
       est_city: establishmentCity,
+      own_code: pixKey,
     };
 
     const { res, jsonData } = await sendUpdate(establishmentData);
@@ -161,6 +165,19 @@ const EstablishmentProfilePage = ({
               </div>
             </div>
           </div>
+          <div className={styles.inputContainer}>
+                <span className={styles.inputLabel}>Chave PIX</span>
+                <div className={styles.inputWrapper}>
+                  <input
+                    type="text"
+                    placeholder="Chave PIX"
+                    name="pixKey"
+                    value={pixKey}
+                    onChange={(e) => setPixKey(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
           <div className={styles.actionButtonsContainer}>
             <Button text="Cancelar" className="outlinedButton" handleClick={() => router.push('/home/dashboard')}/>
             <Button
