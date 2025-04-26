@@ -1,13 +1,12 @@
 // Títulos e textos
-.pageTitle {
+.pageTitle, .modalTitle {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--title-color);
 }
 
-.pageSubtitle {
+.pageSubtitle, .inputLabel, .optionDefault {
   color: var(--text-color);
-  padding: 10px 0;
 }
 
 .arenaInfo {
@@ -17,6 +16,26 @@
   color: var(--title-color);
 }
 
+.modalSubtitle {
+  padding-bottom: 15px;
+}
+
+// Containers gerais
+.reservationContainer,
+.table-responsive {
+  width: 100%;
+  margin: 20px 0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+}
+
+// Radio buttons
 .radioContainer {
   display: flex;
   flex-wrap: wrap;
@@ -28,32 +47,16 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
 
-.radioItem input[type='radio']:checked {
-  accent-color: var(--primary-color);
-}
-
-.reservationContainer{
-  width: 100%;
-}
-
-.formActions{
-  display: flex;
-  justify-content: end;
-  align-items: center;
-  margin-top: 20px;
-  padding: 10px;
+  input[type='radio']:checked {
+    accent-color: var(--primary-color);
+  }
 }
 
 // Modal
-
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
@@ -62,7 +65,7 @@
 }
 
 .modalContent {
-  background-color: white;
+  background: white;
   padding: 20px;
   border-radius: 12px;
   text-align: center;
@@ -71,31 +74,15 @@
   height: 200px;
 }
 
-.modalSubtitle {
-  padding-bottom: 15px;
-}
-
-.modalTitle{
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--title-color);
-  margin-bottom: 10px;
-}
-
 // Formulário
 .reservationForm {
   width: 100%;
-  justify-content: stretch;
+  display: flex;
+  flex-direction: column;
 
   .inputContainer {
-    display: flex;
-    flex-direction: column;
     margin-bottom: 20px;
     width: 100%;
-
-    .inputLabel {
-      color: var(--text-color);
-    }
 
     .inputWrapper {
       position: relative;
@@ -125,16 +112,6 @@
     margin: 10px 0;
   }
 
-  .optionDefault {
-    color: var(--text-color);
-    font-style: italic;
-  }
-
-  .optionTime {
-    color: var(--title-color);
-    background-color: var(--background-color);
-  }
-
   .selectTimeContainer {
     display: flex;
     gap: 20px;
@@ -146,7 +123,7 @@
       flex-direction: column;
       gap: 8px;
       margin-bottom: 24px;
-      align-items: start;
+      align-items: flex-start;
 
       h4 {
         font-size: 1rem;
@@ -155,7 +132,7 @@
         margin: 0 0 4px;
       }
 
-      select.selectTime {
+      .selectTime {
         appearance: none;
         background-color: #fff;
         border: 2px solid var(--primary-color);
@@ -180,113 +157,69 @@
         option {
           padding: 8px;
         }
-
-        .optionDefault {
-          color: #888;
-        }
       }
     }
-
   }
-
 }
 
-// Informações da arena
+// Arena infos
 .arenaInfosContainer {
   display: flex;
   border: 1px solid var(--background-color-hover);
   border-radius: 12px;
   padding: 15px;
-  justify-content: stretch;
-  align-items: start;
   margin: 15px 0;
   gap: 50px;
+  align-items: flex-start;
+  overflow-x: auto;
   box-sizing: border-box;
-  overflow: auto;
 
   .singleInfoContainer {
     display: flex;
     flex-direction: column;
-    justify-content: start;
-  }
-
-  .arenaCategorySoccer,
-  .arenaCategoryBeach,
-  .arenaCategoryTennis,
-  .arenaCategoryOther {
-    font-weight: 600;
-    color: var(--secondary-title-color);
-    padding: 5px 20px;
-    align-self: center;
-    border-radius: 12px;
-  }
-
-  .arenaCategorySoccer {
-    background-color: var(--success);
-  }
-
-  .arenaCategoryBeach {
-    background-color: var(--warning);
-  }
-
-  .arenaCategoryTennis {
-    background-color: var(--orange);
-  }
-
-  .arenaCategoryOther {
-    background-color: var(--secondary-color);
+    justify-content: flex-start;
   }
 }
 
-.society {
-  text-align: center;
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  background-color: var(--success);
-  color: var(--secondary-title-color);
-}
-
-.tenis {
-  text-align: center;
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  background-color: var(--warning);
-  color: var(--title-color);
-}
-
-.beach {
-  text-align: center;
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  background-color: var(--primary-color);
-  color: var(--title-color);
-}
-
+// Categorias de arena (soccer, beach, etc)
+.arenaCategory,
+.society,
+.tenis,
+.beach,
 .outra {
   text-align: center;
   padding: 5px 10px;
   border-radius: 12px;
   font-weight: bold;
-  background-color: var(--title-color);
+}
+
+.arenaCategorySoccer, .society {
+  background-color: var(--success);
   color: var(--secondary-title-color);
 }
 
-
-// Tabela
-.table-responsive {
-  margin: 20px 0;
+.arenaCategoryBeach, .beach {
+  background-color: var(--warning);
+  color: var(--title-color);
 }
 
+.arenaCategoryTennis, .tenis {
+  background-color: var(--orange);
+  color: var(--title-color);
+}
+
+.arenaCategoryOther, .outra {
+  background-color: var(--secondary-color);
+  color: var(--secondary-title-color);
+}
+
+// Tabela
 .custom-table {
   background-color: #1c1c1e;
   border-radius: 10px;
   overflow: hidden;
 
-  th,
-  td {
+  th, td {
     padding: 15px;
     text-align: center;
   }
