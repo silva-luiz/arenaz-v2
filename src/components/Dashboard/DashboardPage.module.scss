@@ -311,6 +311,20 @@
   margin: 0;
 }
 
+.receivedValue {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--success);
+  margin: 0;
+}
+
+.overdueValue {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--danger);
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .reservationStatusContainer {
     justify-content: center;
