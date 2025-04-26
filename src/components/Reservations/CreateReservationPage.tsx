@@ -137,20 +137,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
     }
   };
 
-  // const handleSendWhatsApp = () => {
-  //   const message = encodeURIComponent(
-  //     `Segue o QR Code para pagamento da sua reserva:\n\n${qrCodePayload}`,
-  //   );
-  //   const url = `https://wa.me/55${playerPhone}?text=${message}`;
-  //   window.open(url, '_blank');
-  // };
-
-  // console.log(`QR CODE AQUI: ${qrCodeBase64}`);
-  console.log(parseFloat(advanceAmount));
-  console.log(pixKey);
-  console.log(normalizeCity(establishmentCity));
-  console.log(establishmentOwner);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -404,7 +390,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                         Baixar QR Code
                       </button>
 
-                      {/* Link invisível para forçar o download */}
                       <a ref={downloadLinkRef} style={{ display: 'none' }}>
                         Download
                       </a>
@@ -416,7 +401,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                       />
                     </>
                   ) : (
-                    <p>Gerando QR Code...</p>
+                    <></>
                   )}
                 </div>
               </>
