@@ -2,11 +2,13 @@
 
 import Form from 'react-bootstrap/Form';
 import DatePicker from 'react-datepicker';
+
 import { registerLocale } from 'react-datepicker';
 import { ptBR } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { QrCodePix } from 'qrcode-pix';
 import { format } from 'date-fns';
-
+import Image from 'next/image';
 import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 import 'react-datepicker/dist/react-datepicker.css';
 import styles from '../Reservations/CreateReservationPage.module.scss';
@@ -16,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useFetchArenaInfo } from 'hooks/useFetchArenaInfo';
 import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
 import { CategoryLabel } from './CategoryLabel';
+import { SendWhatsAppButton } from './SendWhatsAppButton';
 
 registerLocale('pt-BR', ptBR);
 
@@ -38,6 +41,10 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   const [advanceAmount, setAdvanceAmount] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
+  const [qrCodePayload, setQrCodePayload] = useState('');
+
+  const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
+  const downloadLinkRef = useRef<HTMLAnchorElement>(null);
 
   const { arenaData, loadingArena, error } = useFetchArenaInfo(
     `${arenaInfoUrl}/${arenaId}`,
@@ -87,13 +94,62 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   };
 
   const arena = arenaData?.arena;
+  const qrcode = arenaData?.qrcode;
 
   const arenaName = arena?.are_name || 'Arena não encontrada';
   const arenaCategory = arena?.are_category || 'Categoria não encontrada';
   const arenaPrice = arena?.are_price || 'Preço não encontrado';
   const userId = arenaData?.usr_id || 'Usuário não encontrado';
+  const establishmentCity = qrcode?.city || 'Cidade não encontrada';
+  const pixKey = qrcode?.own_code || 'Chave PIX não encontrada';
+  const establishmentOwner = qrcode?.usr_name || 'Proprietário não encontrado';
 
   const are_id = arenaId;
+
+  const normalizeCity = (city: string) => {
+    return city
+      .normalize('NFD') // separa letras de acentos
+      .replace(/[\u0300-\u036f]/g, '') // remove os acentos
+      .toUpperCase(); // transforma em maiúsculo
+  };
+
+  const generateQRCode = async () => {
+    const qrCodePix = QrCodePix({
+      version: '01',
+      key: pixKey,
+      name: establishmentOwner,
+      city: normalizeCity(establishmentCity),
+      value: parseFloat(advanceAmount),
+    });
+
+    const base64 = await qrCodePix.base64();
+    setQrCodeBase64(base64);
+
+    const payload = qrCodePix.payload();
+    setQrCodePayload(payload);
+  };
+
+  const handleDownload = () => {
+    if (downloadLinkRef.current && qrCodeBase64) {
+      downloadLinkRef.current.href = qrCodeBase64;
+      downloadLinkRef.current.download = 'qrcode-pix.png';
+      downloadLinkRef.current.click();
+    }
+  };
+
+  // const handleSendWhatsApp = () => {
+  //   const message = encodeURIComponent(
+  //     `Segue o QR Code para pagamento da sua reserva:\n\n${qrCodePayload}`,
+  //   );
+  //   const url = `https://wa.me/55${playerPhone}?text=${message}`;
+  //   window.open(url, '_blank');
+  // };
+
+  // console.log(`QR CODE AQUI: ${qrCodeBase64}`);
+  console.log(parseFloat(advanceAmount));
+  console.log(pixKey);
+  console.log(normalizeCity(establishmentCity));
+  console.log(establishmentOwner);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +173,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         res_date: formattedDate,
         res_start_time: startTime,
         res_end_time: endTime,
-        res_payment_advance: advanceAmount ?? 0,
+        res_payment_advance: advanceAmount,
       };
 
       const { res, jsonData } = await createReservation(reservation);
@@ -131,18 +187,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       console.error('Erro inesperado ao registrar reserva:', error);
     }
   };
-
-  const timeOptions = Array.from({ length: 30 }, (_, i) => {
-    const totalMinutes = 8 * 60 + i * 30; // começa às 08:00
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const formatted = `${hours.toString().padStart(2, '0')}:${minutes
-      .toString()
-      .padStart(2, '0')}`;
-    return formatted;
-  });
-
-  console.log(`PERMANENCIA: ${startTime}-${endTime}`);
 
   return (
     <div>
@@ -311,7 +355,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
               </div>
             </div>
 
-            {advancePayment === "yes" && (
+            {advancePayment === 'yes' && (
               <>
                 <h3 className={styles.arenaInfo}>Valor adiantado</h3>
 
@@ -331,10 +375,49 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                         placeholder="Valor adiantado"
                         value={advanceAmount || ''}
                         onChange={(e) => setAdvanceAmount(e.target.value)}
+                        onBlur={generateQRCode}
                         required
                       />
                     </div>
                   </div>
+                  {qrCodeBase64 ? (
+                    <>
+                      <h3 className={styles.arenaInfo}>
+                        QRCode para pagamento
+                      </h3>
+                      <p className={styles.pageSubtitle}>
+                        Faça o download do QRCode para pagamento ou envie o
+                        código para seu cliente:
+                      </p>
+                      <Image
+                        src={qrCodeBase64}
+                        alt="QR Code Pix"
+                        width={256}
+                        height={256}
+                        style={{ width: 256, height: 256 }}
+                        unoptimized
+                      />
+                      <button
+                        onClick={handleDownload}
+                        className="primaryButton"
+                      >
+                        Baixar QR Code
+                      </button>
+
+                      {/* Link invisível para forçar o download */}
+                      <a ref={downloadLinkRef} style={{ display: 'none' }}>
+                        Download
+                      </a>
+
+                      <SendWhatsAppButton
+                        playerName={playerName}
+                        phoneNumber={playerPhone}
+                        qrCodePayload={qrCodePayload}
+                      />
+                    </>
+                  ) : (
+                    <p>Gerando QR Code...</p>
+                  )}
                 </div>
               </>
             )}
