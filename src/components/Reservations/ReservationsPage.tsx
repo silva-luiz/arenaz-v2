@@ -140,7 +140,6 @@ const ReservationsPage = ({
       <p className={styles.reservationsSubtitle}>
         Confira aqui as informações de todas as suas reservas.
       </p>
-
       {/* Tabela desktop */}
       {loadingReservations ? (
         <div className={styles.loadingContainer}>
