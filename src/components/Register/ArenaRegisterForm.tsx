@@ -7,14 +7,11 @@ import URLS from '../../utils/apiRoutes';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@mui/material';
 import { Form } from 'react-bootstrap';
-import { UploadDropzone } from '@bytescale/upload-widget-react';
 import PhotoUploader from 'components/PhotoUploader';
 
 const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
-  // const location = useLocation();
-
   const { data } = useFetchEstablishmentInfo(URLS.ESTABLISHMENT_INFO);
 
   const [arenaName, setArenaName] = useState('');
