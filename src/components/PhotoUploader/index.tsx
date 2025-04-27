@@ -1,10 +1,12 @@
 import { ChangeEvent } from 'react';
 import { Button, styled } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import Image from 'next/image';
 
 interface IPhotoUploader {
   handleFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   arenaFile: File | null;
+  preview: string;
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -22,10 +24,17 @@ const VisuallyHiddenInput = styled('input')({
 export default function PhotoUploader({
   handleFileUpload,
   arenaFile,
+  preview,
 }: IPhotoUploader) {
   return (
-    <div className="flex flex-col cursor-pointer max-w-72 max-h-40 w-full h-full ">
+    <div className="flex flex-col cursor-pointer items-center">
+      {preview && (
+        <div style={{ margin: '10px 0' }}>
+          <Image src={preview} alt="preview" width={200} height={200} />
+        </div>
+      )}
       <Button
+        className="w-full"
         component="label"
         role={undefined}
         variant="contained"
@@ -35,7 +44,7 @@ export default function PhotoUploader({
         Upload files
         <VisuallyHiddenInput type="file" onChange={handleFileUpload} />
       </Button>
-      <span>Test{arenaFile && arenaFile.name}</span>
+      {arenaFile && <span>{arenaFile.name}</span>}
     </div>
   );
 }

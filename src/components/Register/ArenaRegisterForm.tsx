@@ -23,11 +23,13 @@ const ArenaRegisterForm = () => {
   const [arenaStartHour, setArenaStartHour] = useState('');
   const [arenaClosingHour, setArenaClosingHour] = useState('');
   const [arenaFile, setArenaFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>();
+  const { registerArena, loading, error } = useRegisterArena(url);
+
   const [showModal, setShowModal] = useState(false);
 
   const arenaOpeningHours = `${arenaStartHour}-${arenaClosingHour}`;
 
-  const { registerArena, loading, error } = useRegisterArena(url);
   const router = useRouter();
 
   const est_id = data ? data.est_id : null;
@@ -54,9 +56,7 @@ const ArenaRegisterForm = () => {
 
   useEffect(() => {
     console.log('📡 establishmentInfo:', est_id);
-    console.log('🧯 loading:', loading);
-    console.log('💥 error:', error);
-  }, [data, loading, error]);
+  }, [est_id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,9 +64,14 @@ const ArenaRegisterForm = () => {
       console.error('Establishment ID não disponível');
       return;
     }
+    if (!arenaFile) return alert('Nenhuma foto selecionada');
+
     console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
 
     const userId = data.usr_id;
+
+    const form = new FormData();
+    form.append('photo', arenaFile);
 
     const arena = {
       are_name: arenaName,
@@ -75,6 +80,7 @@ const ArenaRegisterForm = () => {
       usr_cod_cad: userId,
       est_id: est_id,
       are_opening_hours: arenaOpeningHours,
+      are_photo: form,
     };
 
     // Envia a arena para a API
@@ -82,7 +88,7 @@ const ArenaRegisterForm = () => {
 
     console.log(`RES AQUI ${res}`);
 
-    if (res.ok) {
+    if (res?.ok) {
       setShowModal(true);
     } else {
       setShowModal(true);
@@ -90,15 +96,17 @@ const ArenaRegisterForm = () => {
     }
   };
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    setArenaFile(file);
-    console.log(file, 'data');
-
-    console.log(formData);
-  };
+  function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f && f.type.startsWith('image/')) {
+      setArenaFile(f);
+      setPreview(URL.createObjectURL(f));
+    } else {
+      alert('Selecione uma imagem válida');
+      setArenaFile(null);
+      setPreview(undefined);
+    }
+  }
 
   return (
     <>
@@ -110,10 +118,13 @@ const ArenaRegisterForm = () => {
       <form onSubmit={handleSubmit}>
         <div className={styles.contentWrapper}>
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
-          <PhotoUploader
-            handleFileUpload={handleFileUpload}
-            arenaFile={arenaFile}
-          />
+          <div>
+            <PhotoUploader
+              preview={preview}
+              handleFileUpload={handleFileUpload}
+              arenaFile={arenaFile}
+            />
+          </div>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
               <label htmlFor="arenaName" className={styles.inputLabel}>

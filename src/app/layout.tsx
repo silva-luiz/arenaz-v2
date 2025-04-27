@@ -1,9 +1,9 @@
-import NavbarSite from 'components/NavbarSite';
 import './globals.scss';
-import SiteFaq from 'components/Landing/SiteFaq';
-import SiteFooter from 'components/SiteFooter';
 import Head from 'next/head';
 import { Roboto } from 'next/font/google';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import { ThemeProvider } from '@mui/material';
+import theme from 'lib/theme';
 
 const roboto = Roboto({
   weight: ['400', '700'],
@@ -43,9 +43,9 @@ export default function RootLayout({ children }) {
       </Head>
       <body>
         <div id="root">
-          {children}
-          {/* <SiteFaq />
-          <SiteFooter /> */}
+          <AppRouterCacheProvider>
+            <ThemeProvider theme={theme}>{children}</ThemeProvider>
+          </AppRouterCacheProvider>
         </div>
       </body>
     </html>
