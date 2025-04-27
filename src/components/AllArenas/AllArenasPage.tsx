@@ -141,7 +141,11 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       <div>
         <div className={styles.actionButtonContainer}>
           <h2 className={styles.dashboardTitle}>Todas as Arenas</h2>
-          <Link href="/new-arena">
+          <Link
+            href={{
+              pathname: 'new-arena',
+            }}
+          >
             <Button text="+ Nova arena" className="secondaryButton" />
           </Link>
         </div>

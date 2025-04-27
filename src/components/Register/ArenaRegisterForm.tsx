@@ -1,5 +1,5 @@
 import styles from './ArenaRegisterForm.module.scss';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import PropTypes from 'prop-types';
 import { useRegisterArena } from '../../hooks/useRegisterArena';
 import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
@@ -7,6 +7,8 @@ import URLS from '../../utils/apiRoutes';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@mui/material';
 import { Form } from 'react-bootstrap';
+import { UploadDropzone } from '@bytescale/upload-widget-react';
+import PhotoUploader from 'components/PhotoUploader';
 
 const url = URLS.REGISTER_ARENA;
 
@@ -20,6 +22,7 @@ const ArenaRegisterForm = () => {
   const [arenaCategory, setArenaCategory] = useState('');
   const [arenaStartHour, setArenaStartHour] = useState('');
   const [arenaClosingHour, setArenaClosingHour] = useState('');
+  const [arenaFile, setArenaFile] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   const arenaOpeningHours = `${arenaStartHour}-${arenaClosingHour}`;
@@ -87,15 +90,30 @@ const ArenaRegisterForm = () => {
     }
   };
 
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+    setArenaFile(file);
+    console.log(file, 'data');
+
+    console.log(formData);
+  };
+
   return (
     <>
       <h2 className={styles.arenaRegisterTitle}>Adicionar nova Arena</h2>
       <p className={styles.arenaRegisterParagraph}>
         Por favor, preencha os campos com os dados de sua nova Arena
       </p>
+
       <form onSubmit={handleSubmit}>
         <div className={styles.contentWrapper}>
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
+          <PhotoUploader
+            handleFileUpload={handleFileUpload}
+            arenaFile={arenaFile}
+          />
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
               <label htmlFor="arenaName" className={styles.inputLabel}>

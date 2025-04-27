@@ -11,6 +11,7 @@
     "server": "json-server --watch data/db.json"
   },
   "dependencies": {
+    "@bytescale/upload-widget-react": "^4.19.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
@@ -19,12 +20,12 @@
     "@mui/icons-material": "^7.0.2",
     "@mui/material": "^7.0.2",
     "@react-icons/all-files": "^4.1.0",
-    "@tailwindcss/postcss": "^4.0.14",
     "bootstrap": "^5.3.3",
+    "i": "^0.3.7",
     "js-cookie": "^3.0.5",
     "json-server": "^1.0.0-beta.3",
     "next": "^14.2.24",
-    "postcss": "^8.5.3",
+    "npm": "^11.3.0",
     "qrcode-pix": "5.0.0",
     "react": "^18.3.1",
     "react-bootstrap": "^2.10.9",
@@ -32,10 +33,11 @@
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
     "react-icons-kit": "^2.0.0",
+    "react-image-upload": "^3.0.1",
+    "react-images-uploading": "^3.1.7",
     "react-modal": "^3.16.3",
     "react-qrcode-pix": "^4.1.0",
     "react-router-dom": "^7.1.5",
-    "tailwindcss": "^4.0.14",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
@@ -43,11 +45,14 @@
     "@types/node": "22.13.10",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.2.2",
     "eslint-config-prettier": "^10.1.1",
     "globals": "^15.14.0",
+    "postcss": "^8.5.3",
     "prettier": "3.5.3",
-    "sass": "^1.86.0"
+    "sass": "^1.86.0",
+    "tailwindcss": "^3.4.17"
   }
 }
