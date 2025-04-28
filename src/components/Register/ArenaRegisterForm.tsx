@@ -61,29 +61,24 @@ const ArenaRegisterForm = () => {
       console.error('Establishment ID não disponível');
       return;
     }
-    if (!arenaFile) return alert('Nenhuma foto selecionada');
 
     console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
 
     const userId = data.usr_id;
 
     const form = new FormData();
-    form.append('photo', arenaFile);
 
-    const arena = {
-      are_name: arenaName,
-      are_price: arenaPrice,
-      are_category: arenaCategory,
-      usr_cod_cad: userId,
-      est_id: est_id,
-      are_opening_hours: arenaOpeningHours,
-      are_photo: form,
-    };
+    if (arenaFile) {
+      form.append('are_photo', arenaFile);
+    }
+    form.append('are_name', arenaName);
+    form.append('are_price', arenaPrice);
+    form.append('are_category', arenaCategory);
+    form.append('usr_cod_cad', userId);
+    form.append('est_id', est_id);
+    form.append('are_opening_hours', arenaOpeningHours);
 
-    // Envia a arena para a API
-    const { res, jsonData } = await registerArena(arena);
-
-    console.log(`RES AQUI ${res}`);
+    const { res, jsonData } = await registerArena(form);
 
     if (res?.ok) {
       setShowModal(true);
@@ -95,11 +90,16 @@ const ArenaRegisterForm = () => {
 
   function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
-    if (f && f.type.startsWith('image/')) {
-      setArenaFile(f);
-      setPreview(URL.createObjectURL(f));
+    if (f) {
+      if (f.type.startsWith('image/')) {
+        setArenaFile(f);
+        setPreview(URL.createObjectURL(f));
+      } else {
+        alert('Selecione uma imagem válida');
+        setArenaFile(null);
+        setPreview(undefined);
+      }
     } else {
-      alert('Selecione uma imagem válida');
       setArenaFile(null);
       setPreview(undefined);
     }
