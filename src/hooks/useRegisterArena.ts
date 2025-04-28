@@ -4,7 +4,7 @@ export const useRegisterArena = (url) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const registerArena = async (arenaData) => {
+  const registerArena = async (formData) => {
     const token = sessionStorage.getItem("auth-token");
 
     if (!token) {
@@ -19,10 +19,9 @@ export const useRegisterArena = (url) => {
         method: 'POST',
         headers: {
           "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
           // "ngrok-skip-browser-warning": "69420" // usar apenas quando Ngrok estiver sendo utilizado
         },
-        body: JSON.stringify(arenaData),
+        body: formData,
       });
 
       const jsonData = await res.json();
