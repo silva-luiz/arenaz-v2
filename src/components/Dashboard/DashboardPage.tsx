@@ -167,6 +167,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
                     arenaName={arena.are_name}
                     arenaCategory={arena.are_category}
                     arenaPrice={arena.are_price}
+                    arenaPhoto={`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`}
                     goToReservation={`/home/create-reservation/${arena.are_id}`}
                     onEdit={() => handleEditArena(arena)}
                     onDelete={() => handleDeleteArena(arena)}
