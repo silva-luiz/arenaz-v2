@@ -23,6 +23,7 @@ interface Arena {
   are_name: string;
   are_price: number;
   are_category: string;
+  are_photo: string;
 }
 
 interface IAllArenasPageProps {
@@ -173,6 +174,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
           <div className={styles.cardsContainer}>
             {arenas.map((arena, index) => (
               <ArenaCard
+                arenaPhoto={`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`}
                 key={`${index}-${arena.are_id}`}
                 arenaName={arena.are_name}
                 arenaCategory={arena.are_category}
