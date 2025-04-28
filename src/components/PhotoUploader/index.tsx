@@ -39,9 +39,9 @@ export default function PhotoUploader({
         role={undefined}
         variant="contained"
         tabIndex={-1}
-        startIcon={<CloudUploadIcon />}
+        endIcon={<CloudUploadIcon />}
       >
-        Upload files
+        Adiconar foto da Arena
         <VisuallyHiddenInput type="file" onChange={handleFileUpload} />
       </Button>
       {arenaFile && <span>{arenaFile.name}</span>}
