@@ -7,6 +7,7 @@ interface IPhotoUploader {
   handleFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
   arenaFile: File | null;
   preview: string;
+  title: string;
 }
 
 const VisuallyHiddenInput = styled('input')({
@@ -25,6 +26,7 @@ export default function PhotoUploader({
   handleFileUpload,
   arenaFile,
   preview,
+  title,
 }: IPhotoUploader) {
   return (
     <div className="flex flex-col cursor-pointer items-center">
@@ -41,7 +43,7 @@ export default function PhotoUploader({
         tabIndex={-1}
         endIcon={<CloudUploadIcon />}
       >
-        Adiconar foto da Arena
+        {title}
         <VisuallyHiddenInput type="file" onChange={handleFileUpload} />
       </Button>
       {arenaFile && <span>{arenaFile.name}</span>}

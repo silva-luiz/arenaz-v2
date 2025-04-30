@@ -117,6 +117,7 @@ const ArenaRegisterForm = () => {
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
           <div>
             <PhotoUploader
+              title="Adicionar imagem"
               preview={preview}
               handleFileUpload={handleFileUpload}
               arenaFile={arenaFile}

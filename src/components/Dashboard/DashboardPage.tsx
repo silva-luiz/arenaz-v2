@@ -6,11 +6,12 @@ import Modal from 'react-modal';
 import { useDashboardHooks } from '../../hooks/useDashboardHooks';
 import { useDeleteArena } from '../../hooks/useDeleteArena';
 import { useUpdateArenaInfo } from '../../hooks/useUpdateArenaInfo';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import URLS from '../../utils/apiRoutes';
 import WarningIcon from '@mui/icons-material/Warning';
 import Link from 'next/link';
 import { CircularProgress } from '@mui/material';
+import PhotoUploader from 'components/PhotoUploader';
 
 const url = URLS.LOAD_DASHBOARD;
 const urlUpdateArena = URLS.UPDATE_ARENA_INFO;
@@ -19,6 +20,14 @@ const urlDeleteArena = URLS.DELETE_ARENA;
 interface IDashboardPageProps {
   isExpiredSession?: boolean;
   setIsExpiredSession?: () => void;
+}
+
+interface Arena {
+  are_id: number;
+  are_name: string;
+  are_price: number;
+  are_category: string;
+  are_photo: string;
 }
 
 const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
@@ -32,6 +41,9 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
   const [arenaPrice, setArenaPrice] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
 
+  const [arenaFile, setArenaFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>();
+
   const { deleteArena: deleteArenaRequest, loadingDelete } =
     useDeleteArena(urlDeleteArena);
 
@@ -41,7 +53,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const arenas = dashboardData?.arenas ?? [];
-  const [editArena, setEditArena] = useState(null);
+  const [editArena, setEditArena] = useState<Arena | null>(null);
   const [deleteArena, setDeleteArena] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -65,23 +77,54 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
       setArenaName(editArena.are_name || '');
       setArenaPrice(String(editArena.are_price || ''));
       setArenaCategory(editArena.are_category || '');
+      setArenaFile(null);
+      setPreview(`${process.env.NEXT_PUBLIC_API_URL}/${editArena.are_photo}`);
     }
   }, [editArena]);
+
+  function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.type.startsWith('image/')) {
+        setArenaFile(f);
+        setPreview(URL.createObjectURL(f));
+      } else {
+        alert('Selecione uma imagem válida');
+        setArenaFile(null);
+        setPreview(undefined);
+      }
+    } else {
+      setArenaFile(null);
+      setPreview(undefined);
+    }
+  }
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
 
     if (!editArena) return;
 
-    const updatedArenaData = {
-      usr_cod_alt: dashboardData.usr_id,
-      are_id: editArena.are_id,
-      are_name: arenaName,
-      are_price: Number(arenaPrice),
-      are_category: arenaCategory,
-    };
+    const form = new FormData();
 
-    const { res, jsonData } = await updateArenaInfo(updatedArenaData);
+    if (arenaFile) {
+      form.append('are_photo', arenaFile);
+    }
+    form.append('usr_cod_alt', String(dashboardData.usr_id));
+    form.append('are_id', String(editArena.are_id));
+    form.append('are_name', String(arenaName));
+    form.append('are_price', String(Number(arenaPrice)));
+    form.append('are_category', String(arenaCategory));
+
+    // const updatedArenaData = {
+    //   usr_cod_alt: dashboardData.usr_id,
+    //   are_id: editArena.are_id,
+    //   are_name: arenaName,
+    //   are_price: Number(arenaPrice),
+    //   are_category: arenaCategory,
+    //   are_photo: arenaFile,
+    // };
+
+    const { res, jsonData } = await updateArenaInfo(form);
 
     if (res && res.ok) {
       const updatedArena = jsonData.arena;
@@ -111,9 +154,12 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
     console.log('Resposta da API:', res, jsonData);
 
     if (res && res.ok) {
+      const updatedArenas = arenas.filter(
+        (a) => a.are_id !== deleteArena.are_id,
+      );
+      dashboardData.arenas = updatedArenas;
       setModalMessage('Arena excluída com sucesso!');
       setModalIsOpen(true);
-      window.location.reload();
     } else {
       setModalMessage(
         jsonData?.message ||
@@ -261,6 +307,12 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
             Arena: <strong>{editArena?.are_name}</strong>
           </p>
           <form onSubmit={handleEditSubmit}>
+            <PhotoUploader
+              title="Alterar imagem"
+              preview={preview}
+              handleFileUpload={handleFileUpload}
+              arenaFile={arenaFile}
+            />
             <div className={styles.formContainer}>
               <div className={styles.inputContainer}>
                 <label htmlFor="arenaName" className={styles.inputLabel}>

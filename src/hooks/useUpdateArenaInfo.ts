@@ -4,39 +4,48 @@ export const useUpdateArenaInfo = (url) => {
   const [loadingArenaInfo, setLoadingArenaInfo] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateArenaInfo = async (arenaData) => {
+  const updateArenaInfo = async (formData) => {
     const token = sessionStorage.getItem("auth-token");
 
     if (!token) {
       console.error("Token não encontrado!");
-      return;
-  }
+      setError("Token de autenticação ausente");
+      return { res: null, jsonData: null, error: "Token ausente" };
+    }
 
     setLoadingArenaInfo(true);
+    setError(null);
     let res = null;
+    let jsonData = null;
+
     try {
       res = await fetch(url, {
         method: 'PATCH',
         headers: {
           "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-          // "ngrok-skip-browser-warning": "69420" // usar apenas quando Ngrok estiver sendo utilizado
+          "Content-Type": "multipart/form-data"
         },
-        body: JSON.stringify(arenaData),
+        body: formData,
       });
 
-      const jsonData = await res.json();
-      setLoadingArenaInfo(false);
-
-      if (!res.ok) {
-        throw new Error(jsonData.message || 'Erro ao atualizar dados');
+      if (res.status !== 204) {
+        try {
+          jsonData = await res.json();
+        } catch (jsonErr) {
+          console.warn("Erro ao ler JSON:", jsonErr);
+        }
       }
 
-      return { res, jsonData };
+      if (!res.ok) {
+        throw new Error(jsonData?.message || 'Erro ao atualizar dados');
+      }
+
+      return { res, jsonData, error: null };
     } catch (err) {
       setError(err.message);
+      return { res: null, jsonData: null, error: err.message };
+    } finally {
       setLoadingArenaInfo(false);
-      return { res: null, jsonData: null };
     }
   };
 
