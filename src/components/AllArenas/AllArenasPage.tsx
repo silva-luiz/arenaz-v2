@@ -23,6 +23,7 @@ interface Arena {
   are_name: string;
   are_price: number;
   are_category: string;
+  are_photo: string;
 }
 
 interface IAllArenasPageProps {
@@ -141,7 +142,11 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       <div>
         <div className={styles.actionButtonContainer}>
           <h2 className={styles.dashboardTitle}>Todas as Arenas</h2>
-          <Link href="/new-arena">
+          <Link
+            href={{
+              pathname: 'new-arena',
+            }}
+          >
             <Button text="+ Nova arena" className="secondaryButton" />
           </Link>
         </div>
@@ -169,6 +174,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
           <div className={styles.cardsContainer}>
             {arenas.map((arena, index) => (
               <ArenaCard
+                arenaPhoto={`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`}
                 key={`${index}-${arena.are_id}`}
                 arenaName={arena.are_name}
                 arenaCategory={arena.are_category}

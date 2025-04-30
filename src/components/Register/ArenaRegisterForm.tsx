@@ -1,5 +1,5 @@
 import styles from './ArenaRegisterForm.module.scss';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import PropTypes from 'prop-types';
 import { useRegisterArena } from '../../hooks/useRegisterArena';
 import { useFetchEstablishmentInfo } from '../../hooks/useFetchEstablishmentInfo';
@@ -7,12 +7,11 @@ import URLS from '../../utils/apiRoutes';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@mui/material';
 import { Form } from 'react-bootstrap';
+import PhotoUploader from 'components/PhotoUploader';
 
 const url = URLS.REGISTER_ARENA;
 
 const ArenaRegisterForm = () => {
-  // const location = useLocation();
-
   const { data } = useFetchEstablishmentInfo(URLS.ESTABLISHMENT_INFO);
 
   const [arenaName, setArenaName] = useState('');
@@ -20,11 +19,14 @@ const ArenaRegisterForm = () => {
   const [arenaCategory, setArenaCategory] = useState('');
   const [arenaStartHour, setArenaStartHour] = useState('');
   const [arenaClosingHour, setArenaClosingHour] = useState('');
+  const [arenaFile, setArenaFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>();
+  const { registerArena, loading, error } = useRegisterArena(url);
+
   const [showModal, setShowModal] = useState(false);
 
   const arenaOpeningHours = `${arenaStartHour}-${arenaClosingHour}`;
 
-  const { registerArena, loading, error } = useRegisterArena(url);
   const router = useRouter();
 
   const est_id = data ? data.est_id : null;
@@ -51,9 +53,7 @@ const ArenaRegisterForm = () => {
 
   useEffect(() => {
     console.log('📡 establishmentInfo:', est_id);
-    console.log('🧯 loading:', loading);
-    console.log('💥 error:', error);
-  }, [data, loading, error]);
+  }, [est_id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,25 +61,26 @@ const ArenaRegisterForm = () => {
       console.error('Establishment ID não disponível');
       return;
     }
+
     console.log('URL de fetch:', URLS.ESTABLISHMENT_INFO);
 
     const userId = data.usr_id;
 
-    const arena = {
-      are_name: arenaName,
-      are_price: arenaPrice,
-      are_category: arenaCategory,
-      usr_cod_cad: userId,
-      est_id: est_id,
-      are_opening_hours: arenaOpeningHours,
-    };
+    const form = new FormData();
 
-    // Envia a arena para a API
-    const { res, jsonData } = await registerArena(arena);
+    if (arenaFile) {
+      form.append('are_photo', arenaFile);
+    }
+    form.append('are_name', arenaName);
+    form.append('are_price', arenaPrice);
+    form.append('are_category', arenaCategory);
+    form.append('usr_cod_cad', userId);
+    form.append('est_id', est_id);
+    form.append('are_opening_hours', arenaOpeningHours);
 
-    console.log(`RES AQUI ${res}`);
+    const { res, jsonData } = await registerArena(form);
 
-    if (res.ok) {
+    if (res?.ok) {
       setShowModal(true);
     } else {
       setShowModal(true);
@@ -87,15 +88,40 @@ const ArenaRegisterForm = () => {
     }
   };
 
+  function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.type.startsWith('image/')) {
+        setArenaFile(f);
+        setPreview(URL.createObjectURL(f));
+      } else {
+        alert('Selecione uma imagem válida');
+        setArenaFile(null);
+        setPreview(undefined);
+      }
+    } else {
+      setArenaFile(null);
+      setPreview(undefined);
+    }
+  }
+
   return (
     <>
       <h2 className={styles.arenaRegisterTitle}>Adicionar nova Arena</h2>
       <p className={styles.arenaRegisterParagraph}>
         Por favor, preencha os campos com os dados de sua nova Arena
       </p>
+
       <form onSubmit={handleSubmit}>
         <div className={styles.contentWrapper}>
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
+          <div>
+            <PhotoUploader
+              preview={preview}
+              handleFileUpload={handleFileUpload}
+              arenaFile={arenaFile}
+            />
+          </div>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
               <label htmlFor="arenaName" className={styles.inputLabel}>
