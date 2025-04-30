@@ -12,7 +12,7 @@ export default function Home() {
       <NavbarSite />
       <CallToActionBanner
         message={
-          'Cadastre sua arena e conecte-se com atletas de todos os esportes em sua região'
+          'Cadastre suas arenas e tenha um gerenciamento completo e prático!'
         }
         backgroundImage={cta1}
       />
@@ -35,11 +35,11 @@ export default function Home() {
         DescriptionTitle={'Como funciona?'}
         Title1={'Controle total'}
         Description1={
-          'Nosso produto oferece uma solução prática e eficiente para proprietários de arenas esportivas. Ao se cadastrar, o proprietário pode adicionar sua arena ao sistema, permitindo o controle total das reservas feitas para o dia e para o mês inteiro. Isso proporciona uma visão clara e organizada dos horários disponíveis e das reservas confirmadas, facilitando a gestão do espaço.'
+          'Nosso produto oferece uma solução prática e eficiente para proprietários de arenas esportivas. Ao se cadastrar, o proprietário pode adicionar suas arenas ao sistema, permitindo o controle total das reservas feitas para o dia e para o mês inteiro. Isso proporciona uma visão clara e organizada dos horários disponíveis e das reservas confirmadas, facilitando a gestão do espaço.'
         }
         Title2={'Dashboard completo'}
         Description2={
-          'Além disso, o proprietário terá acesso a um dashboard exclusivo que exibe informações importantes sobre as reservas. Esse painel inclui detalhes como a quantidade de reservas realizadas, horários mais populares e dados financeiros, ajudando o proprietário a entender melhor o uso do espaço e a tomar decisões informadas para otimizar a ocupação.'
+          'Além disso, o proprietário terá acesso a um dashboard exclusivo que exibe informações importantes sobre as reservas. Esse painel inclui detalhes como a quantidade de reservas realizadas, horários preenchidos e disponíveis, e dados financeiros, ajudando o proprietário a entender melhor o uso do espaço e a tomar decisões informadas para otimizar a ocupação.'
         }
       />
       <CallToActionBanner

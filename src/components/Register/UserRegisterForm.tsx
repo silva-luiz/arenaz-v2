@@ -71,17 +71,17 @@ const UserRegisterForm = ({
   };
 
   return (
-    <div>
+    <div className={styles.teste}>
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="name">Nome completo</span>
+          <label htmlFor="name" className={styles.inputLabel}>Nome completo</label>
           <div className={styles.inputWrapper}>
             <input
               type="text"
               name="name"
               id="name"
               placeholder="Nome completo"
-              value={data.name || ''}
+              value={data?.name || ''}
               onChange={(e) => updateFieldHandler('name', e.target.value)}
               required
             />
@@ -91,14 +91,14 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="email">E-mail</span>
+          <label htmlFor="email" className={styles.inputLabel}>E-mail</label>
           <div className={styles.inputWrapper}>
             <input
               type="email"
               name="email"
               id="email"
               placeholder="E-mail"
-              value={data.email || ''}
+              value={data?.email || ''}
               onChange={(e) => {
                 updateFieldHandler('email', e.target.value);
                 if (e.target.value === '') {
@@ -116,7 +116,7 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="password">Senha</span>
+          <label htmlFor="password" className={styles.inputLabel}>Senha</label>
           <div className={styles.inputWrapper}>
             <input
               type={passwordVisibility.password.type}
@@ -124,13 +124,13 @@ const UserRegisterForm = ({
               id="password"
               placeholder="Digite uma senha"
               pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}"
-              value={data.password || ''}
+              value={data?.password || ''}
               autoComplete="current-password"
               onChange={(e) => updateFieldHandler('password', e.target.value)}
               required
             />
             <Icon
-              className="absolute mr-10"
+              className={styles.iconInsideInput}
               icon={passwordVisibility.password.icon}
               size={22}
               onClick={() => handleToggle('password')}
@@ -146,14 +146,14 @@ const UserRegisterForm = ({
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <label htmlFor="repassword">Confirme sua senha</label>
+          <label htmlFor="repassword" className={styles.inputLabel}>Confirme sua senha</label>
           <div className={styles.inputWrapper}>
             <input
               type={passwordVisibility.confirmPassword.type}
               name="repassword"
               id="repassword"
               placeholder="Digite novamente a senha"
-              value={data.confirmPassword || ''}
+              value={data?.confirmPassword || ''}
               onChange={(e) => {
                 updateFieldHandler('confirmPassword', e.target.value);
                 if (e.target.value === '') {
@@ -165,7 +165,7 @@ const UserRegisterForm = ({
               required
             />
             <Icon
-              className="absolute mr-10"
+              className={styles.iconInsideInput}
               icon={passwordVisibility.confirmPassword.icon}
               size={22}
               onClick={() => handleToggle('confirmPassword')}

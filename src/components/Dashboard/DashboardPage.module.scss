@@ -4,25 +4,155 @@
   justify-content: space-between;
 }
 
-.dashboardMainContent {
-  height: 100%;
+.dashboardTitle{
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
-.welcome {
+.dashboardMainContent {
+  height: 100%;
+  width: 100%;
+}
+
+.subtitle {
   color: var(--text-color);
 }
 
-.userName {
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.noArenasContainer{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.loadingText{
+  padding: 10px;
+  color: var(--text-color);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 50px 100px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 90%;
+}
+
+.modalTitle{
+  font-size: 1.5rem;
   font-weight: bold;
   color: var(--title-color);
+  margin-bottom: 10px;
+}
+
+.modalSubtitle {
+  margin-bottom: 1rem;
+  color: var(--title-color);
+  font-size: 1.3rem;
+  padding: 10px 0;
+  font-weight: bold;
+  text-align: left;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputLabel{
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-color-hover);
+  border-radius: 12px;
+  padding: 10px;
+  background-color: var(--background-color);
+}
+
+.inputWrapper input {
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+}
+
+
+.radioContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radioItem input[type='radio']:checked {
+  accent-color: var(--primary-color);
+}
+
+.modalHeader{
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.modalActions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .cardsContainer {
   display: flex;
-  /* flex-wrap: wrap; */
+  flex-wrap: wrap;
   justify-content: start;
+  align-items: center;
   gap: 20px;
-  margin-top: 20px;
+  margin: 20px 0;
+  border: 1px solid var(--background-color-hover);
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .arenaCard {
@@ -36,13 +166,53 @@
   margin-bottom: 20px;
 }
 
+.arenaCard {
+  position: relative;
+  padding: 1rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.actionIcons {
+  font-size: 1.2rem;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.iconEdit {
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.iconDelete {
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #ff0000;
+  }
+}
+
+
 .arenaCard:hover {
   transform: scale(1.05);
 }
 
 .arenaCardImage {
-  width: 100%;
-  height: auto;
+  margin-top: 15px;
+  width: 300px;
+  height: 150px;
   object-fit: cover;
   border-bottom: 2px solid var(--background-color);
 }
@@ -138,6 +308,20 @@
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
+  margin: 0;
+}
+
+.receivedValue {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--success);
+  margin: 0;
+}
+
+.overdueValue {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--danger);
   margin: 0;
 }
 

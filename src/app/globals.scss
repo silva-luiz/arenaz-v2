@@ -1,4 +1,6 @@
-@import 'tailwindcss';
+@import '~tailwindcss/base';
+@import '~tailwindcss/components';
+@import '~tailwindcss/utilities';
 // @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
 /* Colors */
@@ -185,4 +187,8 @@ hr {
   background-color: var(--primary-color) !important;
   color: var(--secondary-color) !important;
   border-radius: 50%;
+}
+
+.uploader__file_input {
+  display: none !important;
 }

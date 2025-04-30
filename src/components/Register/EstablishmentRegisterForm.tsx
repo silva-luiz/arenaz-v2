@@ -6,7 +6,9 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
     <div>
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="establishment">Nome do estabelecimento</span>
+          <label htmlFor="establishment" className={styles.inputLabel}>
+            Nome do estabelecimento
+          </label>
           <div className={styles.inputWrapper}>
             <input
               type="text"
@@ -25,7 +27,9 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="phone">Telefone</span>
+          <label htmlFor="phone" className={styles.inputLabel}>
+            Telefone
+          </label>
           <div className={styles.inputWrapper}>
             <input
               type="tel"
@@ -45,7 +49,9 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="cep">CEP</span>
+          <label htmlFor="cep" className={styles.inputLabel}>
+            CEP
+          </label>
           <div className={styles.inputWrapper}>
             <input
               type="text"
@@ -65,7 +71,9 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="address">Endereço</span>
+          <label htmlFor="address" className={styles.inputLabel}>
+            Endereço
+          </label>
           <div className={styles.inputWrapper}>
             <input
               type="text"
@@ -84,7 +92,9 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
 
       <div className={styles.formContainer}>
         <div className={styles.inputContainer}>
-          <span htmlFor="city">Cidade</span>
+          <label htmlFor="city" className={styles.inputLabel}>
+            Cidade
+          </label>
           <div className={styles.inputWrapper}>
             <input
               type="text"

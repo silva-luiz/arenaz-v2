@@ -1,12 +1,8 @@
-/* h2 {
-    margin: 5px;
+.welcome{
+  padding: 20px;
+  font-size: 1.8rem;
+  font-weight: bold;
 }
-
-p {
-    font-size: 16px;
-    color: var(--text-color);
-    margin: 10px 5px;
-} */
 
 .arenaRegisterTitle,
 .arenaRegisterSubtitle,
@@ -15,8 +11,28 @@ p {
   padding-bottom: 15px;
 }
 
+.modalTitle{
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--title-color);
+  margin-bottom: 10px;
+}
+
+.modalOverlay{
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .registerSubtitle {
   margin-bottom: 25px;
+  color: var(--text-color);
 }
 
 .actionButtonsContainer {
@@ -88,7 +104,7 @@ p {
   align-items: center;
   padding: 20px;
   text-align: center;
-  width: 50vw;
+  width: 50%;
   border: solid 1px var(--background-color-hover);
   border-radius: 12px;
 }
@@ -111,6 +127,20 @@ p {
   width: 100%;
 }
 
+.forms{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.inputLabel {
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+  }
+
 .inputContainer {
   display: flex;
   flex-direction: column;
@@ -126,19 +156,21 @@ p {
   align-self: flex-start;
 }
 
+.mainFormContainer{
+  width: 100%;
+}
+
 .inputWrapper {
+  width: 100%;
   position: relative;
   display: flex;
   align-items: center;
   border: 1px solid var(--background-color-hover);
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 40px 10px 10px;
   background-color: var(--background-color);
-}
-
-.inputWrapper i {
-  color: var(--background-color-hover);
-  margin-right: 10px;
+  color: var(--text-color);
+  margin-left: 5px;
 }
 
 .inputWrapper input {
@@ -146,20 +178,26 @@ p {
   outline: none;
   width: 100%;
   font-size: 14px;
-  padding: 5px;
+  background: transparent;
+  color: var(--text-color);
 }
 
 .inputWrapper input::placeholder {
   color: var(--text-color);
+  opacity: 0.6;
 }
 
 .inputWrapper:focus-within {
   border-color: var(--primary-color);
 }
 
-.inputWrapper {
-  margin-left: 5px;
-  color: var(--text-color);
+.iconInsideInput {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--background-color-hover);
 }
 
 .radioContainer {
@@ -198,7 +236,7 @@ p {
 }
 .modalContent {
   background: var(--background-color);
-  padding: 20px;
+  padding: 30px;
   border-radius: 12px;
   text-align: center;
   max-width: 400px;
@@ -209,8 +247,6 @@ p {
 .modalActions {
   margin-top: 20px;
 }
-
-/* Validação do email */
 
 .inputError {
   border: 1px solid var(--danger) !important;
