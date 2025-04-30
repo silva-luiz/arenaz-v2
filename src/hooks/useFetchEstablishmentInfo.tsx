@@ -1,38 +1,48 @@
 import { useState, useEffect } from 'react';
 
 export const useFetchEstablishmentInfo = (url) => {
-  const [establishmentInfo, setEstablishmentInfo] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchEstablishmentInfo = async () => {
-    const token = sessionStorage.getItem("auth-token");
+      const token = sessionStorage.getItem('auth-token');
+      console.log('Iniciando fetch');
+      console.log('URL:', url);
+      console.log('Token:', token);
 
       try {
         const response = await fetch(url, {
-          method: 'GET', // ou o método apropriado
+          method: 'GET',
           headers: {
-            "Authorization": `Bearer ${token}`,
-            'ngrok-skip-browser-warning': '69420', // Adicionando o header
-            'Content-Type': 'application/json', // Caso você precise especificar o tipo de conteúdo
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            // 'ngrok-skip-browser-warning': '69420', // usar apenas quando Ngrok estiver sendo utilizado
           },
         });
+
+        console.log('Resposta status:', response.status);
 
         if (!response.ok) {
           throw new Error('Erro ao buscar informações do estabelecimento');
         }
         const data = await response.json();
-        setEstablishmentInfo(data);
+        console.log('Conteúdo da resposta: ', data);
+        setData(data);
       } catch (err) {
+        console.error('Erro no fetch:', err.message);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEstablishmentInfo();
-  }, [url]); // Dependência para que o fetch seja executado quando a URL mudar
+    if (url) {
+      fetchEstablishmentInfo();
+    }
+  }, [url]);
+  // Dependência para que o fetch seja executado quando a URL mudar
 
-  return { establishmentInfo, loading, error };
+  return { data, loading, error };
 };

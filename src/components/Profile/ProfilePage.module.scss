@@ -31,17 +31,27 @@
   }
 
   .formContainer {
-    width: 100%; /* Assegura que o formContainer ocupe 100% da largura do elemento pai */
+    width: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  /* span{
-      color: var(--text-color);
-  } */
-
-  .title {
+  .pageTitle {
     padding-bottom: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .pageSubtitle {
+    margin-bottom: 2rem;
+  text-align: left;
+  color: var(--text-color);
+  }
+
+  .subtitle {
+    padding-bottom: 10px;
+    font-size: 1.3rem;
+    font-weight: bold;
   }
 
   .formColumns {
@@ -55,7 +65,17 @@
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
-    width: 100%;
+    width: 50%;
+  }
+
+  .inputLabel {
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+  }
+
+  .disabledInput{
+    color: var(--text-color)
   }
 
   .inputWrapper {
@@ -80,6 +100,40 @@
     display: flex;
     gap: 10px;
     justify-content: end;
+  }
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .modalContent {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 90%;
+    width: 400px;
+    height: 200px;
+  }
+
+  .modalSubtitle {
+    padding-bottom: 15px;
+  }
+
+  .modalTitle{
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--title-color);
+    margin-bottom: 10px;
   }
 
   @media (max-width: 768px) {

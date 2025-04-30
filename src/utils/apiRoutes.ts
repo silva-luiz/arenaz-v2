@@ -1,22 +1,36 @@
-
-const BASE_URL = 'https://9545-170-231-235-156.ngrok-free.app/';
+const BASE_URL = 'http://127.0.0.1:8000/';
 
 const URLS = {
   // User
-  REGISTER_USER: `${BASE_URL}api/user`,
   EMAIL_VALIDATION: `${BASE_URL}api/email-validation`,
+  REGISTER_USER: `${BASE_URL}api/user`,
+  GET_USER_INFO: `${BASE_URL}api/get-user`,
+  UPDATE_USER_INFO: `${BASE_URL}api/user/update`,
 
   // Establishment
   REGISTER_ESTABLISHMENT: `${BASE_URL}api/establishment`,
   GET_ESTABLISHMENT: `${BASE_URL}api/establishment/user/`,
+  GET_ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/get-establishment/`,
   ESTABLISHMENT_INFO: `${BASE_URL}api/establishment/info/`,
   GET_ALL_ESTABLISHMENTS: `${BASE_URL}api/establishments`,
-  UPDATE_ESTABLISHMENT: `${BASE_URL}api/establishments/cad/`,
-  DELETE_ESTABLISHMENT: `${BASE_URL}api/establishments/del/`,
+  UPDATE_ESTABLISHMENT: `${BASE_URL}api/establishment/update/`,
+  DELETE_ESTABLISHMENT: `${BASE_URL}api/establishment/del/`,
 
   // Arena
   REGISTER_ARENA: `${BASE_URL}api/arena`,
   GET_USER_ARENAS: `${BASE_URL}api/arenas/user`,
+  GET_ARENA_INFO: `${BASE_URL}api/arena/get-arena`,
+  UPDATE_ARENA_INFO: `${BASE_URL}api/arena/update`,
+  DELETE_ARENA: `${BASE_URL}api/arena`,
+  GET_SINGLE_ARENA_INFO: `${BASE_URL}api/arena`, // send ID
+
+  // Reservation
+  GET_RESERVATIONS: `${BASE_URL}api/reservation`,
+  CREATE_RESERVATION: `${BASE_URL}api/reservation`,
+  UPDATE_RESERVATION: `${BASE_URL}api/reservation/cad`, // send ID
+  DELETE_RESERVATION: `${BASE_URL}api/reservation/del`, // send ID
+  GET_RESERVATION_INFO: `${BASE_URL}api/reservation`, // send ID
+  FETCH_AVAILABLE_HOURS: `${BASE_URL}api/reservation/arena`,
 
   // Login
   LOGIN: `${BASE_URL}api/login`,
