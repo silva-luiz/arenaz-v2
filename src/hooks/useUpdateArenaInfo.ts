@@ -13,6 +13,9 @@ export const useUpdateArenaInfo = (url) => {
       return { res: null, jsonData: null, error: "Token ausente" };
     }
 
+    // Laravel precisa disso para tratar como PATCH
+    formData.append('_method', 'PATCH');
+
     setLoadingArenaInfo(true);
     setError(null);
     let res = null;
@@ -20,10 +23,9 @@ export const useUpdateArenaInfo = (url) => {
 
     try {
       res = await fetch(url, {
-        method: 'PATCH',
+        method: 'POST', // importante
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "multipart/form-data"
+          "Authorization": `Bearer ${token}`
         },
         body: formData,
       });

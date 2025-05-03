@@ -115,16 +115,8 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
     form.append('are_price', String(Number(arenaPrice)));
     form.append('are_category', String(arenaCategory));
 
-    // const updatedArenaData = {
-    //   usr_cod_alt: dashboardData.usr_id,
-    //   are_id: editArena.are_id,
-    //   are_name: arenaName,
-    //   are_price: Number(arenaPrice),
-    //   are_category: arenaCategory,
-    //   are_photo: arenaFile,
-    // };
-
     const { res, jsonData } = await updateArenaInfo(form);
+
 
     if (res && res.ok) {
       const updatedArena = jsonData.arena;
@@ -302,10 +294,9 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
         overlayClassName={styles.modalOverlay}
       >
         <div className={styles.modalContent}>
-          <h2 className={styles.modalTitle}>Editar dados da Arena</h2>
-          <p className={styles.modalSubtitle}>
-            Arena: <strong>{editArena?.are_name}</strong>
-          </p>
+          <h2 className={styles.modalTitle}>
+            Editar dados de <strong>{editArena?.are_name}</strong>
+          </h2>
           <form onSubmit={handleEditSubmit}>
             <PhotoUploader
               title="Alterar imagem"
