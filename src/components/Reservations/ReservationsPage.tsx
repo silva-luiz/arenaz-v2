@@ -11,6 +11,13 @@ import Link from 'next/link';
 import WarningIcon from '@mui/icons-material/Warning';
 import { CircularProgress } from '@mui/material';
 
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
+
 const urlFetchReservations = URLS.GET_RESERVATIONS;
 const urlDeleteReservation = URLS.DELETE_RESERVATION;
 
@@ -27,7 +34,7 @@ const ReservationsPage = ({
   const [modalMessage, setModalMessage] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
-
+  const [value, setValue] = React.useState('1');
   const [reservationPlayerNames, setReservationPlayerNames] = useState<
     string[]
   >([]);
@@ -55,40 +62,32 @@ const ReservationsPage = ({
   const { deleteReservation: deleteReservationRequest, loadingDelete } =
     useDeleteReservation(urlDeleteReservation);
 
-  const reservations = data?.reservations || [];
-  useEffect(() => {
-    if (data?.reservations) {
-      // Mapeando as propriedades de cada reserva
-      const playerNames = data.reservations.map(
-        (reserva) => reserva.res_player_name,
-      );
-      const dates = data.reservations.map((reserva) => reserva.res_date);
-      const values = data.reservations.map((reserva) => reserva.res_value);
-      const paymentAdvance = data.reservations.map(
-        (reserva) => reserva.res_payment_advance,
-      );
-      const ids = data.reservations.map((reserva) => reserva.res_id);
-      const arenas = data.reservations.map((reserva) => reserva.are_name);
-      const categories = data.reservations.map(
-        (reserva) => reserva.are_category,
-      );
-      const phones = data.reservations.map((reserva) => reserva.res_cel_phone);
-      const startTimes = data.reservations.map(
-        (reserva) => reserva.res_start_time,
-      );
-      const endTimes = data.reservations.map((reserva) => reserva.res_end_time);
+  const [activeReservations, setActiveReservations] = useState([]);
+  const [pendingReservations, setPendingReservations] = useState([]);
+  const [pastReservations, setPastReservations] = useState([]);
 
-      // Salvando no estado
-      setReservationPlayerNames(playerNames);
-      setReservationPhones(phones);
-      setReservationDates(dates);
-      setReservationValues(values);
-      setPaymentAdvanceValues(paymentAdvance);
-      setReservationIds(ids);
-      setReservationStartTime(startTimes);
-      setReservationEndTime(endTimes);
-      setReservationArenaNames(arenas);
-      setReservationArenaCategories(categories);
+  useEffect(() => {
+    const processReservations = (reservations) => {
+      if (!reservations) return null;
+
+      return reservations.map((reserva) => ({
+        playerName: reserva.res_player_name,
+        phone: reserva.res_cel_phone,
+        date: reserva.res_date,
+        value: reserva.res_value,
+        paymentAdvance: reserva.res_payment_advance,
+        id: reserva.res_id,
+        arena: reserva.are_name,
+        category: reserva.are_category,
+        startTime: reserva.res_start_time,
+        endTime: reserva.res_end_time,
+      }));
+    };
+
+    if (data) {
+      setActiveReservations(processReservations(data.active_reservations));
+      setPendingReservations(processReservations(data.pending_reservations));
+      setPastReservations(processReservations(data.reservations));
     }
   }, [data]);
 
@@ -99,6 +98,10 @@ const ReservationsPage = ({
     setModalMessage('Deseja excluir essa reserva?');
     setIsDeleteMode(true);
     setShowModal(true);
+  };
+
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setValue(newValue);
   };
 
   const handleConfirmDelete = async () => {
@@ -148,81 +151,231 @@ const ReservationsPage = ({
         </div>
       ) : (
         <div className={styles.tableResponsive}>
-          {data?.reservations?.length > 0 ? (
-            <Table
-              striped
-              bordered
-              hover
-              variant="dark"
-              size="sm"
-              className={styles.customTable}
-            >
-              <thead>
-                <tr className={styles.tableHeaderRow}>
-                  <th className={styles.tableHeader}>Arena</th>
-                  <th className={styles.tableHeader}>Categoria</th>
-                  <th className={styles.tableHeader}>Locador</th>
-                  <th className={styles.tableHeader}>Contato</th>
-                  <th className={styles.tableHeader}>Data</th>
-                  <th className={styles.tableHeader}>Horário</th>
-                  <th className={styles.tableHeader}>Valor</th>
-                  <th className={styles.tableHeader}>Valor adiantado</th>
-                  <th className={styles.tableHeader}>Editar</th>
-                  <th className={styles.tableHeader}>Excluir</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.reservations.map((reserva, index) => (
-                  <tr key={index} className={styles.tableRow}>
-                    <td className={styles.tableData}>
-                      {reservationArenaNames[index]}
-                    </td>
-                    <td className={styles.tableData}>
-                      {reservationArenaCategories[index]}
-                    </td>
-                    <td className={styles.tableData}>
-                      {reservationPlayerNames[index]}
-                    </td>
-                    <td className={styles.tableData}>
-                      {reservationPhones[index]}
-                    </td>
-                    <td className={styles.tableData}>
-                      {reservationDates[index] || 'Data não disponível'}
-                    </td>
-                    <td className={styles.tableData}>
-                      {reservationStartTime[index]} -{' '}
-                      {reservationEndTime[index]}
-                    </td>
-                    <td className={styles.tableData}>
-                      R$ {reservationValues[index] || 'Valor não disponível'}
-                    </td>
-                    <td className={styles.tableData}>
-                      R$ {paymentAdvanceValues[index] || 0}
-                    </td>
-                    <td className={styles.tableData}>
-                      <Link href={`/home/update-reservation/${reserva.res_id}`}>
-                        <FaEdit className={styles.iconButton} title="Editar" />
-                      </Link>
-                    </td>
-                    <td className={styles.tableData}>
-                      <FaTrash
-                        className={styles.iconButtonTrash}
-                        onClick={() => handleDeleteClick(reserva)}
-                        title="Cancelar"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          ) : (
-            <div className={styles.noReservationsContainer}>
-              <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
-              <p className={styles.noReservationsMessage}>
-                Você ainda não tem reservas cadastradas.
-              </p>
-            </div>
-          )}
+          <Box sx={{ width: '100%', typography: 'body1' }}>
+            <TabContext value={value}>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TabList
+                  onChange={handleChange}
+                  aria-label="reservations"
+                  centered
+                >
+                  <Tab label="Reservas ativas" value="1" />
+                  <Tab label="Reservas pendentes" value="2" />
+                  <Tab label="Histórico de reservas" value="3" />
+                </TabList>
+              </Box>
+              <TabPanel value="1">
+                {' '}
+                {activeReservations?.length > 0 ? (
+                  <Table
+                    striped
+                    bordered
+                    hover
+                    variant="dark"
+                    size="sm"
+                    className={styles.customTable}
+                  >
+                    <thead>
+                      <tr className={styles.tableHeaderRow}>
+                        <th className={styles.tableHeader}>Arena</th>
+                        <th className={styles.tableHeader}>Categoria</th>
+                        <th className={styles.tableHeader}>Locador</th>
+                        <th className={styles.tableHeader}>Contato</th>
+                        <th className={styles.tableHeader}>Data</th>
+                        <th className={styles.tableHeader}>Horário</th>
+                        <th className={styles.tableHeader}>Valor</th>
+                        <th className={styles.tableHeader}>Valor adiantado</th>
+                        <th className={styles.tableHeader}>Editar</th>
+                        <th className={styles.tableHeader}>Excluir</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeReservations.map((reserva, index) => (
+                        <tr key={index} className={styles.tableRow}>
+                          <td className={styles.tableData}>{reserva.arena}</td>
+                          <td className={styles.tableData}>
+                            {reserva.category}
+                          </td>
+                          <td className={styles.tableData}>
+                            {reserva.playerName}
+                          </td>
+                          <td className={styles.tableData}>{reserva.phone}</td>
+                          <td className={styles.tableData}>
+                            {reserva.date || 'Data não disponível'}
+                          </td>
+                          <td className={styles.tableData}>
+                            {reserva.startTime} - {reserva.endTime}
+                          </td>
+                          <td className={styles.tableData}>
+                            R$ {reserva.value || 'Valor não disponível'}
+                          </td>
+                          <td className={styles.tableData}>
+                            R$ {reserva.paymentAdvance || 0}
+                          </td>
+                          <td className={styles.tableData}>
+                            <Link
+                              href={`/home/update-reservation/${reserva.res_id}`}
+                            >
+                              <FaEdit
+                                className={styles.iconButton}
+                                title="Editar"
+                              />
+                            </Link>
+                          </td>
+                          <td className={styles.tableData}>
+                            <FaTrash
+                              className={styles.iconButtonTrash}
+                              onClick={() => handleDeleteClick(reserva)}
+                              title="Cancelar"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                ) : (
+                  <div className={styles.noReservationsContainer}>
+                    <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+                    <p className={styles.noReservationsMessage}>
+                      Você ainda não tem reservas cadastradas.
+                    </p>
+                  </div>
+                )}
+              </TabPanel>
+              <TabPanel value="2">
+                <Table
+                  striped
+                  bordered
+                  hover
+                  variant="dark"
+                  size="sm"
+                  className={styles.customTable}
+                >
+                  <thead>
+                    <tr className={styles.tableHeaderRow}>
+                      <th className={styles.tableHeader}>Arena</th>
+                      <th className={styles.tableHeader}>Categoria</th>
+                      <th className={styles.tableHeader}>Locador</th>
+                      <th className={styles.tableHeader}>Contato</th>
+                      <th className={styles.tableHeader}>Data</th>
+                      <th className={styles.tableHeader}>Horário</th>
+                      <th className={styles.tableHeader}>Valor</th>
+                      <th className={styles.tableHeader}>Valor adiantado</th>
+                      <th className={styles.tableHeader}>Editar</th>
+                      <th className={styles.tableHeader}>Excluir</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingReservations.map((reserva, index) => (
+                      <tr key={index} className={styles.tableRow}>
+                        <td className={styles.tableData}>{reserva.arena}</td>
+                        <td className={styles.tableData}>{reserva.category}</td>
+                        <td className={styles.tableData}>
+                          {reserva.playerName}
+                        </td>
+                        <td className={styles.tableData}>{reserva.phone}</td>
+                        <td className={styles.tableData}>
+                          {reserva.date || 'Data não disponível'}
+                        </td>
+                        <td className={styles.tableData}>
+                          {reserva.startTime} - {reserva.endTime}
+                        </td>
+                        <td className={styles.tableData}>
+                          R$ {reserva.value || 'Valor não disponível'}
+                        </td>
+                        <td className={styles.tableData}>
+                          R$ {reserva.paymentAdvance || 0}
+                        </td>
+                        <td className={styles.tableData}>
+                          <Link
+                            href={`/home/update-reservation/${reserva.res_id}`}
+                          >
+                            <FaEdit
+                              className={styles.iconButton}
+                              title="Editar"
+                            />
+                          </Link>
+                        </td>
+                        <td className={styles.tableData}>
+                          <FaTrash
+                            className={styles.iconButtonTrash}
+                            onClick={() => handleDeleteClick(reserva)}
+                            title="Cancelar"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </TabPanel>
+              <TabPanel value="3">
+                <Table
+                  striped
+                  bordered
+                  hover
+                  variant="dark"
+                  size="sm"
+                  className={styles.customTable}
+                >
+                  <thead>
+                    <tr className={styles.tableHeaderRow}>
+                      <th className={styles.tableHeader}>Arena</th>
+                      <th className={styles.tableHeader}>Categoria</th>
+                      <th className={styles.tableHeader}>Locador</th>
+                      <th className={styles.tableHeader}>Contato</th>
+                      <th className={styles.tableHeader}>Data</th>
+                      <th className={styles.tableHeader}>Horário</th>
+                      <th className={styles.tableHeader}>Valor</th>
+                      <th className={styles.tableHeader}>Valor adiantado</th>
+                      <th className={styles.tableHeader}>Editar</th>
+                      <th className={styles.tableHeader}>Excluir</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastReservations.map((reserva, index) => (
+                      <tr key={index} className={styles.tableRow}>
+                        <td className={styles.tableData}>{reserva.arena}</td>
+                        <td className={styles.tableData}>{reserva.category}</td>
+                        <td className={styles.tableData}>
+                          {reserva.playerName}
+                        </td>
+                        <td className={styles.tableData}>{reserva.phone}</td>
+                        <td className={styles.tableData}>
+                          {reserva.date || 'Data não disponível'}
+                        </td>
+                        <td className={styles.tableData}>
+                          {reserva.startTime} - {reserva.endTime}
+                        </td>
+                        <td className={styles.tableData}>
+                          R$ {reserva.value || 'Valor não disponível'}
+                        </td>
+                        <td className={styles.tableData}>
+                          R$ {reserva.paymentAdvance || 0}
+                        </td>
+                        <td className={styles.tableData}>
+                          <Link
+                            href={`/home/update-reservation/${reserva.res_id}`}
+                          >
+                            <FaEdit
+                              className={styles.iconButton}
+                              title="Editar"
+                            />
+                          </Link>
+                        </td>
+                        <td className={styles.tableData}>
+                          <FaTrash
+                            className={styles.iconButtonTrash}
+                            onClick={() => handleDeleteClick(reserva)}
+                            title="Cancelar"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </TabPanel>
+            </TabContext>
+          </Box>
         </div>
       )}
 

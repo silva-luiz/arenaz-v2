@@ -442,6 +442,18 @@
   dependencies:
     "@babel/runtime" "^7.27.0"
 
+"@mui/lab@^7.0.0-beta.11":
+  version "7.0.0-beta.11"
+  resolved "https://registry.yarnpkg.com/@mui/lab/-/lab-7.0.0-beta.11.tgz#e3731d60f1e156368cd9be779fc730a27ec8f6dc"
+  integrity sha512-VJDEUgiRsjo8V2xDvBEE9Cfs1cSlwzp9UFmD3KzIg6emFMqz9BfYh+9cFI4iQWaoz3Agm3q6bVKlhlX6xw6sVQ==
+  dependencies:
+    "@babel/runtime" "^7.27.0"
+    "@mui/system" "^7.0.2"
+    "@mui/types" "^7.4.1"
+    "@mui/utils" "^7.0.2"
+    clsx "^2.1.1"
+    prop-types "^15.8.1"
+
 "@mui/material-nextjs@^7.0.2":
   version "7.0.2"
   resolved "https://registry.yarnpkg.com/@mui/material-nextjs/-/material-nextjs-7.0.2.tgz#72c2d2f00479ed83619b9f5b4566896a600bf189"
