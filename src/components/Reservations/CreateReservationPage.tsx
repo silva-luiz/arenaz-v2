@@ -384,6 +384,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                         unoptimized
                       />
                       <button
+                        type="button"
                         onClick={handleDownload}
                         className="primaryButton"
                       >
