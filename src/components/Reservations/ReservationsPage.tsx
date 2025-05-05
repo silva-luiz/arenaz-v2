@@ -158,6 +158,8 @@ const ReservationsPage = ({
                   onChange={handleChange}
                   aria-label="reservations"
                   centered
+                  textColor="inherit"
+                  indicatorColor="primary"
                 >
                   <Tab label="Reservas ativas" value="1" />
                   <Tab label="Reservas pendentes" value="2" />
@@ -166,6 +168,10 @@ const ReservationsPage = ({
               </Box>
               <TabPanel value="1">
                 {' '}
+                <p className={styles.reservationsSubtitle}>
+                  Aqui são listadas todas as reservas ativas, ou seja, que ainda
+                  estão em andamento.
+                </p>
                 {activeReservations?.length > 0 ? (
                   <Table
                     striped
@@ -214,6 +220,7 @@ const ReservationsPage = ({
                           </td>
                           <td className={styles.tableData}>
                             <Link
+                              className={styles.tableButton}
                               href={`/home/update-reservation/${reserva.res_id}`}
                             >
                               <FaEdit
@@ -223,11 +230,13 @@ const ReservationsPage = ({
                             </Link>
                           </td>
                           <td className={styles.tableData}>
-                            <FaTrash
-                              className={styles.iconButtonTrash}
-                              onClick={() => handleDeleteClick(reserva)}
-                              title="Cancelar"
-                            />
+                            <div className={styles.tableButton}>
+                              <FaTrash
+                                className={styles.iconButtonTrash}
+                                onClick={() => handleDeleteClick(reserva)}
+                                title="Cancelar"
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -243,6 +252,10 @@ const ReservationsPage = ({
                 )}
               </TabPanel>
               <TabPanel value="2">
+                <p className={styles.reservationsSubtitle}>
+                  Aqui são listadas todas as reservas pendentes, ou seja,
+                  reservas que ainda existe parte do pagamento em aberto.
+                </p>
                 <Table
                   striped
                   bordered
@@ -288,6 +301,7 @@ const ReservationsPage = ({
                         </td>
                         <td className={styles.tableData}>
                           <Link
+                            className={styles.tableButton}
                             href={`/home/update-reservation/${reserva.res_id}`}
                           >
                             <FaEdit
@@ -297,18 +311,26 @@ const ReservationsPage = ({
                           </Link>
                         </td>
                         <td className={styles.tableData}>
-                          <FaTrash
-                            className={styles.iconButtonTrash}
-                            onClick={() => handleDeleteClick(reserva)}
-                            title="Cancelar"
-                          />
+                          <div className={styles.tableButton}>
+                            <FaTrash
+                              className={styles.iconButtonTrash}
+                              onClick={() => handleDeleteClick(reserva)}
+                              title="Cancelar"
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </Table>
               </TabPanel>
+
               <TabPanel value="3">
+                <p className={styles.reservationsSubtitle}>
+                  Aqui são listadas todas as reservas finalizadas, ou seja, com
+                  pagamento integral concluído e com a utilização do espaço já
+                  realizada.
+                </p>
                 <Table
                   striped
                   bordered
@@ -354,6 +376,7 @@ const ReservationsPage = ({
                         </td>
                         <td className={styles.tableData}>
                           <Link
+                            className={styles.tableButton}
                             href={`/home/update-reservation/${reserva.res_id}`}
                           >
                             <FaEdit
@@ -363,11 +386,13 @@ const ReservationsPage = ({
                           </Link>
                         </td>
                         <td className={styles.tableData}>
-                          <FaTrash
-                            className={styles.iconButtonTrash}
-                            onClick={() => handleDeleteClick(reserva)}
-                            title="Cancelar"
-                          />
+                          <div className={styles.tableButton}>
+                            <FaTrash
+                              className={styles.iconButtonTrash}
+                              onClick={() => handleDeleteClick(reserva)}
+                              title="Cancelar"
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
