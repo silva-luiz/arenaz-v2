@@ -406,35 +406,110 @@ const ReservationsPage = ({
 
       {/* Versão mobile: cards */}
       <div className={styles.mobileCardsContainer}>
-        {data?.reservations?.map((reserva, index) => (
+        {activeReservations.map((reserva, index) => (
           <div key={index} className={styles.mobileCard}>
             <p>
               <strong>Arena:</strong> {reserva.arena}
             </p>
             <p>
-              <strong>Categoria:</strong> {reserva.categoria}
+              <strong>Categoria:</strong> {reserva.category}
             </p>
             <p>
-              <strong>Locador:</strong> {reservationPlayerNames[index]}
+              <strong>Locador:</strong> {reserva.playerName}
             </p>
             <p>
-              <strong>Contato:</strong> {reservationPhones[index]}
+              <strong>Contato:</strong> {reserva.phone}
             </p>
             <p>
-              <strong>Data:</strong>{' '}
-              {reservationDates[index] || 'Data não disponível'}
+              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
             </p>
             <p>
-              <strong>Horário:</strong> {reservationStartTime[index]} -{' '}
-              {reservationEndTime[index]}
+              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
             </p>
             <p>
               <strong>Valor:</strong> R${' '}
-              {reservationValues[index] || 'Valor não disponível'}
+              {reserva.value || 'Valor não disponível'}
             </p>
             <p>
-              <strong>Valor adiantado:</strong> R${' '}
-              {paymentAdvanceValues[index] || 0}
+              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
+            </p>
+            <div className={styles.mobileActions}>
+              <Link href={`/home/update-reservation/${reserva.res_id}`}>
+                <FaEdit className={styles.iconButton} title="Editar" />
+              </Link>
+              <FaTrash
+                className={styles.iconButton}
+                onClick={() => handleDeleteClick(reserva)}
+                title="Cancelar"
+              />
+            </div>
+          </div>
+        ))}
+        {pendingReservations.map((reserva, index) => (
+          <div key={index} className={styles.mobileCard}>
+            <p>
+              <strong>Arena:</strong> {reserva.arena}
+            </p>
+            <p>
+              <strong>Categoria:</strong> {reserva.category}
+            </p>
+            <p>
+              <strong>Locador:</strong> {reserva.playerName}
+            </p>
+            <p>
+              <strong>Contato:</strong> {reserva.phone}
+            </p>
+            <p>
+              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
+            </p>
+            <p>
+              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
+            </p>
+            <p>
+              <strong>Valor:</strong> R${' '}
+              {reserva.value || 'Valor não disponível'}
+            </p>
+            <p>
+              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
+            </p>
+            <div className={styles.mobileActions}>
+              <Link href={`/home/update-reservation/${reserva.res_id}`}>
+                <FaEdit className={styles.iconButton} title="Editar" />
+              </Link>
+              <FaTrash
+                className={styles.iconButton}
+                onClick={() => handleDeleteClick(reserva)}
+                title="Cancelar"
+              />
+            </div>
+          </div>
+        ))}
+        {pastReservations.map((reserva, index) => (
+          <div key={index} className={styles.mobileCard}>
+            <p>
+              <strong>Arena:</strong> {reserva.arena}
+            </p>
+            <p>
+              <strong>Categoria:</strong> {reserva.category}
+            </p>
+            <p>
+              <strong>Locador:</strong> {reserva.playerName}
+            </p>
+            <p>
+              <strong>Contato:</strong> {reserva.phone}
+            </p>
+            <p>
+              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
+            </p>
+            <p>
+              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
+            </p>
+            <p>
+              <strong>Valor:</strong> R${' '}
+              {reserva.value || 'Valor não disponível'}
+            </p>
+            <p>
+              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
             </p>
             <div className={styles.mobileActions}>
               <Link href={`/home/update-reservation/${reserva.res_id}`}>
