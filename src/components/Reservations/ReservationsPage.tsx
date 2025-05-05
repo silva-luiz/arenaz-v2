@@ -256,6 +256,7 @@ const ReservationsPage = ({
                   Aqui são listadas todas as reservas pendentes, ou seja,
                   reservas que ainda existe parte do pagamento em aberto.
                 </p>
+                {pendingReservations?.length > 0 ? (
                 <Table
                   striped
                   bordered
@@ -323,6 +324,14 @@ const ReservationsPage = ({
                     ))}
                   </tbody>
                 </Table>
+                ) : (
+                  <div className={styles.noReservationsContainer}>
+                  <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+                  <p className={styles.noReservationsMessage}>
+                    Você ainda não tem reservas cadastradas.
+                  </p>
+                </div>
+                )}
               </TabPanel>
 
               <TabPanel value="3">
@@ -331,6 +340,7 @@ const ReservationsPage = ({
                   pagamento integral concluído e com a utilização do espaço já
                   realizada.
                 </p>
+                {pendingReservations?.length > 0 ? (
                 <Table
                   striped
                   bordered
@@ -398,6 +408,14 @@ const ReservationsPage = ({
                     ))}
                   </tbody>
                 </Table>
+                ) : (
+                  <div className={styles.noReservationsContainer}>
+                  <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
+                  <p className={styles.noReservationsMessage}>
+                    Você ainda não tem reservas cadastradas.
+                  </p>
+                </div>
+                )}
               </TabPanel>
             </TabContext>
           </Box>
