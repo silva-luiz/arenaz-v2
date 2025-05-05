@@ -340,7 +340,7 @@ const ReservationsPage = ({
                   pagamento integral concluído e com a utilização do espaço já
                   realizada.
                 </p>
-                {pendingReservations?.length > 0 ? (
+                {pastReservations?.length > 0 ? (
                 <Table
                   striped
                   bordered
