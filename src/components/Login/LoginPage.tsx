@@ -84,12 +84,7 @@ const LoginPage = () => {
               <FaLock className={styles.faIcon} />
             </div>
           </div>
-          {/* <div className={styles.recallForget}>
-            <label>
-              <input type="checkbox" className={styles.checkbox} />
-              Lembrar login
-            </label>
-          </div> */}
+
           <Button
             className={styles.loginPrimaryButton}
             text={loading ? 'Entrando...' : 'Entrar'}

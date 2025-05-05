@@ -109,6 +109,14 @@
     background-color: var(--primary-color-hover);
   }
 
+  .loginPrimaryButton:disabled,
+  .loginPrimaryButton.disabled {
+  background-color: var(--background-color-hover);
+  color: var(--text-color-light);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
   .signUpLink {
     display: flex;
     justify-content: center;
