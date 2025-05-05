@@ -57,6 +57,15 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
   const [deleteArena, setDeleteArena] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [loadingRedirect, setLoadingRedirect] = useState<number | null>(null);
+
+  const handleRedirectToReservation = (arenaId: number) => {
+    if (loadingRedirect !== null) return; // já está indo
+
+    setLoadingRedirect(arenaId);
+    window.location.href = `/home/create-reservation/${arenaId}`;
+  };
+
 
   const handleEditArena = (arena) => {
     setEditArena(arena);
@@ -116,7 +125,6 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
     form.append('are_category', String(arenaCategory));
 
     const { res, jsonData } = await updateArenaInfo(form);
-
 
     if (res && res.ok) {
       const updatedArena = jsonData.arena;
@@ -206,9 +214,12 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
                     arenaCategory={arena.are_category}
                     arenaPrice={arena.are_price}
                     arenaPhoto={`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`}
-                    goToReservation={`/home/create-reservation/${arena.are_id}`}
+                    goToReservation={() =>
+                      handleRedirectToReservation(arena.are_id)
+                    }
                     onEdit={() => handleEditArena(arena)}
                     onDelete={() => handleDeleteArena(arena)}
+                    isRedirecting={loadingRedirect === arena.are_id}
                   />
                 ))}
             {arenas.length > 5 && (
