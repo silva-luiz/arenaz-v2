@@ -154,7 +154,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       setModalMessage('Arena excluída com sucesso!');
     } else {
       setModalMessage(
-        jsonData?.message || 'Erro ao excluir a arena. Tente novamente.',
+        jsonData?.message || `Erro ao excluir a arena. Verifique se não há reservas ativas para essa arena.`,
       );
     }
 
