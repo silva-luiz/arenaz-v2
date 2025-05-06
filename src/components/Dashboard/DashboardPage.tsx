@@ -233,7 +233,7 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
         )}
       </div>
 
-      <h2 className={styles.dashboardTitle}>Reservas ativas</h2>
+      <h2 className={styles.dashboardTitle}>Informações financeiras</h2>
       <div className={styles.reservationStatusContainer}>
         {dashboardData && arenas.length > 0 && (
           <>

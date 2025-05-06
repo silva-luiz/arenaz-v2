@@ -1,0 +1,86 @@
+.noReservationsContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.noReservationsMessage {
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--text-color);
+  margin-top: 0;
+  align-self: center;
+}
+
+.warningIcon {
+  align-self: center;
+}
+.customTable {
+  width: 100%;
+  background-color: #343a40;
+  border-radius: 12px;
+}
+
+.tableHeader {
+  background-color: #495057;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 16px !important;
+}
+
+.tableRow {
+  transition: background-color 0.3s ease;
+}
+
+.tableRow:hover {
+  background-color: #565e64;
+}
+
+.tableData {
+  text-align: center;
+  color: var(--secondary-title-color);
+  padding: 12px !important;
+  vertical-align: middle;
+}
+
+.tableButton{
+  display: flex;
+  justify-content: center;
+}
+
+.tableHeaderRow {
+  th:first-child {
+    border-top-left-radius: 12px;
+  }
+
+  th:last-child {
+    border-top-right-radius: 12px;
+  }
+}
+
+.iconButton {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: ease 0.3s;
+}
+
+.iconButton:hover {
+  color: var(--primary-color);
+}
+
+.iconButtonTrash {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: ease 0.3s;
+}
+
+.iconButtonTrash:hover {
+  color: var(--danger);
+}
+

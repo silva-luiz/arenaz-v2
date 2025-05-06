@@ -1,14 +1,10 @@
 'use client';
-import Table from 'react-bootstrap/Table';
 import styles from '../Reservations/ReservationsPage.module.scss';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaEdit, FaTrash } from 'react-icons/fa';
 import URLS from 'utils/apiRoutes';
 import { useFetchReservations } from 'hooks/useFetchReservations';
 import { useDeleteReservation } from 'hooks/useDeleteReservation';
-import Link from 'next/link';
-import WarningIcon from '@mui/icons-material/Warning';
 import { CircularProgress } from '@mui/material';
 
 import * as React from 'react';
@@ -17,6 +13,8 @@ import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
+import ReservationsTable from 'components/ReservationTable/ReservationTable';
+import ReservationsCardList from 'components/ReservationsCardList/ReservationsCardList';
 
 const urlFetchReservations = URLS.GET_RESERVATIONS;
 const urlDeleteReservation = URLS.DELETE_RESERVATION;
@@ -35,11 +33,11 @@ const ReservationsPage = ({
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [value, setValue] = React.useState('1');
- 
-  const { data, loadingReservations, error } =
+
+  const { data, loadingReservations } =
     useFetchReservations(urlFetchReservations);
 
-  const { deleteReservation: deleteReservationRequest, loadingDelete } =
+  const { deleteReservation: deleteReservationRequest } =
     useDeleteReservation(urlDeleteReservation);
 
   const [activeReservations, setActiveReservations] = useState([]);
@@ -70,8 +68,6 @@ const ReservationsPage = ({
       setPastReservations(processReservations(data.reservations));
     }
   }, [data]);
-
-  const router = useRouter();
 
   const handleDeleteClick = (reservation: any) => {
     setSelectedReservation(reservation);
@@ -153,166 +149,22 @@ const ReservationsPage = ({
                   Aqui são listadas todas as reservas ativas, ou seja, que ainda
                   estão em andamento.
                 </p>
-                {activeReservations?.length > 0 ? (
-                  <Table
-                    striped
-                    bordered
-                    hover
-                    variant="dark"
-                    size="sm"
-                    className={styles.customTable}
-                  >
-                    <thead>
-                      <tr className={styles.tableHeaderRow}>
-                        <th className={styles.tableHeader}>Arena</th>
-                        <th className={styles.tableHeader}>Categoria</th>
-                        <th className={styles.tableHeader}>Locador</th>
-                        <th className={styles.tableHeader}>Contato</th>
-                        <th className={styles.tableHeader}>Data</th>
-                        <th className={styles.tableHeader}>Horário</th>
-                        <th className={styles.tableHeader}>Valor</th>
-                        <th className={styles.tableHeader}>Valor adiantado</th>
-                        <th className={styles.tableHeader}>Editar</th>
-                        <th className={styles.tableHeader}>Excluir</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeReservations.map((reserva, index) => (
-                        <tr key={index} className={styles.tableRow}>
-                          <td className={styles.tableData}>{reserva.arena}</td>
-                          <td className={styles.tableData}>
-                            {reserva.category}
-                          </td>
-                          <td className={styles.tableData}>
-                            {reserva.playerName}
-                          </td>
-                          <td className={styles.tableData}>{reserva.phone}</td>
-                          <td className={styles.tableData}>
-                            {reserva.date || 'Data não disponível'}
-                          </td>
-                          <td className={styles.tableData}>
-                            {reserva.startTime} - {reserva.endTime}
-                          </td>
-                          <td className={styles.tableData}>
-                            R$ {reserva.value || 'Valor não disponível'}
-                          </td>
-                          <td className={styles.tableData}>
-                            R$ {reserva.paymentAdvance || 0}
-                          </td>
-                          <td className={styles.tableData}>
-                            <Link
-                              className={styles.tableButton}
-                              href={`/home/update-reservation/${reserva.res_id}`}
-                            >
-                              <FaEdit
-                                className={styles.iconButton}
-                                title="Editar"
-                              />
-                            </Link>
-                          </td>
-                          <td className={styles.tableData}>
-                            <div className={styles.tableButton}>
-                              <FaTrash
-                                className={styles.iconButtonTrash}
-                                onClick={() => handleDeleteClick(reserva)}
-                                title="Cancelar"
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                ) : (
-                  <div className={styles.noReservationsContainer}>
-                    <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
-                    <p className={styles.noReservationsMessage}>
-                      Você ainda não tem reservas cadastradas.
-                    </p>
-                  </div>
-                )}
+                <ReservationsTable
+                  reservationStatus={activeReservations}
+                  handleDeleteClick={handleDeleteClick}
+                  emptyMessage="Você ainda não tem reservas ativas."
+                />
               </TabPanel>
               <TabPanel value="2">
                 <p className={styles.reservationsSubtitle}>
                   Aqui são listadas todas as reservas pendentes, ou seja,
                   reservas que ainda existe parte do pagamento em aberto.
                 </p>
-                {pendingReservations?.length > 0 ? (
-                <Table
-                  striped
-                  bordered
-                  hover
-                  variant="dark"
-                  size="sm"
-                  className={styles.customTable}
-                >
-                  <thead>
-                    <tr className={styles.tableHeaderRow}>
-                      <th className={styles.tableHeader}>Arena</th>
-                      <th className={styles.tableHeader}>Categoria</th>
-                      <th className={styles.tableHeader}>Locador</th>
-                      <th className={styles.tableHeader}>Contato</th>
-                      <th className={styles.tableHeader}>Data</th>
-                      <th className={styles.tableHeader}>Horário</th>
-                      <th className={styles.tableHeader}>Valor</th>
-                      <th className={styles.tableHeader}>Valor adiantado</th>
-                      <th className={styles.tableHeader}>Editar</th>
-                      <th className={styles.tableHeader}>Excluir</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendingReservations.map((reserva, index) => (
-                      <tr key={index} className={styles.tableRow}>
-                        <td className={styles.tableData}>{reserva.arena}</td>
-                        <td className={styles.tableData}>{reserva.category}</td>
-                        <td className={styles.tableData}>
-                          {reserva.playerName}
-                        </td>
-                        <td className={styles.tableData}>{reserva.phone}</td>
-                        <td className={styles.tableData}>
-                          {reserva.date || 'Data não disponível'}
-                        </td>
-                        <td className={styles.tableData}>
-                          {reserva.startTime} - {reserva.endTime}
-                        </td>
-                        <td className={styles.tableData}>
-                          R$ {reserva.value || 'Valor não disponível'}
-                        </td>
-                        <td className={styles.tableData}>
-                          R$ {reserva.paymentAdvance || 0}
-                        </td>
-                        <td className={styles.tableData}>
-                          <Link
-                            className={styles.tableButton}
-                            href={`/home/update-reservation/${reserva.res_id}`}
-                          >
-                            <FaEdit
-                              className={styles.iconButton}
-                              title="Editar"
-                            />
-                          </Link>
-                        </td>
-                        <td className={styles.tableData}>
-                          <div className={styles.tableButton}>
-                            <FaTrash
-                              className={styles.iconButtonTrash}
-                              onClick={() => handleDeleteClick(reserva)}
-                              title="Cancelar"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-                ) : (
-                  <div className={styles.noReservationsContainer}>
-                  <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
-                  <p className={styles.noReservationsMessage}>
-                    Você ainda não tem reservas cadastradas.
-                  </p>
-                </div>
-                )}
+                <ReservationsTable
+                  reservationStatus={pendingReservations}
+                  handleDeleteClick={handleDeleteClick}
+                  emptyMessage="Você ainda não tem reservas pendentes."
+                />
               </TabPanel>
 
               <TabPanel value="3">
@@ -321,82 +173,11 @@ const ReservationsPage = ({
                   pagamento integral concluído e com a utilização do espaço já
                   realizada.
                 </p>
-                {pastReservations?.length > 0 ? (
-                <Table
-                  striped
-                  bordered
-                  hover
-                  variant="dark"
-                  size="sm"
-                  className={styles.customTable}
-                >
-                  <thead>
-                    <tr className={styles.tableHeaderRow}>
-                      <th className={styles.tableHeader}>Arena</th>
-                      <th className={styles.tableHeader}>Categoria</th>
-                      <th className={styles.tableHeader}>Locador</th>
-                      <th className={styles.tableHeader}>Contato</th>
-                      <th className={styles.tableHeader}>Data</th>
-                      <th className={styles.tableHeader}>Horário</th>
-                      <th className={styles.tableHeader}>Valor</th>
-                      <th className={styles.tableHeader}>Valor adiantado</th>
-                      <th className={styles.tableHeader}>Editar</th>
-                      <th className={styles.tableHeader}>Excluir</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pastReservations.map((reserva, index) => (
-                      <tr key={index} className={styles.tableRow}>
-                        <td className={styles.tableData}>{reserva.arena}</td>
-                        <td className={styles.tableData}>{reserva.category}</td>
-                        <td className={styles.tableData}>
-                          {reserva.playerName}
-                        </td>
-                        <td className={styles.tableData}>{reserva.phone}</td>
-                        <td className={styles.tableData}>
-                          {reserva.date || 'Data não disponível'}
-                        </td>
-                        <td className={styles.tableData}>
-                          {reserva.startTime} - {reserva.endTime}
-                        </td>
-                        <td className={styles.tableData}>
-                          R$ {reserva.value || 'Valor não disponível'}
-                        </td>
-                        <td className={styles.tableData}>
-                          R$ {reserva.paymentAdvance || 0}
-                        </td>
-                        <td className={styles.tableData}>
-                          <Link
-                            className={styles.tableButton}
-                            href={`/home/update-reservation/${reserva.res_id}`}
-                          >
-                            <FaEdit
-                              className={styles.iconButton}
-                              title="Editar"
-                            />
-                          </Link>
-                        </td>
-                        <td className={styles.tableData}>
-                          <div className={styles.tableButton}>
-                            <FaTrash
-                              className={styles.iconButtonTrash}
-                              onClick={() => handleDeleteClick(reserva)}
-                              title="Cancelar"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-                ) : (
-                  <div className={styles.noReservationsContainer}>
-                  <WarningIcon style={{ color: 'orange', fontSize: 48 }} />
-                  <p className={styles.noReservationsMessage}>
-                    Você ainda não tem reservas cadastradas.
-                  </p>
-                </div>
-                )}
+                <ReservationsTable
+                  reservationStatus={pastReservations}
+                  handleDeleteClick={handleDeleteClick}
+                  emptyMessage="Você ainda não tem reservas em seu histórico."
+                />
               </TabPanel>
             </TabContext>
           </Box>
@@ -404,125 +185,42 @@ const ReservationsPage = ({
       )}
 
       {/* Versão mobile: cards */}
-      <div className={styles.mobileCardsContainer}>
-        {activeReservations.map((reserva, index) => (
-          <div key={index} className={styles.mobileCard}>
-            <p>
-              <strong>Arena:</strong> {reserva.arena}
-            </p>
-            <p>
-              <strong>Categoria:</strong> {reserva.category}
-            </p>
-            <p>
-              <strong>Locador:</strong> {reserva.playerName}
-            </p>
-            <p>
-              <strong>Contato:</strong> {reserva.phone}
-            </p>
-            <p>
-              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
-            </p>
-            <p>
-              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
-            </p>
-            <p>
-              <strong>Valor:</strong> R${' '}
-              {reserva.value || 'Valor não disponível'}
-            </p>
-            <p>
-              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
-            </p>
-            <div className={styles.mobileActions}>
-              <Link href={`/home/update-reservation/${reserva.res_id}`}>
-                <FaEdit className={styles.iconButton} title="Editar" />
-              </Link>
-              <FaTrash
-                className={styles.iconButton}
-                onClick={() => handleDeleteClick(reserva)}
-                title="Cancelar"
-              />
-            </div>
-          </div>
-        ))}
-        {pendingReservations.map((reserva, index) => (
-          <div key={index} className={styles.mobileCard}>
-            <p>
-              <strong>Arena:</strong> {reserva.arena}
-            </p>
-            <p>
-              <strong>Categoria:</strong> {reserva.category}
-            </p>
-            <p>
-              <strong>Locador:</strong> {reserva.playerName}
-            </p>
-            <p>
-              <strong>Contato:</strong> {reserva.phone}
-            </p>
-            <p>
-              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
-            </p>
-            <p>
-              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
-            </p>
-            <p>
-              <strong>Valor:</strong> R${' '}
-              {reserva.value || 'Valor não disponível'}
-            </p>
-            <p>
-              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
-            </p>
-            <div className={styles.mobileActions}>
-              <Link href={`/home/update-reservation/${reserva.res_id}`}>
-                <FaEdit className={styles.iconButton} title="Editar" />
-              </Link>
-              <FaTrash
-                className={styles.iconButton}
-                onClick={() => handleDeleteClick(reserva)}
-                title="Cancelar"
-              />
-            </div>
-          </div>
-        ))}
-        {pastReservations.map((reserva, index) => (
-          <div key={index} className={styles.mobileCard}>
-            <p>
-              <strong>Arena:</strong> {reserva.arena}
-            </p>
-            <p>
-              <strong>Categoria:</strong> {reserva.category}
-            </p>
-            <p>
-              <strong>Locador:</strong> {reserva.playerName}
-            </p>
-            <p>
-              <strong>Contato:</strong> {reserva.phone}
-            </p>
-            <p>
-              <strong>Data:</strong> {reserva.date || 'Data não disponível'}
-            </p>
-            <p>
-              <strong>Horário:</strong> {reserva.startTime} - {reserva.endTime}
-            </p>
-            <p>
-              <strong>Valor:</strong> R${' '}
-              {reserva.value || 'Valor não disponível'}
-            </p>
-            <p>
-              <strong>Valor adiantado:</strong> R$ {reserva.paymentAdvance || 0}
-            </p>
-            <div className={styles.mobileActions}>
-              <Link href={`/home/update-reservation/${reserva.res_id}`}>
-                <FaEdit className={styles.iconButton} title="Editar" />
-              </Link>
-              <FaTrash
-                className={styles.iconButton}
-                onClick={() => handleDeleteClick(reserva)}
-                title="Cancelar"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      <h2 className={styles.reservationsCategory}>Reservas ativas</h2>
+      {activeReservations.length > 0 ? (
+        <ReservationsCardList
+          reservations={activeReservations}
+          title="Reservas Ativas"
+          handleDeleteClick={handleDeleteClick}
+        />
+      ) : (
+        <p className={styles.emptyMessage}>Nenhuma reserva ativa encontrada.</p>
+      )}
+
+      <h2 className={styles.reservationsCategory}>Reservas pendentes</h2>
+      {pendingReservations.length > 0 ? (
+        <ReservationsCardList
+          reservations={pendingReservations}
+          title="Reservas Pendentes"
+          handleDeleteClick={handleDeleteClick}
+        />
+      ) : (
+        <p className={styles.emptyMessage}>
+          Nenhuma reserva pendente encontrada.
+        </p>
+      )}
+
+      <h2 className={styles.reservationsCategory}>Histórico de reservas</h2>
+      {pastReservations.length > 0 ? (
+        <ReservationsCardList
+          reservations={pastReservations}
+          title="Reservas Passadas"
+          handleDeleteClick={handleDeleteClick}
+        />
+      ) : (
+        <p className={styles.emptyMessage}>
+          Nenhum histórico de reserva encontrado.
+        </p>
+      )}
 
       {/* Modal de cancelamento */}
       {showModal && (
