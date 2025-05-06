@@ -37,6 +37,8 @@ const ReservationsTable: React.FC<ReservationsTableProps> = ({
   emptyMessage,
 }) => {
   if (!reservationStatus || reservationStatus.length === 0) {
+    console.log('Dados recebidos:', reservationStatus);
+
     return (
       <div className={styles.noReservationsContainer}>
         <WarningIcon style={{ color: 'orange', fontSize: 48 }} />

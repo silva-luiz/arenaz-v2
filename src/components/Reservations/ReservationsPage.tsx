@@ -54,7 +54,7 @@ const ReservationsPage = ({
         date: reserva.res_date,
         value: reserva.res_value,
         paymentAdvance: reserva.res_payment_advance,
-        id: reserva.res_id,
+        res_id: reserva.res_id,
         arena: reserva.are_name,
         category: reserva.are_category,
         startTime: reserva.res_start_time,
@@ -71,7 +71,7 @@ const ReservationsPage = ({
 
   const handleDeleteClick = (reservation: any) => {
     setSelectedReservation(reservation);
-    console.log('aqui >> ' + reservation.id);
+    console.log('Reserva selecionada para exclusão:', reservation.res_id); // Aqui deve ser res_id, não id
     setModalMessage('Deseja excluir essa reserva?');
     setIsDeleteMode(true);
     setShowModal(true);
@@ -84,8 +84,10 @@ const ReservationsPage = ({
   const handleConfirmDelete = async () => {
     if (!selectedReservation) return;
 
+    console.log('ID da reserva para exclusão:', selectedReservation.res_id); // Acessando res_id aqui
+
     const { res, jsonData } = await deleteReservationRequest(
-      selectedReservation.id,
+      selectedReservation.res_id, // Passando o res_id
     );
 
     console.log('Resposta da API:', res, jsonData);
