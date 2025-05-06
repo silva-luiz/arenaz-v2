@@ -250,6 +250,12 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
               </p>
             </div>
             <div className={styles.reservationIndicator}>
+              <p className={styles.valueTitle}>Pagamentos adiantados</p>
+              <p className={styles.receivedValue}>
+                R$ {dashboardData.indicators.active_received},00
+              </p>
+            </div>
+            <div className={styles.reservationIndicator}>
               <p className={styles.valueTitle}>Valor a receber</p>
               <p className={styles.reservationValue}>
                 R$ {dashboardData.indicators.total_pending},00
