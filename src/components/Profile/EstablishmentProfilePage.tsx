@@ -90,13 +90,20 @@ const EstablishmentProfilePage = ({
       est_address: establishmentAddress,
       est_city: establishmentCity,
       own_code: pixKey,
-      est_photo: establishmentFile,
     };
 
+    // Adiciona os campos normalmente
     Object.entries(formFields).forEach(([key, value]) => {
       form.append(key, value);
       console.log(`${key}: ${value}`);
     });
+
+    // Só adiciona a foto se tiver um arquivo novo
+    if (establishmentFile) {
+      form.append('est_photo', establishmentFile);
+      console.log('est_photo:', establishmentFile);
+    }
+
     const { res, jsonData } = await sendUpdate(form);
 
     if (res && res.ok) {
