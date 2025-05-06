@@ -4455,6 +4455,11 @@ react-lifecycles-compat@^3.0.0, react-lifecycles-compat@^3.0.4:
   resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
 
+react-masked-text@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/react-masked-text/-/react-masked-text-1.0.5.tgz#8d2b1dd64f2cf41af795b41e1004a039427d2604"
+  integrity sha512-WichrlCXehL0apIfIgOdi2mjBE03tdMi8wXF+DhHe2ySWYxXCkP88aqDBaJZWUMa3Jp8p2h71u7TpC7EzEjXYw==
+
 react-modal@^3.16.3:
   version "3.16.3"
   resolved "https://registry.yarnpkg.com/react-modal/-/react-modal-3.16.3.tgz#c412d41915782e3c261253435d01468e2439b11b"
@@ -4921,6 +4926,11 @@ streamsearch@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/streamsearch/-/streamsearch-1.1.0.tgz#404dd1e2247ca94af554e841a8ef0eaa238da764"
   integrity sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==
+
+string-mask@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/string-mask/-/string-mask-0.3.0.tgz#9e7244b87bb2f6f9647e2ac98f96fa1a57c21198"
+  integrity sha512-YR93J2lCJyA9GYDHoPk2Yzykw6zc/A2KkcRchSMuLo9tTKDfawqrU/sGf2kxGelPyYTAgQ4j5MLWob/7tJ68bg==
 
 "string-width-cjs@npm:string-width@^4.2.0":
   version "4.2.3"

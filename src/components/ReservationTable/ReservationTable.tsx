@@ -3,6 +3,7 @@ import Table from 'react-bootstrap/Table';
 import Link from 'next/link';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import WarningIcon from '@mui/icons-material/Warning';
+import StringMask from 'string-mask';
 import styles from '../ReservationTable/ReservationsTable.module.scss';
 
 interface Reservation {
@@ -23,6 +24,12 @@ interface ReservationsTableProps {
   handleDeleteClick: (reservation: Reservation) => void;
   emptyMessage?: string;
 }
+
+const formatPhone = (phone: string) => {
+  const mask = new StringMask('(00) 0 0000-0000');
+  const digits = phone.replace(/\D/g, '');
+  return mask.apply(digits);
+};
 
 const ReservationsTable: React.FC<ReservationsTableProps> = ({
   reservationStatus,
@@ -69,7 +76,7 @@ const ReservationsTable: React.FC<ReservationsTableProps> = ({
             <td className={styles.tableData}>{reserva.arena}</td>
             <td className={styles.tableData}>{reserva.category}</td>
             <td className={styles.tableData}>{reserva.playerName}</td>
-            <td className={styles.tableData}>{reserva.phone}</td>
+            <td className={styles.tableData}>{formatPhone(reserva.phone)}</td>
             <td className={styles.tableData}>
               {reserva.date || 'Data não disponível'}
             </td>
@@ -77,10 +84,16 @@ const ReservationsTable: React.FC<ReservationsTableProps> = ({
               {reserva.startTime} - {reserva.endTime}
             </td>
             <td className={styles.tableData}>
-              R$ {reserva.value || 'Valor não disponível'}
+              R${' '}
+              {reserva.value?.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+              }) || 'N/D'}
             </td>
             <td className={styles.tableData}>
-              R$ {reserva.paymentAdvance || 0}
+              R${' '}
+              {reserva.paymentAdvance?.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+              }) || '0,00'}
             </td>
             <td className={styles.tableData}>
               <Link

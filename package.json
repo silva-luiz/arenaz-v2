@@ -38,9 +38,11 @@
     "react-image-upload": "^3.0.1",
     "react-images-uploading": "^3.1.7",
     "react-input-mask": "^2.0.4",
+    "react-masked-text": "^1.0.5",
     "react-modal": "^3.16.3",
     "react-qrcode-pix": "^4.1.0",
     "react-router-dom": "^7.1.5",
+    "string-mask": "^0.3.0",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
