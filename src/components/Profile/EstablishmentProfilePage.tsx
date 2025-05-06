@@ -7,6 +7,7 @@ import Button from '../Button';
 import URLS from 'utils/apiRoutes';
 import { useUpdateEstablishmentInfo } from 'hooks/useUpdateEstablishmentInfo';
 import PhotoUploader from 'components/PhotoUploader';
+import InputMask from 'react-input-mask';
 
 const url = URLS.GET_ESTABLISHMENT_INFO;
 const urlUpdateEstablishmentInfo = URLS.UPDATE_ESTABLISHMENT;
@@ -59,6 +60,17 @@ const EstablishmentProfilePage = ({
     }
   }, [data]);
   console.log('Dados recebidos:', data);
+
+  const handlePhoneChange = (e) => {
+    const maskedValue = e.target.value;
+    const onlyNumbers = maskedValue.replace(/\D/g, '');
+    setEstablishmentPhone(onlyNumbers);
+  };
+
+  const formatPhone = (raw) => {
+    if (!raw) return '';
+    return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
+  };
 
   function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -155,14 +167,21 @@ const EstablishmentProfilePage = ({
                   Telefone do estabelecimento
                 </span>
                 <div className={styles.inputWrapper}>
-                  <input
-                    type="text"
-                    placeholder="Telefone"
-                    name="establishmentPhone"
-                    value={establishmentPhone}
-                    onChange={(e) => setEstablishmentPhone(e.target.value)}
-                    required
-                  />
+                  <InputMask
+                    mask="(99)9 9999-9999"
+                    value={formatPhone(establishmentPhone)}
+                    onChange={handlePhoneChange}
+                  >
+                    {(inputProps) => (
+                      <input
+                        {...inputProps}
+                        type="text"
+                        placeholder="Telefone"
+                        name="establishmentPhone"
+                        required
+                      />
+                    )}
+                  </InputMask>
                 </div>
               </div>
 

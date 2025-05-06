@@ -19,6 +19,7 @@ import { useFetchArenaInfo } from 'hooks/useFetchArenaInfo';
 import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
 import { CategoryLabel } from './CategoryLabel';
 import { SendWhatsAppButton } from './SendWhatsAppButton';
+import InputMask from 'react-input-mask';
 
 registerLocale('pt-BR', ptBR);
 
@@ -84,7 +85,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       const { res, jsonData } = await fetchAvailableHours(reservationHoursData);
       if (res.ok) {
         console.log('Horários disponíveis:', jsonData);
-        setAvailableTimes(jsonData.available_hours);
+        console.log('jsonData.available_hours:', jsonData.available_hours);
+        console.log('Tipo:', typeof jsonData.available_hours);
+        setAvailableTimes(jsonData.available_hours.available_hours);
       } else {
         console.error('Erro ao buscar horários disponíveis:', res.statusText);
       }
@@ -111,6 +114,19 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       .normalize('NFD') // separa letras de acentos
       .replace(/[\u0300-\u036f]/g, '') // remove os acentos
       .toUpperCase(); // transforma em maiúsculo
+  };
+
+  // Salva apenas os números no state
+  const handlePhoneChange = (e) => {
+    const maskedValue = e.target.value;
+    const onlyDigits = maskedValue.replace(/\D/g, '');
+    setPlayerPhone(onlyDigits);
+  };
+
+  // Formata visualmente para mostrar no campo
+  const formatPhone = (raw) => {
+    if (!raw) return '';
+    return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
   };
 
   const generateQRCode = async () => {
@@ -230,15 +246,16 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {availableTimes.map((time) => (
-                    <option
-                      key={time}
-                      value={time}
-                      className={styles.optionTime}
-                    >
-                      {time}
-                    </option>
-                  ))}
+                  {Array.isArray(availableTimes) &&
+                    availableTimes.map((time) => (
+                      <option
+                        key={time}
+                        value={time}
+                        className={styles.optionTime}
+                      >
+                        {time}
+                      </option>
+                    ))}
                 </Form.Select>
               </div>
 
@@ -254,17 +271,18 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {availableTimes
-                    .filter((time) => time > startTime)
-                    .map((time) => (
-                      <option
-                        key={time}
-                        value={time}
-                        className={styles.optionTime}
-                      >
-                        {time}
-                      </option>
-                    ))}
+                  {Array.isArray(availableTimes) &&
+                    availableTimes
+                      .filter((time) => time > startTime)
+                      .map((time) => (
+                        <option
+                          key={time}
+                          value={time}
+                          className={styles.optionTime}
+                        >
+                          {time}
+                        </option>
+                      ))}
                 </Form.Select>
               </div>
             </div>
@@ -287,15 +305,22 @@ const CreateReservationPage = ({ arenaId }: Props) => {
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
-                <input
-                  required
-                  type="text"
-                  placeholder="Telefone para contato"
-                  name="contactPhone"
-                  className={styles.inputText}
-                  value={playerPhone}
-                  onChange={(e) => setPlayerPhone(e.target.value)}
-                />
+                <InputMask
+                  mask="(99)9 9999-9999"
+                  value={formatPhone(playerPhone)}
+                  onChange={handlePhoneChange}
+                >
+                  {(inputProps) => (
+                    <input
+                      {...inputProps}
+                      required
+                      type="text"
+                      name="contactPhone"
+                      placeholder="Telefone para contato"
+                      className={styles.inputText}
+                    />
+                  )}
+                </InputMask>
               </div>
             </div>
 
