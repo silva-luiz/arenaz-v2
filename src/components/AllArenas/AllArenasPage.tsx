@@ -132,7 +132,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
         arena.are_id === updatedArena.are_id ? updatedArena : arena,
       );
 
-      dashboardData.arenas = updatedArenas;
+      setArenas(updatedArenas);
 
       setModalMessage('Arena atualizada com sucesso!');
       setModalIsOpen(true);

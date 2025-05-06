@@ -51,13 +51,14 @@ const EditArenaModal: React.FC<EditArenaModalProps> = ({
         </h2>
 
         <form onSubmit={onSubmit}>
-          <PhotoUploader
-            title="Alterar imagem"
-            preview={preview}
-            handleFileUpload={handleFileUpload}
-            arenaFile={arenaFile}
-          />
-
+          <div className={styles.photoUploaderContainer}>
+            <PhotoUploader
+              title="Alterar imagem"
+              preview={preview}
+              handleFileUpload={handleFileUpload}
+              arenaFile={arenaFile}
+            />
+          </div>
           <div className={styles.formContainer}>
             <div className={styles.inputContainer}>
               <label htmlFor="arenaName" className={styles.inputLabel}>
