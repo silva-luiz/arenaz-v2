@@ -35,27 +35,7 @@ const ReservationsPage = ({
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [value, setValue] = React.useState('1');
-  const [reservationPlayerNames, setReservationPlayerNames] = useState<
-    string[]
-  >([]);
-  const [reservationPhones, setReservationPhones] = useState<string[]>([]);
-  const [reservationDates, setReservationDates] = useState<string[]>([]);
-  const [reservationValues, setReservationValues] = useState<number[]>([]);
-  const [paymentAdvanceValues, setPaymentAdvanceValues] = useState<number[]>(
-    [],
-  );
-  const [reservationIds, setReservationIds] = useState<number[]>([]);
-  const [reservationStartTime, setReservationStartTime] = useState<string[]>(
-    [],
-  );
-  const [reservationEndTime, setReservationEndTime] = useState<string[]>([]);
-  const [reservationArenaNames, setReservationArenaNames] = useState<string[]>(
-    [],
-  );
-  const [reservationArenaCategories, setReservationArenaCategories] = useState<
-    string[]
-  >([]);
-
+ 
   const { data, loadingReservations, error } =
     useFetchReservations(urlFetchReservations);
 
@@ -95,6 +75,7 @@ const ReservationsPage = ({
 
   const handleDeleteClick = (reservation: any) => {
     setSelectedReservation(reservation);
+    console.log('aqui >> ' + reservation.id);
     setModalMessage('Deseja excluir essa reserva?');
     setIsDeleteMode(true);
     setShowModal(true);
@@ -108,7 +89,7 @@ const ReservationsPage = ({
     if (!selectedReservation) return;
 
     const { res, jsonData } = await deleteReservationRequest(
-      selectedReservation.res_id,
+      selectedReservation.id,
     );
 
     console.log('Resposta da API:', res, jsonData);
