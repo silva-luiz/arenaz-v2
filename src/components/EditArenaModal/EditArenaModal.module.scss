@@ -1,0 +1,145 @@
+$modal-padding-desktop: 50px 100px;
+$modal-padding-mobile: 30px 20px;
+$border-radius: 12px;
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 50px 100px;
+  border-radius: $border-radius;
+  text-align: center;
+  max-width: 50%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  @media (max-width: 1024px) {
+    max-width: 90%;
+    padding: 40px 60px;
+  }
+
+  @media (max-width: 768px) {
+    max-width: 90%;
+    padding: 30px 20px;
+  }
+
+  @media (max-width: 480px) {
+    max-width: 90%;
+    padding: 20px 15px;
+  }
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--title-color);
+  margin-bottom: 10px;
+}
+
+.modalSubtitle {
+  margin-bottom: 1rem;
+  color: var(--title-color);
+  font-size: 1.3rem;
+  padding: 10px 0;
+  font-weight: bold;
+  text-align: left;
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+    text-align: center;
+  }
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputLabel {
+  font-size: 1rem;
+  color: var(--text-color);
+  text-align: left;
+
+  @media (max-width: 480px) {
+    text-align: center;
+  }
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--background-color-hover);
+  border-radius: $border-radius;
+  padding: 10px;
+  background-color: var(--background-color);
+
+  input {
+    border: none;
+    outline: none;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
+.radioContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: flex-start;
+
+  @media (max-width: 480px) {
+    justify-content: center;
+  }
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  input[type='radio']:checked {
+    accent-color: var(--primary-color);
+  }
+}
+
+.modalActions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  button {
+    min-width: 120px;
+
+    @media (max-width: 480px) {
+      width: 100%;
+    }
+  }
+}
