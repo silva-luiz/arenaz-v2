@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { FaEdit, FaTrash } from 'react-icons/fa';
-import ArenaCardImg from '../../assets/arena_card_img.jpg';
+import ArenaCardImg from '../../assets/arena_card_img.png';
 import styles from '../Dashboard/DashboardPage.module.scss';
 import CircularProgress from '@mui/material/CircularProgress';
 

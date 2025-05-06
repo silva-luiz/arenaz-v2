@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import ArenaCardImg from '../../assets/arena_card_img.jpg';
+import ArenaCardImg from '../../assets/arena_card_img.png';
 
 import styles from '../Dashboard/DashboardPage.module.scss';
 import Image from 'next/image';
