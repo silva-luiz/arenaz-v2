@@ -38,11 +38,13 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   const [playerName, setPlayerName] = useState('');
   const [playerPhone, setPlayerPhone] = useState('');
   const [price, setPrice] = useState('');
+  const [priceFormatted, setPriceFormatted] = useState('');
   const [advancePayment, setAdvancePayment] = useState('');
-  const [advanceAmount, setAdvanceAmount] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [qrCodePayload, setQrCodePayload] = useState('');
+  const [advanceAmountFormatted, setAdvanceAmountFormatted] = useState('');
+  const [advanceAmount, setAdvanceAmount] = useState(null);
 
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
@@ -127,6 +129,56 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   const formatPhone = (raw) => {
     if (!raw) return '';
     return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
+  };
+
+  const formatCurrency = (value) => {
+    const numericValue = value.replace(/\D/g, ''); // Remove tudo que não for número
+    const floatValue = parseFloat(numericValue) / 100;
+
+    if (isNaN(floatValue)) return '';
+
+    return floatValue.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    });
+  };
+
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = parseFloat(raw) / 100;
+
+    if (isNaN(numeric)) {
+      setPrice(null);
+      setPriceFormatted('');
+      return;
+    }
+
+    setPrice(numeric); // número limpo para o backend
+    setPriceFormatted(
+      numeric.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    );
+  };
+
+  const handleAdvanceAmountChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = parseFloat(raw) / 100;
+
+    if (isNaN(numeric)) {
+      setAdvanceAmount(null);
+      setAdvanceAmountFormatted('');
+      return;
+    }
+
+    setAdvanceAmount(numeric); // valor numérico real (ex: 123.45)
+    setAdvanceAmountFormatted(
+      numeric.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    ); // valor formatado (ex: "R$ 123,45")
   };
 
   const generateQRCode = async () => {
@@ -332,10 +384,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   type="text"
                   placeholder="Valor"
                   name="price"
-                  step="0.01"
                   className={styles.inputText}
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  value={priceFormatted}
+                  onChange={handlePriceChange}
                 />
               </div>
             </div>
@@ -380,12 +431,12 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                     </label>
                     <div className={styles.inputWrapper}>
                       <input
-                        type="number"
+                        type="text"
                         name="advanceAmount"
                         id="advanceAmount"
                         placeholder="Valor adiantado"
-                        value={advanceAmount || ''}
-                        onChange={(e) => setAdvanceAmount(e.target.value)}
+                        value={advanceAmountFormatted}
+                        onChange={handleAdvanceAmountChange}
                         onBlur={generateQRCode}
                         required
                       />
