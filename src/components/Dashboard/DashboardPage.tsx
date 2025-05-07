@@ -234,40 +234,57 @@ const DashboardPage = ({ isExpiredSession }: IDashboardPageProps) => {
 
       <h2 className={styles.dashboardTitle}>Informações financeiras</h2>
       <div className={styles.reservationStatusContainer}>
-        {dashboardData && arenas.length > 0 && (
-          <>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Total de reservas</p>
-              <p className={styles.reservationValue}>
-                {dashboardData.indicators.total_reservations}
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Valor recebido</p>
-              <p className={styles.receivedValue}>
-                R$ {dashboardData.indicators.total_received},00
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Pagamentos adiantados</p>
-              <p className={styles.receivedValue}>
-                R$ {dashboardData.indicators.active_received},00
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Valor a receber</p>
-              <p className={styles.reservationValue}>
-                R$ {dashboardData.indicators.total_pending},00
-              </p>
-            </div>
-            <div className={styles.reservationIndicator}>
-              <p className={styles.valueTitle}>Pagamentos atrasados</p>
-              <p className={styles.overdueValue}>
-                R$ {dashboardData.indicators.overdue_debts},00
-              </p>
-            </div>
-          </>
-        )}
+      {dashboardData && arenas.length > 0 && (
+  <>
+    <div className={styles.reservationIndicator}>
+      <p className={styles.valueTitle}>Total de reservas</p>
+      <p className={styles.reservationValue}>
+        {dashboardData.indicators.total_reservations}
+      </p>
+    </div>
+
+    <div className={styles.reservationIndicator}>
+      <p className={styles.valueTitle}>Valor recebido</p>
+      <p className={styles.receivedValue}>
+        {dashboardData.indicators.total_received.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })}
+      </p>
+    </div>
+
+    <div className={styles.reservationIndicator}>
+      <p className={styles.valueTitle}>Pagamentos adiantados</p>
+      <p className={styles.receivedValue}>
+        {dashboardData.indicators.active_received.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })}
+      </p>
+    </div>
+
+    <div className={styles.reservationIndicator}>
+      <p className={styles.valueTitle}>Valor a receber</p>
+      <p className={styles.reservationValue}>
+        {dashboardData.indicators.total_pending.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })}
+      </p>
+    </div>
+
+    <div className={styles.reservationIndicator}>
+      <p className={styles.valueTitle}>Pagamentos atrasados</p>
+      <p className={styles.overdueValue}>
+        {dashboardData.indicators.overdue_debts.toLocaleString('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        })}
+      </p>
+    </div>
+  </>
+)}
+
 
         {dashboardData && arenas.length === 0 && (
           <p className={styles.noReservationsMessage}>

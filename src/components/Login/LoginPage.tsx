@@ -32,7 +32,8 @@ const LoginPage = () => {
       await login(userData);
       router.push('home/dashboard');
     } catch (error) {
-      console.error('Login Error' + error);
+      console.error('Login Error', error);
+      setCredentialsError('Credenciais inválidas. Verifique seu e-mail e senha.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,11 @@ const LoginPage = () => {
                 type="email"
                 placeholder="E-mail"
                 name="email"
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setCredentialsError('');
+                }}
+                
                 required
               />
 
@@ -79,7 +84,12 @@ const LoginPage = () => {
                 type="password"
                 placeholder="Senha"
                 name="password"
-                onChange={(e) => setPassword(e.target.value)}
+                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setCredentialsError('');
+                }}
+                
               />
               <FaLock className={styles.faIcon} />
             </div>
