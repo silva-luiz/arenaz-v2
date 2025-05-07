@@ -32,7 +32,7 @@ interface Props {
 }
 
 const CreateReservationPage = ({ arenaId }: Props) => {
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [playerName, setPlayerName] = useState('');
