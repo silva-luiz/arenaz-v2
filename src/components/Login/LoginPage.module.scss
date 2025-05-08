@@ -6,151 +6,187 @@
   width: 100%;
   margin: 0 auto;
   gap: 40px;
-  flex: 2;
   max-width: 1200px;
+  padding: 20px;
+
+  .loginWallpaper {
+    flex: 1;
+    max-width: 660px;
+
+    img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+  }
 
   .formContainer {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
 
-  .loginForm {
-    width: 100%;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    border-radius: 12px;
-  }
-
-  .arenaZLogo {
-    width: 150px;
-    height: auto;
-  }
-
-  .loginTitle {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  .loginWelcomeMessage{
-    font-size: 1.4rem;
-    font-weight: bold;
-  }
-
-  .siteName {
-    color: var(--primary-color);
-    font-weight: bold;
-    font-size: 1.4rem;
-  }
-
-  .inputContainer {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
-  .inputWrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--background-color-hover);
-    border-radius: 12px;
-    padding: 10px;
-    background-color: var(--background-color);
-  }
-
-  .inputWrapper input {
-    border: none;
-    outline: none;
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-  }
-
-  .inputLabel{
-    font-size: 1rem;
-    color: var(--text-color);
-    text-align: left;
-  }
-
-  .faIcon {
-    color: var(--text-color);
-  }
-
-  .recallForget {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .recallForget .checkbox {
-    margin-right: 10px;
-    accent-color: var(--primary-color);
-  }
-
-  .loginPrimaryButton {
-    width: 100%;
-    padding: 10px 20px;
-    border-radius: 12px;
-    background-color: var(--primary-color);
-    color: var(--title-color);
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-
-  .loginPrimaryButton:hover {
-    background-color: var(--primary-color-hover);
-  }
-
-  .signUpLink {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-  }
-
-  .signUpLink a {
-    margin-left: 10px;
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: bold;
-  }
-
-  .signUpLink a:hover {
-    text-decoration: underline;
-  }
-
-  .inputError {
-    border: 1px solid var(--danger) !important;
-  }
-
-  .errorText {
-    color: var(--danger);
-    font-size: 0.85rem;
-    margin-top: 5px;
-    text-align: start;
-  }
-
-  @media (max-width: 768px) {
-    .loginMainContainer {
+    .loginForm {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
       flex-direction: column;
-      padding: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 12px;
+
+      .arenaZLogo {
+        width: 150px;
+        height: auto;
+        margin-bottom: 20px;
+      }
+
+      .loginTitle {
+        text-align: center;
+        margin-bottom: 20px;
+
+        .loginWelcomeMessage {
+          font-size: 1.4rem;
+          font-weight: bold;
+
+          .siteName {
+            color: var(--primary-color);
+            font-weight: bold;
+          }
+        }
+      }
+
+      .inputContainer {
+        width: 100%;
+        margin-bottom: 20px;
+
+        .inputLabel {
+          font-size: 1rem;
+          color: var(--text-color);
+          margin-bottom: 6px;
+          display: block;
+        }
+
+        .inputWrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--background-color-hover);
+          border-radius: 12px;
+          padding: 10px;
+          background-color: var(--background-color);
+
+          input {
+            border: none;
+            outline: none;
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            background: transparent;
+          }
+
+          .faIcon {
+            color: var(--text-color);
+            margin-left: 10px;
+          }
+        }
+
+        .inputError {
+          border: 1px solid var(--danger) !important;
+        }
+
+        .errorText {
+          color: var(--danger);
+          font-size: 0.85rem;
+          margin-top: 5px;
+          text-align: start;
+        }
+      }
+
+      .loginPrimaryButton {
+        width: 100%;
+        padding: 10px 20px;
+        border-radius: 12px;
+        background-color: var(--primary-color);
+        color: var(--title-color);
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+
+        &:hover {
+          background-color: var(--primary-color-hover);
+        }
+
+        &:disabled,
+        &.disabled {
+          background-color: var(--background-color-hover);
+          color: var(--text-color-light);
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+
+      .signUpLink {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        font-size: 0.95rem;
+
+        a {
+          margin-left: 10px;
+          color: var(--primary-color);
+          text-decoration: none;
+          font-weight: bold;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
     }
+  }
+
+  // Responsivo
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
 
     .loginWallpaper {
       width: 100%;
-      height: 300px;
+      max-width: none;
+
+      img {
+        height: auto;
+      }
     }
 
     .formContainer {
       width: 100%;
+
+      .loginForm {
+        padding: 20px 10px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .loginForm {
+      .loginTitle .loginWelcomeMessage {
+        font-size: 1.1rem;
+
+        .siteName {
+          font-size: 1.1rem;
+        }
+      }
+
+      .loginPrimaryButton {
+        padding: 10px;
+        font-size: 0.95rem;
+      }
     }
   }
 }

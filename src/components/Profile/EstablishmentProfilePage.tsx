@@ -1,16 +1,16 @@
 import styles from '../Profile/ProfilePage.module.scss';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFetchEstablishmentInfo } from 'hooks/useFetchEstablishmentInfo';
 import Button from '../Button';
 import URLS from 'utils/apiRoutes';
 import { useUpdateEstablishmentInfo } from 'hooks/useUpdateEstablishmentInfo';
-import { useFetchUserInfo } from 'hooks/useFetchUserInfo';
+import PhotoUploader from 'components/PhotoUploader';
+import InputMask from 'react-input-mask';
 
 const url = URLS.GET_ESTABLISHMENT_INFO;
 const urlUpdateEstablishmentInfo = URLS.UPDATE_ESTABLISHMENT;
-const urlUserId = URLS.GET_USER_INFO;
 
 interface IEstablishmentPageProps {
   isExpiredSession?: boolean;
@@ -28,6 +28,9 @@ const EstablishmentProfilePage = ({
   const [establishmentCity, setEstablishmentCity] = useState('');
   const [pixKey, setPixKey] = useState('');
 
+  const [establishmentFile, setEstablishmentFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>();
+
   const { data, error } = useFetchEstablishmentInfo(url);
 
   const {
@@ -42,24 +45,56 @@ const EstablishmentProfilePage = ({
   const [modalMessage, setModalMessage] = useState('');
 
   useEffect(() => {
-    console.log('Dados recebidos:', data);
     if (data?.establishment) {
       const establishment = data.establishment;
-      const ownCode = data.own_code;
 
       setEstablishmentName(establishment.est_name);
       setEstablishmentPhone(establishment.est_phone);
       setEstablishmentCep(establishment.est_zipcode);
       setEstablishmentAddress(establishment.est_address);
       setEstablishmentCity(establishment.est_city);
-      setPixKey(ownCode);
+      setPixKey(establishment.own_code);
+      setPreview(
+        `${process.env.NEXT_PUBLIC_API_URL}/${establishment.est_photo}`,
+      );
     }
   }, [data]);
+  console.log('Dados recebidos:', data);
+
+  const handlePhoneChange = (e) => {
+    const maskedValue = e.target.value;
+    const onlyNumbers = maskedValue.replace(/\D/g, '');
+    setEstablishmentPhone(onlyNumbers);
+  };
+
+  const formatPhone = (raw) => {
+    if (!raw) return '';
+    return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
+  };
+
+  function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.type.startsWith('image/')) {
+        setEstablishmentFile(f);
+        setPreview(URL.createObjectURL(f));
+      } else {
+        alert('Selecione uma imagem válida');
+        setEstablishmentFile(null);
+        setPreview(undefined);
+      }
+    } else {
+      setEstablishmentFile(null);
+      setPreview(undefined);
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const establishmentData = {
+    const form = new FormData();
+
+    const formFields = {
       usr_cod_alt: data.usr_id,
       est_name: establishmentName,
       est_phone: establishmentPhone,
@@ -69,15 +104,27 @@ const EstablishmentProfilePage = ({
       own_code: pixKey,
     };
 
-    const { res, jsonData } = await sendUpdate(establishmentData);
+    // Adiciona os campos normalmente
+    Object.entries(formFields).forEach(([key, value]) => {
+      form.append(key, value);
+      console.log(`${key}: ${value}`);
+    });
 
-    if (res.ok) {
+    // Só adiciona a foto se tiver um arquivo novo
+    if (establishmentFile) {
+      form.append('est_photo', establishmentFile);
+      console.log('est_photo:', establishmentFile);
+    }
+
+    const { res, jsonData } = await sendUpdate(form);
+
+    if (res && res.ok) {
       setModalMessage('Dados atualizados com sucesso!');
       setShowModal(true);
     } else {
       setModalMessage('Erro ao atualizar dados. Tente novamente mais tarde.');
       setShowModal(true);
-      console.error('Erro ao registrar arena:', jsonData);
+      console.error('Erro ao atualizar dados:', jsonData);
     }
   };
 
@@ -89,11 +136,17 @@ const EstablishmentProfilePage = ({
       </p>
       <div className={styles.formContainer}>
         <form onSubmit={onSubmit}>
+          <div className={styles.photoButtonContainer}>
+            <PhotoUploader
+              title="Adicionar imagem"
+              preview={preview}
+              handleFileUpload={handleFileUpload}
+              arenaFile={establishmentFile}
+              defaultImage="/images/establishment_placeholder.png"
+            />
+          </div>
           <div className={styles.formColumns}>
             <div className={styles.column}>
-              <h3 className={styles.subtitle}>
-                Informações do estabelecimento
-              </h3>
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>
                   Nome do estabelecimento
@@ -109,21 +162,46 @@ const EstablishmentProfilePage = ({
                   />
                 </div>
               </div>
+
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>
                   Telefone do estabelecimento
                 </span>
                 <div className={styles.inputWrapper}>
+                  <InputMask
+                    mask="(99)9 9999-9999"
+                    value={formatPhone(establishmentPhone)}
+                    onChange={handlePhoneChange}
+                  >
+                    {(inputProps) => (
+                      <input
+                        {...inputProps}
+                        type="text"
+                        placeholder="Telefone"
+                        name="establishmentPhone"
+                        required
+                      />
+                    )}
+                  </InputMask>
+                </div>
+              </div>
+
+              <div className={styles.inputContainer}>
+                <span className={styles.inputLabel}>Chave PIX</span>
+                <div className={styles.inputWrapper}>
                   <input
                     type="text"
-                    placeholder="Telefone"
-                    name="establishmentPhone"
-                    value={establishmentPhone}
-                    onChange={(e) => setEstablishmentPhone(e.target.value)}
+                    placeholder="Chave PIX"
+                    name="pixKey"
+                    value={pixKey}
+                    onChange={(e) => setPixKey(e.target.value)}
                     required
                   />
                 </div>
               </div>
+            </div>
+
+            <div className={styles.column}>
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>CEP</span>
                 <div className={styles.inputWrapper}>
@@ -137,6 +215,7 @@ const EstablishmentProfilePage = ({
                   />
                 </div>
               </div>
+
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>Endereço</span>
                 <div className={styles.inputWrapper}>
@@ -150,6 +229,7 @@ const EstablishmentProfilePage = ({
                   />
                 </div>
               </div>
+
               <div className={styles.inputContainer}>
                 <span className={styles.inputLabel}>Cidade</span>
                 <div className={styles.inputWrapper}>
@@ -165,21 +245,13 @@ const EstablishmentProfilePage = ({
               </div>
             </div>
           </div>
-          <div className={styles.inputContainer}>
-                <span className={styles.inputLabel}>Chave PIX</span>
-                <div className={styles.inputWrapper}>
-                  <input
-                    type="text"
-                    placeholder="Chave PIX"
-                    name="pixKey"
-                    value={pixKey}
-                    onChange={(e) => setPixKey(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+
           <div className={styles.actionButtonsContainer}>
-            <Button text="Cancelar" className="outlinedButton" handleClick={() => router.push('/home/dashboard')}/>
+            <Button
+              text="Cancelar"
+              className="outlinedButton"
+              handleClick={() => router.push('/home/dashboard')}
+            />
             <Button
               text="Salvar alterações"
               className="primaryButton"
@@ -217,7 +289,7 @@ const EstablishmentProfilePage = ({
                 className="outlinedButton"
                 onClick={() => setShowModal(false)}
               >
-                Voltar
+                Ok
               </button>
             )}
           </div>

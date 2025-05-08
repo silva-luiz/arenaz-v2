@@ -1,9 +1,9 @@
-import Link from 'next/link';
+'use client';
 import Image from 'next/image';
 import { FaEdit, FaTrash } from 'react-icons/fa';
-
-import ArenaCardImg from '../../assets/arena_card_img.jpg';
+import ArenaCardImg from '../../assets/arena_card_img.png';
 import styles from '../Dashboard/DashboardPage.module.scss';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const ArenaCard = ({
   arenaName,
@@ -13,6 +13,7 @@ const ArenaCard = ({
   goToReservation,
   onEdit,
   onDelete,
+  isRedirecting, // nova prop
 }) => {
   return (
     <div className={styles.arenaCard}>
@@ -36,14 +37,24 @@ const ArenaCard = ({
         width={400}
         height={300}
       />
+
       <div className={styles.arenaInfos}>
         <p className={styles.arenaName}>{arenaName}</p>
         <p className={styles.arenaCategory}>{arenaCategory}</p>
         <p className={styles.arenaPrice}>R$ {arenaPrice}/hora</p>
       </div>
-      <Link className={styles.newReservationLink} href={goToReservation || ''}>
-        <h5 className={styles.netReservationLinkText}>+ Nova reserva</h5>
-      </Link>
+
+      <button
+        className={styles.newReservationLink}
+        onClick={goToReservation}
+        disabled={isRedirecting}
+      >
+        {isRedirecting ? (
+          <CircularProgress size={20} color="inherit" />
+        ) : (
+          <h5 className={styles.netReservationLinkText}>+ Nova reserva</h5>
+        )}
+      </button>
     </div>
   );
 };

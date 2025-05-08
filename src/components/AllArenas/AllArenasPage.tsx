@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import Link from 'next/link';
 import Modal from 'react-modal';
 import { CircularProgress } from '@mui/material';
@@ -13,6 +13,7 @@ import URLS from '../../utils/apiRoutes';
 import { useDashboardHooks } from '../../hooks/useDashboardHooks';
 import { useDeleteArena } from '../../hooks/useDeleteArena';
 import { useUpdateArenaInfo } from 'hooks/useUpdateArenaInfo';
+import EditArenaModal from 'components/EditArenaModal/EditArenaModal';
 
 const url = URLS.LOAD_DASHBOARD;
 const urlUpdateArena = URLS.UPDATE_ARENA_INFO;
@@ -52,6 +53,17 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
   const [deleteArena, setDeleteArena] = useState<Arena | null>(null);
 
   const [arenas, setArenas] = useState<Arena[]>([]);
+  const [loadingRedirect, setLoadingRedirect] = useState<number | null>(null);
+
+  const [arenaFile, setArenaFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string>();
+
+  const handleRedirectToReservation = (arenaId: number) => {
+    if (loadingRedirect !== null) return; // já está indo
+
+    setLoadingRedirect(arenaId);
+    window.location.href = `/home/create-reservation/${arenaId}`;
+  };
 
   const { updateArenaInfo, loadingArenaInfo } =
     useUpdateArenaInfo(urlUpdateArena);
@@ -70,6 +82,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
     setArenaPrice(String(arena.are_price));
     setArenaCategory(arena.are_category);
     setEditModalOpen(true);
+    setPreview(`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`);
   };
 
   const handleDeleteArena = (arena: Arena) => {
@@ -77,38 +90,60 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
     setDeleteModalOpen(true);
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+  function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.type.startsWith('image/')) {
+        setArenaFile(f);
+        setPreview(URL.createObjectURL(f));
+      } else {
+        alert('Selecione uma imagem válida');
+        setArenaFile(null);
+        setPreview(undefined);
+      }
+    } else {
+      setArenaFile(null);
+      setPreview(undefined);
+    }
+  }
+
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editArena || !dashboardData) return;
 
-    const updatedArenaData = {
-      usr_cod_alt: dashboardData.usr_id,
-      are_id: editArena.are_id,
-      are_name: arenaName,
-      are_price: Number(arenaPrice),
-      are_category: arenaCategory,
-    };
+    if (!editArena) return;
 
-    const { res, jsonData } = await updateArenaInfo(updatedArenaData);
+    const form = new FormData();
 
-    if (res?.ok) {
-      const updatedArena = jsonData.arena as Arena;
+    if (arenaFile) {
+      form.append('are_photo', arenaFile);
+    }
+    form.append('usr_cod_alt', String(dashboardData.usr_id));
+    form.append('are_id', String(editArena.are_id));
+    form.append('are_name', String(arenaName));
+    form.append('are_price', String(Number(arenaPrice)));
+    form.append('are_category', String(arenaCategory));
+
+    const { res, jsonData } = await updateArenaInfo(form);
+
+    if (res && res.ok) {
+      const updatedArena = jsonData.arena;
+
       const updatedArenas = arenas.map((arena) =>
         arena.are_id === updatedArena.are_id ? updatedArena : arena,
       );
+
       setArenas(updatedArenas);
+
       setModalMessage('Arena atualizada com sucesso!');
+      setModalIsOpen(true);
+      setEditModalOpen(false);
     } else {
       setModalMessage(
         jsonData?.message || 'Erro ao atualizar a arena. Tente novamente.',
       );
+      setModalIsOpen(true);
     }
-
-    setModalIsOpen(true);
-    setEditModalOpen(false);
-    setEditArena(null);
   };
-
   const handleConfirmDelete = async () => {
     if (!deleteArena) return;
 
@@ -119,7 +154,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       setModalMessage('Arena excluída com sucesso!');
     } else {
       setModalMessage(
-        jsonData?.message || 'Erro ao excluir a arena. Tente novamente.',
+        jsonData?.message || `Erro ao excluir a arena. Verifique se não há reservas ativas para essa arena.`,
       );
     }
 
@@ -174,12 +209,15 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
           <div className={styles.cardsContainer}>
             {arenas.map((arena, index) => (
               <ArenaCard
+                isRedirecting={loadingRedirect === arena.are_id}
                 arenaPhoto={`${process.env.NEXT_PUBLIC_API_URL}/${arena.are_photo}`}
                 key={`${index}-${arena.are_id}`}
                 arenaName={arena.are_name}
                 arenaCategory={arena.are_category}
                 arenaPrice={arena.are_price}
-                goToReservation={`/home/create-reservation/${arena.are_id}`}
+                goToReservation={() =>
+                  handleRedirectToReservation(arena.are_id)
+                }
                 onEdit={() => handleEditArena(arena)}
                 onDelete={() => handleDeleteArena(arena)}
               />
@@ -215,66 +253,22 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       </Modal>
 
       {/* Modal de edição */}
-      <Modal
+      <EditArenaModal
         isOpen={editModalOpen}
-        onRequestClose={() => setEditModalOpen(false)}
-        className={styles.modal}
-        overlayClassName={styles.modalOverlay}
-      >
-        <div className={styles.modalContent}>
-          <h2 className={styles.modalTitle}>Editar dados da Arena</h2>
-          <p className={styles.modalSubtitle}>
-            Arena: <strong>{editArena?.are_name}</strong>
-          </p>
-          <form onSubmit={handleEditSubmit}>
-            <div className={styles.formContainer}>
-              <div className={styles.inputContainer}>
-                <label htmlFor="arenaName" className={styles.inputLabel}>
-                  Nome da Arena
-                </label>
-                <input
-                  type="text"
-                  id="arenaName"
-                  value={arenaName}
-                  onChange={(e) => setArenaName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className={styles.inputContainer}>
-                <label htmlFor="arenaPrice" className={styles.inputLabel}>
-                  Preço/hora
-                </label>
-                <input
-                  type="number"
-                  id="arenaPrice"
-                  value={arenaPrice}
-                  onChange={(e) => setArenaPrice(e.target.value)}
-                  required
-                />
-              </div>
-              <div className={styles.inputContainer}>
-                <label htmlFor="arenaCategory" className={styles.inputLabel}>
-                  Categoria
-                </label>
-                <input
-                  type="text"
-                  id="arenaCategory"
-                  value={arenaCategory}
-                  onChange={(e) => setArenaCategory(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="primaryButton"
-              disabled={loadingArenaInfo}
-            >
-              {loadingArenaInfo ? 'Salvando...' : 'Salvar Alterações'}
-            </button>
-          </form>
-        </div>
-      </Modal>
+        onClose={() => setEditModalOpen(false)}
+        onSubmit={handleEditSubmit}
+        arenaName={arenaName}
+        setArenaName={setArenaName}
+        arenaPrice={arenaPrice}
+        setArenaPrice={setArenaPrice}
+        arenaCategory={arenaCategory}
+        setArenaCategory={setArenaCategory}
+        editArena={editArena}
+        preview={preview}
+        arenaFile={arenaFile}
+        handleFileUpload={handleFileUpload}
+        loadingArenaInfo={loadingArenaInfo}
+      />
 
       {/* Modal de exclusão */}
       <Modal

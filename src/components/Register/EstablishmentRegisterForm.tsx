@@ -1,7 +1,13 @@
 import styles from '../Register/Register.module.scss';
 import PropTypes from 'prop-types';
+import InputMask from 'react-input-mask';
 
 const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
+  const handlePhoneChange = (e) => {
+    const maskedValue = e.target.value;
+    const onlyNumbers = maskedValue.replace(/\D/g, '');
+    updateFieldHandler('establishmentPhone', onlyNumbers); // envia só os números
+  };
   return (
     <div>
       <div className={styles.formContainer}>
@@ -31,18 +37,22 @@ const EstablishmentRegisterForm = ({ data, updateFieldHandler }) => {
             Telefone
           </label>
           <div className={styles.inputWrapper}>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              pattern="(\(?\d{2}\)?\s?)?\d{5}-?\d{4}"
-              placeholder="(99)99999-9999"
+            <InputMask
+              mask="(99)9 9999-9999"
               value={data.establishmentPhone || ''}
-              onChange={(e) =>
-                updateFieldHandler('establishmentPhone', e.target.value)
-              }
-              required
-            />
+              onChange={handlePhoneChange}
+            >
+              {(inputProps) => (
+                <input
+                  {...inputProps}
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  placeholder="(99)9 9999-9999"
+                  required
+                />
+              )}
+            </InputMask>
           </div>
         </div>
       </div>

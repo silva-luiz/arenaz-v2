@@ -19,6 +19,7 @@ import { useFetchArenaInfo } from 'hooks/useFetchArenaInfo';
 import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
 import { CategoryLabel } from './CategoryLabel';
 import { SendWhatsAppButton } from './SendWhatsAppButton';
+import InputMask from 'react-input-mask';
 
 registerLocale('pt-BR', ptBR);
 
@@ -31,17 +32,19 @@ interface Props {
 }
 
 const CreateReservationPage = ({ arenaId }: Props) => {
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerPhone, setPlayerPhone] = useState('');
   const [price, setPrice] = useState('');
+  const [priceFormatted, setPriceFormatted] = useState('');
   const [advancePayment, setAdvancePayment] = useState('');
-  const [advanceAmount, setAdvanceAmount] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [qrCodePayload, setQrCodePayload] = useState('');
+  const [advanceAmountFormatted, setAdvanceAmountFormatted] = useState('');
+  const [advanceAmount, setAdvanceAmount] = useState(null);
 
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
@@ -84,7 +87,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       const { res, jsonData } = await fetchAvailableHours(reservationHoursData);
       if (res.ok) {
         console.log('Horários disponíveis:', jsonData);
-        setAvailableTimes(jsonData.available_hours);
+        console.log('jsonData.available_hours:', jsonData.available_hours);
+        console.log('Tipo:', typeof jsonData.available_hours);
+        setAvailableTimes(jsonData.available_hours.available_hours);
       } else {
         console.error('Erro ao buscar horários disponíveis:', res.statusText);
       }
@@ -111,6 +116,57 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       .normalize('NFD') // separa letras de acentos
       .replace(/[\u0300-\u036f]/g, '') // remove os acentos
       .toUpperCase(); // transforma em maiúsculo
+  };
+
+  // Salva apenas os números no state
+  const handlePhoneChange = (e) => {
+    const maskedValue = e.target.value;
+    const onlyDigits = maskedValue.replace(/\D/g, '');
+    setPlayerPhone(onlyDigits);
+  };
+
+  // Formata visualmente para mostrar no campo
+  const formatPhone = (raw) => {
+    if (!raw) return '';
+    return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
+  };
+
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = parseFloat(raw) / 100;
+
+    if (isNaN(numeric)) {
+      setPrice(null);
+      setPriceFormatted('');
+      return;
+    }
+
+    setPrice(numeric); // número limpo para o backend
+    setPriceFormatted(
+      numeric.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    );
+  };
+
+  const handleAdvanceAmountChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = parseFloat(raw) / 100;
+
+    if (isNaN(numeric)) {
+      setAdvanceAmount(null);
+      setAdvanceAmountFormatted('');
+      return;
+    }
+
+    setAdvanceAmount(numeric); // valor numérico real (ex: 123.45)
+    setAdvanceAmountFormatted(
+      numeric.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    ); // valor formatado (ex: "R$ 123,45")
   };
 
   const generateQRCode = async () => {
@@ -230,15 +286,16 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {availableTimes.map((time) => (
-                    <option
-                      key={time}
-                      value={time}
-                      className={styles.optionTime}
-                    >
-                      {time}
-                    </option>
-                  ))}
+                  {Array.isArray(availableTimes) &&
+                    availableTimes.map((time) => (
+                      <option
+                        key={time}
+                        value={time}
+                        className={styles.optionTime}
+                      >
+                        {time}
+                      </option>
+                    ))}
                 </Form.Select>
               </div>
 
@@ -254,17 +311,18 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   <option value="" className={styles.optionDefault}>
                     Selecione um horário...
                   </option>
-                  {availableTimes
-                    .filter((time) => time > startTime)
-                    .map((time) => (
-                      <option
-                        key={time}
-                        value={time}
-                        className={styles.optionTime}
-                      >
-                        {time}
-                      </option>
-                    ))}
+                  {Array.isArray(availableTimes) &&
+                    availableTimes
+                      .filter((time) => time > startTime)
+                      .map((time) => (
+                        <option
+                          key={time}
+                          value={time}
+                          className={styles.optionTime}
+                        >
+                          {time}
+                        </option>
+                      ))}
                 </Form.Select>
               </div>
             </div>
@@ -287,15 +345,22 @@ const CreateReservationPage = ({ arenaId }: Props) => {
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
-                <input
-                  required
-                  type="text"
-                  placeholder="Telefone para contato"
-                  name="contactPhone"
-                  className={styles.inputText}
-                  value={playerPhone}
-                  onChange={(e) => setPlayerPhone(e.target.value)}
-                />
+                <InputMask
+                  mask="(99)9 9999-9999"
+                  value={formatPhone(playerPhone)}
+                  onChange={handlePhoneChange}
+                >
+                  {(inputProps) => (
+                    <input
+                      {...inputProps}
+                      required
+                      type="text"
+                      name="contactPhone"
+                      placeholder="Telefone para contato"
+                      className={styles.inputText}
+                    />
+                  )}
+                </InputMask>
               </div>
             </div>
 
@@ -307,10 +372,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   type="text"
                   placeholder="Valor"
                   name="price"
-                  step="0.01"
                   className={styles.inputText}
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  value={priceFormatted}
+                  onChange={handlePriceChange}
                 />
               </div>
             </div>
@@ -355,12 +419,12 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                     </label>
                     <div className={styles.inputWrapper}>
                       <input
-                        type="number"
+                        type="text"
                         name="advanceAmount"
                         id="advanceAmount"
                         placeholder="Valor adiantado"
-                        value={advanceAmount || ''}
-                        onChange={(e) => setAdvanceAmount(e.target.value)}
+                        value={advanceAmountFormatted}
+                        onChange={handleAdvanceAmountChange}
                         onBlur={generateQRCode}
                         required
                       />
@@ -384,6 +448,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                         unoptimized
                       />
                       <button
+                        type="button"
                         onClick={handleDownload}
                         className="primaryButton"
                       >
