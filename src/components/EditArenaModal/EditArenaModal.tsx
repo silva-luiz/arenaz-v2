@@ -15,6 +15,7 @@ interface EditArenaModalProps {
   setArenaCategory: (value: string) => void;
   editArena?: {
     are_name: string;
+    are_photo: string;
   };
   preview?: string;
   arenaFile?: File | null;
@@ -38,6 +39,9 @@ const EditArenaModal: React.FC<EditArenaModalProps> = ({
   handleFileUpload,
   loadingArenaInfo,
 }) => {
+
+const previewImage = editArena?.are_photo == null ? "/images/placeholder.png" : preview;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -54,7 +58,7 @@ const EditArenaModal: React.FC<EditArenaModalProps> = ({
           <div className={styles.photoUploaderContainer}>
             <PhotoUploader
               title="Alterar imagem"
-              preview={preview}
+              preview={previewImage}
               handleFileUpload={handleFileUpload}
               arenaFile={arenaFile}
               defaultImage="/images/placeholder.png"

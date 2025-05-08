@@ -128,6 +128,10 @@ const EstablishmentProfilePage = ({
     }
   };
 
+  const previewImage = establishmentFile == null
+  ? "/images/establishment_placeholder.png"
+  : preview;
+
   return (
     <div className={styles.pageWrapper}>
       <h2 className={styles.pageTitle}>Informações do estabelecimento</h2>
@@ -139,10 +143,10 @@ const EstablishmentProfilePage = ({
           <div className={styles.photoButtonContainer}>
             <PhotoUploader
               title="Adicionar imagem"
-              preview={preview}
+              preview={previewImage}
               handleFileUpload={handleFileUpload}
               arenaFile={establishmentFile}
-              defaultImage="/images/establishment_placeholder.png"
+              
             />
           </div>
           <div className={styles.formColumns}>
