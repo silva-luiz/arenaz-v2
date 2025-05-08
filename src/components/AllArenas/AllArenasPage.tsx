@@ -284,7 +284,7 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
             Deseja realmente excluir a Arena{' '}
             <strong>{deleteArena?.are_name}</strong>
           </p>
-          <p>Essa ação nao poderá ser desfeita</p>
+          <p>Essa ação não poderá ser desfeita</p>
 
           <div className={styles.modalActions}>
             <button

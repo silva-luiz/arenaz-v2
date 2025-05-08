@@ -138,8 +138,16 @@ const ProfilePage = ({
             </div>
 
             <div className={styles.actionButtonsContainer}>
-              <Button text="Cancelar" className="outlinedButton" handleClick={() => router.push('/home/dashboard')}/>
-              <Button text="Salvar alterações" className="primaryButton" type='submit'/>
+              <Button
+                text="Cancelar"
+                className="outlinedButton"
+                handleClick={() => router.push('/home/dashboard')}
+              />
+              <Button
+                text="Salvar alterações"
+                className="primaryButton"
+                type="submit"
+              />
             </div>
           </form>
         </div>
