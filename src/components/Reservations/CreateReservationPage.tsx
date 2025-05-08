@@ -131,18 +131,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
     return raw.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, '($1)$2 $3-$4');
   };
 
-  const formatCurrency = (value) => {
-    const numericValue = value.replace(/\D/g, ''); // Remove tudo que não for número
-    const floatValue = parseFloat(numericValue) / 100;
-
-    if (isNaN(floatValue)) return '';
-
-    return floatValue.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    });
-  };
-
   const handlePriceChange = (e) => {
     const raw = e.target.value.replace(/\D/g, '');
     const numeric = parseFloat(raw) / 100;
