@@ -142,6 +142,7 @@ const EstablishmentProfilePage = ({
               preview={preview}
               handleFileUpload={handleFileUpload}
               arenaFile={establishmentFile}
+              defaultImage="/images/establishment_placeholder.png"
             />
           </div>
           <div className={styles.formColumns}>

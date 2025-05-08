@@ -57,6 +57,7 @@ const EditArenaModal: React.FC<EditArenaModalProps> = ({
               preview={preview}
               handleFileUpload={handleFileUpload}
               arenaFile={arenaFile}
+              defaultImage="/images/placeholder.png"
             />
           </div>
           <div className={styles.formContainer}>
