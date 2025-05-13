@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import ArenaCardImg from '../../assets/arena_card_img.png';
-import styles from '../Dashboard/DashboardPage.module.scss';
+import styles from './ArenaCard.module.scss';
 import CircularProgress from '@mui/material/CircularProgress';
 
 const ArenaCard = ({
@@ -13,7 +13,7 @@ const ArenaCard = ({
   goToReservation,
   onEdit,
   onDelete,
-  isRedirecting, // nova prop
+  isRedirecting,
 }) => {
   return (
     <div className={styles.arenaCard}>

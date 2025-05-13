@@ -6,7 +6,7 @@ import { CircularProgress } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 
 import Button from '../Button';
-import ArenaCard from 'components/Dashboard/ArenaCard';
+import ArenaCard from 'components/ArenaCard/ArenaCard';
 import styles from '../Dashboard/DashboardPage.module.scss';
 
 import URLS from '../../utils/apiRoutes';
@@ -154,7 +154,8 @@ const AllArenasPage = ({ isExpiredSession }: IAllArenasPageProps) => {
       setModalMessage('Arena excluída com sucesso!');
     } else {
       setModalMessage(
-        jsonData?.message || `Erro ao excluir a arena. Verifique se não há reservas ativas para essa arena.`,
+        jsonData?.message ||
+          `Erro ao excluir a arena. Verifique se não há reservas ativas para essa arena.`,
       );
     }
 
