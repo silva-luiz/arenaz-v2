@@ -141,7 +141,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   };
 
   const are_id = arenaId;
-  
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,7 +177,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
 
       console.log('Dados da reserva:', reservation);
 
-      const { res, jsonData } = await updateReservation(reservation);
+      const { res } = await updateReservation(reservation);
 
       if (res.ok) {
         setShowModal(true);
@@ -188,9 +188,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       console.error('Erro inesperado ao atualizar reserva:', error);
     }
   };
-
-
-
 
   return (
     <div>
@@ -216,7 +213,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
         Escolha o dia, horário de início e horário de término para o seu
         agendamento:
       </p>
-
       <div className={styles.arenaInfosContainer}>
         <div className={styles.reservationContainer}>
           <form onSubmit={handleSubmit} className={styles.reservationForm}>
@@ -237,7 +233,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 wrapperClassName={styles.datePickerWrapper}
               />
             </div>
-
             <div className={styles.selectTimeContainer}>
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de início</h4>
@@ -261,7 +256,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   ))}
                 </Form.Select>
               </div>
-
               <div className={styles.timePickerContainer}>
                 <h4 className={styles.arenaInfo}>Horário de saída</h4>
                 <Form.Select
@@ -288,7 +282,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 </Form.Select>
               </div>
             </div>
-
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Jogador responsável</label>
               <div className={styles.inputWrapper}>
@@ -303,7 +296,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 />
               </div>
             </div>
-
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
@@ -325,7 +317,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 </InputMask>
               </div>
             </div>
-
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Valor (R$)</label>
               <div className={styles.inputWrapper}>
@@ -341,8 +332,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 />
               </div>
             </div>
-
-
             <h3 className={styles.arenaInfo}>Pagamento adiantado?</h3>
             <div className={styles.radioContainer}>
               <div className={styles.radioItem}>
@@ -370,12 +359,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 <label htmlFor="no">Não</label>
               </div>
             </div>
-
-
             {advancePayment === 'yes' && (
               <>
                 <h3 className={styles.arenaInfo}>Valor adiantado</h3>
-
                 <div className={styles.formContainer}>
                   <div className={styles.inputContainer}>
                     <label
@@ -399,7 +385,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                 </div>
               </>
             )}
-
             <div className={styles.formActions}>
               <button
                 type="submit"
@@ -412,7 +397,6 @@ const CreateReservationPage = ({ arenaId }: Props) => {
           </form>
         </div>
       </div>
-
       {showModal && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
