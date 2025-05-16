@@ -21,14 +21,14 @@ O ArenaZ foi desenvolvido utilizando as seguintes tecnologias:
 
 - **Prototipação**: Figma
 - **Backend**: Laravel
-- **Frontend**: React JS
+- **Frontend**: Next.js
 - **Banco de Dados**: PostgreSQL
 
 ## Executando o projeto
 Para executar o projeto, digite os seguintes comandos pelo terminal, na pasta do raiz do projeto:
 
 - Para a instalação dos pacotes necessários
-`npm install`
+`yarn`
 
 - Para rodar a aplicação
-`npm run dev`
+`yarn dev`
