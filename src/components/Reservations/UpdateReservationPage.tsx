@@ -86,6 +86,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       setReservationEndTime(reservation.res_end_time || '');
       setOriginalStartTime(reservation.res_start_time || '');
       setOriginalEndTime(reservation.res_end_time || '');
+      setAdvancePayment(reservation.res_payment_advance > 0 ? 'yes' : 'no');
 
       setReservationAvailableHours(availableHours);
 
@@ -140,6 +141,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
   };
 
   const are_id = arenaId;
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -186,6 +188,9 @@ const CreateReservationPage = ({ arenaId }: Props) => {
       console.error('Erro inesperado ao atualizar reserva:', error);
     }
   };
+
+
+
 
   return (
     <div>
@@ -337,6 +342,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
               </div>
             </div>
 
+
             <h3 className={styles.arenaInfo}>Pagamento adiantado?</h3>
             <div className={styles.radioContainer}>
               <div className={styles.radioItem}>
@@ -346,6 +352,7 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   name="advancePayment"
                   value="yes"
                   required
+                  checked={advancePayment === 'yes'}
                   onChange={(e) => setAdvancePayment(e.target.value)}
                 />
                 <label htmlFor="yes">Sim</label>
@@ -355,13 +362,15 @@ const CreateReservationPage = ({ arenaId }: Props) => {
                   type="radio"
                   id="no"
                   name="advancePayment"
-                  value="Não"
+                  value="no"
                   required
+                  checked={advancePayment === 'no'}
                   onChange={(e) => setAdvancePayment(e.target.value)}
                 />
                 <label htmlFor="no">Não</label>
               </div>
             </div>
+
 
             {advancePayment === 'yes' && (
               <>
