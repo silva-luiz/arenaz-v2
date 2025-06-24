@@ -128,9 +128,7 @@ const EstablishmentProfilePage = ({
     }
   };
 
-  const previewImage = establishmentFile == null
-  ? "/images/establishment_placeholder.png"
-  : preview;
+  const previewImage = preview ?? '/images/establishment_placeholder.png';
 
   return (
     <div className={styles.pageWrapper}>
@@ -146,7 +144,6 @@ const EstablishmentProfilePage = ({
               preview={previewImage}
               handleFileUpload={handleFileUpload}
               arenaFile={establishmentFile}
-              
             />
           </div>
           <div className={styles.formColumns}>
