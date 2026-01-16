@@ -11,6 +11,7 @@ import 'react-datepicker/dist/react-datepicker-cssmodules.css';
 import 'react-datepicker/dist/react-datepicker.css';
 import styles from '../Reservations/CreateReservationPage.module.scss';
 import URLS from 'utils/apiRoutes';
+import InputMask from 'react-input-mask';
 import { useRouter } from 'next/navigation';
 import { useFetchAvailableHours } from 'hooks/useFetchAvailableHours';
 import { useFetchReservationInfo } from 'hooks/useFetchReservationInfo';
@@ -301,15 +302,22 @@ const CreateReservationPage = ({ arenaId }: Props) => {
             <div className={styles.inputContainer}>
               <label className={styles.inputLabel}>Telefone para contato</label>
               <div className={styles.inputWrapper}>
-                <input
-                  required
-                  type="text"
-                  placeholder="Telefone para contato"
-                  name="contactPhone"
-                  className={styles.inputText}
+                <InputMask
+                  mask="(99) 9 9999-9999"
                   value={reservationCellphone}
                   onChange={(e) => setReservationCellphone(e.target.value)}
-                />
+                >
+                  {(inputProps: any) => (
+                    <input
+                      {...inputProps}
+                      required
+                      type="text"
+                      placeholder="Telefone para contato"
+                      name="contactPhone"
+                      className={styles.inputText}
+                    />
+                  )}
+                </InputMask>
               </div>
             </div>
 

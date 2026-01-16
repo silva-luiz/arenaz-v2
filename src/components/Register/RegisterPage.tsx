@@ -88,6 +88,10 @@ const RegisterPage = () => {
         own_id: ownerId,
       };
 
+      Object.entries(establishmentData).forEach(([key, value]) => {
+        console.log(`${key}: ${value}`);
+      });
+
       if (userResponse.token) {
         sessionStorage.setItem('auth-token', userResponse.token);
         Cookies.set('auth_token', userResponse.token, { expires: 1 });
@@ -135,7 +139,10 @@ const RegisterPage = () => {
           </p>
         </div>
         <div className={styles.formContainer}>
-          <form onSubmit={(e) => changeStep(currentStep + 1, e)} className={styles.forms}>
+          <form
+            onSubmit={(e) => changeStep(currentStep + 1, e)}
+            className={styles.forms}
+          >
             <div className={styles.mainFormContainer}>{currentComponent}</div>
             <div className={styles.actionButtonsContainer}>
               {!isFirstStep && (
@@ -178,7 +185,9 @@ const RegisterPage = () => {
         ariaHideApp={false}
       >
         <div className={styles.modalContent}>
-          <h2 className={styles.modalTitle}>{isSuccess ? 'Sucesso!' : 'Erro'}</h2>
+          <h2 className={styles.modalTitle}>
+            {isSuccess ? 'Sucesso!' : 'Erro'}
+          </h2>
           <p>{modalMessage}</p>
           {isSuccess ? (
             <div className={styles.modalActions}>

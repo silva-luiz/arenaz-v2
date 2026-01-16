@@ -15,7 +15,8 @@ const ArenaRegisterForm = () => {
   const { data } = useFetchEstablishmentInfo(URLS.ESTABLISHMENT_INFO);
 
   const [arenaName, setArenaName] = useState('');
-  const [arenaPrice, setArenaPrice] = useState('');
+  const [arenaPrice, setArenaPrice] = useState(null);
+  const [arenaPriceFormatted, setArenaPriceFormatted] = useState('');
   const [arenaCategory, setArenaCategory] = useState('');
   const [arenaStartHour, setArenaStartHour] = useState('');
   const [arenaClosingHour, setArenaClosingHour] = useState('');
@@ -40,6 +41,25 @@ const ArenaRegisterForm = () => {
       .padStart(2, '0')}`;
     return formatted;
   });
+
+  const handlePriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = parseFloat(raw) / 100;
+
+    if (isNaN(numeric)) {
+      setArenaPrice(null);
+      setArenaPriceFormatted('');
+      return;
+    }
+
+    setArenaPrice(numeric); // número limpo para o backend
+    setArenaPriceFormatted(
+      numeric.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }),
+    );
+  };
 
   const handleStartTimeChange = (e) => {
     setArenaStartHour(e.target.value);
@@ -117,9 +137,11 @@ const ArenaRegisterForm = () => {
           <h3 className={styles.arenaRegisterSubtitle}>Informações gerais</h3>
           <div>
             <PhotoUploader
+              title="Adicionar imagem"
               preview={preview}
               handleFileUpload={handleFileUpload}
               arenaFile={arenaFile}
+              defaultImage="/images/placeholder.png"
             />
           </div>
           <div className={styles.formContainer}>
@@ -148,12 +170,12 @@ const ArenaRegisterForm = () => {
               </label>
               <div className={styles.inputWrapper}>
                 <input
-                  type="number"
+                  type="text"
                   name="arenaPrice"
                   id="arenaPrice"
                   placeholder="Preço"
-                  value={arenaPrice || ''}
-                  onChange={(e) => setArenaPrice(e.target.value)}
+                  value={arenaPriceFormatted}
+                  onChange={handlePriceChange}
                   required
                 />
               </div>

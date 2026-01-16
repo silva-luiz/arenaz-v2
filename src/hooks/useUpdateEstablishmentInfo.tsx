@@ -4,39 +4,46 @@ export const useUpdateEstablishmentInfo = (url) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateEstablishmentInfo = async (establishmentData) => {
-    const token = sessionStorage.getItem("auth-token");
+  const updateEstablishmentInfo = async (formData) => {
+    const token = sessionStorage.getItem('auth-token');
 
     if (!token) {
-      console.error("Token não encontrado!");
-      return;
-  }
+      setError('Token não encontrado!');
+      console.error('Token não encontrado!');
+      return { res: null, jsonData: null };
+    }
+
+    formData.append('_method', 'PATCH');
 
     setLoading(true);
-    let res = null;
     try {
-      res = await fetch(url, {
-        method: 'PATCH',
+      const res = await fetch(url, {
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-          // "ngrok-skip-browser-warning": "69420" // usar apenas quando Ngrok estiver sendo utilizado
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(establishmentData),
+        body: formData,
       });
 
-      const jsonData = await res.json();
-      setLoading(false);
+      let jsonData = null;
+
+      try {
+        jsonData = await res.json(); // Pode lançar erro se resposta não for JSON
+      } catch (jsonErr) {
+        console.warn('Resposta não é JSON:', jsonErr);
+      }
 
       if (!res.ok) {
-        throw new Error(jsonData.message || 'Erro ao atualizar dados');
+        throw new Error(jsonData?.message || 'Erro ao atualizar dados');
       }
 
       return { res, jsonData };
     } catch (err) {
-      setError(err.message);
-      setLoading(false);
+      console.error('Erro na requisição:', err);
+      setError(err.message || 'Erro desconhecido');
       return { res: null, jsonData: null };
+    } finally {
+      setLoading(false);
     }
   };
 

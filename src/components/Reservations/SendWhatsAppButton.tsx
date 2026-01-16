@@ -20,7 +20,7 @@ export const SendWhatsAppButton: React.FC<SendWhatsAppButtonProps> = ({
   };
 
   return (
-    <button onClick={handleSendWhatsApp} className="primaryButton">
+    <button onClick={handleSendWhatsApp} className="primaryButton" type="button">
       Enviar QR Code via WhatsApp
     </button>
   );

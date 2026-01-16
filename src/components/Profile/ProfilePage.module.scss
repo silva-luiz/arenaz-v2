@@ -3,19 +3,41 @@
   flex-direction: column;
   align-items: stretch;
 
+  // Títulos da página
+  .pageTitle {
+    padding-bottom: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .pageSubtitle {
+    margin-bottom: 2rem;
+    text-align: left;
+    color: var(--text-color);
+  }
+
+  .photoButtonContainer{
+    width: 25%;
+    margin: 0 auto;
+  }
+
+  .subtitle {
+    padding-bottom: 10px;
+    font-size: 1.3rem;
+    font-weight: bold;
+  }
+
+  // Container principal do formulário
   .formContainer {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     width: 100%;
     padding: 20px;
     border: 1px solid var(--background-color-hover);
     border-radius: 12px;
   }
 
-  .column {
-    flex-grow: 1;
-  }
-
+  // Área que agrupa os dois blocos (estabelecimento e proprietário)
   .establishmentOwnerWrapper {
     display: flex;
     justify-content: space-between;
@@ -26,56 +48,39 @@
 
   .establishmentContainer,
   .ownerContainer {
-    flex-basis: 45%;
-    flex-grow: 1;
+    flex: 1 1 48%;
+    min-width: 300px;
   }
 
-  .formContainer {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .pageTitle {
-    padding-bottom: 10px;
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
-
-  .pageSubtitle {
-    margin-bottom: 2rem;
-  text-align: left;
-  color: var(--text-color);
-  }
-
-  .subtitle {
-    padding-bottom: 10px;
-    font-size: 1.3rem;
-    font-weight: bold;
-  }
-
+  // Colunas internas do formulário
   .formColumns {
+    padding-top: 30px;
     display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    width: 100%;
+    flex-wrap: wrap;
+    gap: 2rem;
+
+    .column {
+      flex: 1 1 48%;
+      min-width: 300px;
+    }
   }
 
+  // Inputs
   .inputContainer {
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
-    width: 50%;
+    width: 100%;
   }
 
   .inputLabel {
-  font-size: 1rem;
-  color: var(--text-color);
-  text-align: left;
+    font-size: 1rem;
+    color: var(--text-color);
+    text-align: left;
   }
 
-  .disabledInput{
-    color: var(--text-color)
+  .disabledInput {
+    color: var(--text-color);
   }
 
   .inputWrapper {
@@ -86,22 +91,26 @@
     border-radius: 12px;
     padding: 10px;
     background-color: var(--background-color);
+
+    input {
+      border: none;
+      outline: none;
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
   }
 
-  .inputWrapper input {
-    border: none;
-    outline: none;
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-  }
+  // Botões
   .actionButtonsContainer {
     padding-top: 20px;
     display: flex;
     gap: 10px;
-    justify-content: end;
+    justify-content: flex-end;
   }
 
+  // Modal
   .modal {
     position: fixed;
     top: 0;
@@ -125,29 +134,41 @@
     height: 200px;
   }
 
-  .modalSubtitle {
-    padding-bottom: 15px;
-  }
-
-  .modalTitle{
+  .modalTitle {
     font-size: 1.5rem;
     font-weight: bold;
     color: var(--title-color);
     margin-bottom: 10px;
   }
 
+  .modalSubtitle {
+    padding-bottom: 15px;
+  }
+
+  // Responsividade
   @media (max-width: 768px) {
     .formColumns {
       flex-direction: column;
+
+      .column {
+        flex: 1 1 100%;
+      }
     }
+
+    .establishmentContainer,
+    .ownerContainer {
+      flex: 1 1 100%;
+    }
+
     .actionButtonsContainer {
       flex-direction: column;
       align-items: center;
-    }
-    .outlinedButton,
-    .primaryButton {
-      width: 100%;
-      margin: 5px 0;
+
+      .outlinedButton,
+      .primaryButton {
+        width: 100%;
+        margin: 5px 0;
+      }
     }
   }
 
@@ -160,9 +181,7 @@
       h2 {
         font-size: 1.5rem;
       }
-    }
 
-    .formHeader {
       p {
         font-size: 14px;
       }
