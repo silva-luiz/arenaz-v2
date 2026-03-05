@@ -1,5 +1,6 @@
 'use client';
 import NavbarSite from 'components/NavbarSite';
+import PricingSection from 'components/Landing/PricingSection/PricingSection';
 import SiteFooter from 'components/SiteFooter';
 import cta1 from 'assets/cta-1.png';
 import cta2 from 'assets/cta-2.png';
@@ -42,7 +43,12 @@ export default function Home() {
         Description2={
           'Além disso, o proprietário terá acesso a um dashboard exclusivo que exibe informações importantes sobre as reservas. Esse painel inclui detalhes como a quantidade de reservas realizadas, horários preenchidos e disponíveis, e dados financeiros, ajudando o proprietário a entender melhor o uso do espaço e a tomar decisões informadas para otimizar a ocupação.'
         }
+        Title3={'Agentes de IA no WhatsApp'}
+        Description3={
+          'Os jogadores podem interagir diretamente com agentes de inteligência artificial pelo WhatsApp, realizando todo o fluxo de reservas de forma automatizada. Desde a consulta de horários e arenas disponíveis até a confirmação da reserva e o pagamento, tudo acontece sem a necessidade de intervenção do proprietário. Isso garante praticidade para o jogador e eficiência na gestão das arenas.'
+        }
       />
+      <PricingSection />
       <CallToActionBanner
         message={'Seu gerenciamento de forma simplificada e automatizada!'}
         backgroundImage={cta2}
