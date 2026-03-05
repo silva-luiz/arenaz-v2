@@ -1,5 +1,6 @@
 'use client';
 import NavbarSite from 'components/NavbarSite';
+import SiteFooter from 'components/SiteFooter';
 import cta1 from 'assets/cta-1.png';
 import cta2 from 'assets/cta-2.png';
 
@@ -18,9 +19,9 @@ export default function Home() {
       />
       <SiteDescription
         DescriptionTitle={'Por que utilizar nossa plataforma?'}
-        Title1={'Visibilidade'}
+        Title1={'Automação e agilidade'}
         Description1={
-          'Ter sua arena em nossa plataforma coloca seu estabelecimento em evidência na região, permitindo que praticantes de todos os esportes o encontrem com facilidade. Aumente sua visibilidade e atraia novos clientes de forma eficaz!'
+          'Com agentes de IA e chatbots inteligentes, todo o processo de consulta de horários, reservas e pagamentos é realizado de forma totalmente automatizada e instantânea. O jogador resolve tudo em poucos minutos, direto pelo WhatsApp, enquanto você, proprietário, ganha mais tempo para focar na gestão estratégica do seu espaço e no crescimento do seu negócio.'
         }
         Title2={'Gerenciamento simplificado'}
         Description2={
@@ -28,7 +29,7 @@ export default function Home() {
         }
         Title3={'Variedade'}
         Description3={
-          'Na nossa plataforma, a variedade é a chave. Você pode cadastrar Arenas de todos os esportes, desde futebol. até quadras de areia. Seja qual for o tipo de espaço que você oferece, nossa plataforma permite que você alcance uma ampla gama de praticantes! '
+          'Na nossa plataforma, a variedade é a chave. Você pode cadastrar Arenas de todos os esportes, desde futebol, até quadras de areia. Seja qual for o tipo de espaço que você oferece, nossa plataforma permite que você alcance uma ampla gama de praticantes! '
         }
       />
       <SiteDescription
@@ -43,11 +44,10 @@ export default function Home() {
         }
       />
       <CallToActionBanner
-        message={
-          'Todos os esportes em um só lugar, com muito mais visibilidade!'
-        }
+        message={'Seu gerenciamento de forma simplificada e automatizada!'}
         backgroundImage={cta2}
       />
+      <SiteFooter />
     </>
   );
 }

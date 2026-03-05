@@ -1,0 +1,100 @@
+.privacy {
+  width: 100%;
+  padding: 60px 20px;
+  background-color: var(--background-color);
+  color: var(--title-color);
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .lastUpdate {
+    font-size: 14px;
+    opacity: 0.6;
+    margin-bottom: 40px;
+  }
+
+  section {
+    margin-bottom: 30px;
+  }
+
+  h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  p {
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+    a {
+    color: var(--text-link-color);
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  ul {
+    padding-left: 20px;
+
+    li {
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+  }
+}
+
+/* ========================
+   RESPONSIVIDADE
+======================== */
+
+@media (max-width: 768px) {
+  .privacy {
+    padding: 40px 15px;
+
+    h1 {
+      font-size: 26px;
+    }
+
+    h2 {
+      font-size: 18px;
+    }
+
+    p,
+    li {
+      font-size: 14px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .privacy {
+    padding: 30px 10px;
+
+    h1 {
+      font-size: 22px;
+    }
+
+    h2 {
+      font-size: 16px;
+    }
+
+    p,
+    li {
+      font-size: 13px;
+    }
+  }
+}
