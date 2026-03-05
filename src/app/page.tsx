@@ -7,6 +7,7 @@ import cta2 from 'assets/cta-2.png';
 
 import CallToActionBanner from 'components/Landing/CallToActionBanner';
 import SiteDescription from 'components/Landing/SiteDescription';
+import FAQSection from 'components/Landing/FAQSection/FAQSection';
 
 export default function Home() {
   return (
@@ -53,6 +54,7 @@ export default function Home() {
         message={'Seu gerenciamento de forma simplificada e automatizada!'}
         backgroundImage={cta2}
       />
+      <FAQSection />
       <SiteFooter />
     </>
   );
