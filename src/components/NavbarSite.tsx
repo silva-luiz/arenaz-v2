@@ -16,9 +16,9 @@ const NavbarSite = () => {
       <div>
         {/* <Link href="/home">Go to home</Link> */}
 
-        <Link href="/register">
+        {/* <Link href="/register">
           <Button className="primaryButton" text="Criar conta" />
-        </Link>
+        </Link> */}
         <Link href="/login">
           <Button className="outlinedButton" text="Entrar" />
         </Link>

@@ -1,3 +1,13 @@
+.inputWrapper input:-webkit-autofill,
+.inputWrapper input:-webkit-autofill:hover,
+.inputWrapper input:-webkit-autofill:focus,
+.inputWrapper input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: var(--text-color);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 .loginMainContainer {
   display: flex;
   justify-content: space-between;
@@ -74,22 +84,45 @@
           align-items: center;
           border: 1px solid var(--background-color-hover);
           border-radius: 12px;
-          padding: 10px;
           background-color: var(--background-color);
-
+          overflow: hidden;
           input {
             border: none;
             outline: none;
             width: 100%;
-            padding: 10px;
+            padding: 12px 40px;
             font-size: 14px;
             background: transparent;
           }
 
           .faIcon {
+            position: absolute;
+            left: 12px;
+            font-size: 14px;
             color: var(--text-color);
-            margin-left: 10px;
           }
+
+          .eyeButton {
+            position: absolute;
+            right: 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+            font-size: 14px;
+            padding: 0;
+
+            &:hover {
+              color: var(--primary-color);
+            }
+          }
+        }
+
+        .inputWrapper:focus-within {
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.03);
         }
 
         .inputError {
@@ -149,7 +182,7 @@
     }
   }
 
-  // Responsivo
+  // Responsiveness
   @media (max-width: 1024px) {
     flex-direction: column;
     gap: 20px;

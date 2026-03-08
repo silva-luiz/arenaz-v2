@@ -1,39 +1,48 @@
-import Button from '../Button';
-import { FaUser, FaLock } from 'react-icons/fa';
-// import Cookies from 'js-cookie';
-import { useState } from 'react';
+'use client';
 
+import Button from '../Button';
+import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useState } from 'react';
 import arenaZLogo from '/public/images/arenaz-logo.png';
 import styles from './LoginPage.module.scss';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import { authService } from 'lib/api';
 
 const LoginPage = () => {
   const { login } = authService;
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
   const [credentialsError, setCredentialsError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+
+  const handleChange = (field) => (e) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: e.target.value,
+    }));
+    setCredentialsError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setLoading(true);
 
-    const userData = {
-      email: email,
-      password: password,
-    };
-
     try {
-      await login(userData);
-      router.push('home/dashboard');
+      await login(form);
+      router.push('/home/dashboard');
     } catch (error) {
       console.error('Login Error', error);
-      setCredentialsError('Credenciais inválidas. Verifique seu e-mail e senha.');
+      setCredentialsError(
+        'Credenciais inválidas. Verifique seu e-mail e senha.'
+      );
     } finally {
       setLoading(false);
     }
@@ -47,66 +56,73 @@ const LoginPage = () => {
         height={781}
         alt="login image"
       />
+
       <div className={styles.formContainer}>
         <form className={styles.loginForm} onSubmit={handleSubmit}>
           <Image src={arenaZLogo} alt="Logo" className={styles.arenaZLogo} />
+
           <div className={styles.loginTitle}>
             <h1 className={styles.loginWelcomeMessage}>
               Olá, seja bem-vindo ao{' '}
               <span className={styles.siteName}>ArenaZ</span>
             </h1>
           </div>
+
+          {/* EMAIL */}
+
           <div className={styles.inputContainer}>
             <span className={styles.inputLabel}>E-mail</span>
+
             <div className={styles.inputWrapper}>
+              <FaUser className={styles.faIcon} />
+
               <input
                 type="email"
                 placeholder="E-mail"
                 name="email"
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setCredentialsError('');
-                }}
-                
                 required
+                value={form.email}
+                onChange={handleChange('email')}
               />
-
-              <FaUser className={styles.faIcon} />
             </div>
+
             {credentialsError && (
               <p className={styles.errorText}>{credentialsError}</p>
             )}
           </div>
+
+          {/* PASSWORD */}
+
           <div className={styles.inputContainer}>
             <span className={styles.inputLabel}>Senha</span>
+
             <div className={styles.inputWrapper}>
+              <FaLock className={styles.faIcon} />
+
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Senha"
                 name="password"
                 required
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setCredentialsError('');
-                }}
-                
+                value={form.password}
+                onChange={handleChange('password')}
               />
-              <FaLock className={styles.faIcon} />
+
+              <button
+                type="button"
+                className={styles.eyeButton}
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
             </div>
           </div>
 
           <Button
             className={styles.loginPrimaryButton}
             text={loading ? 'Entrando...' : 'Entrar'}
-            handleClick={handleSubmit}
             disabled={loading}
           />
-          <div className={styles.signUpLink}>
-            <p>Ainda não tem conta?</p>{' '}
-            <Link href="/register" className={styles.startNowLink}>
-              Comece agora mesmo!
-            </Link>
-          </div>
         </form>
       </div>
     </div>
