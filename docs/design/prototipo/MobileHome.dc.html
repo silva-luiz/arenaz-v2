@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ArenaZ — Home mobile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&amp;family=Geist+Mono:wght@500..600&amp;display=swap">
+<style>
+body{margin:0;font-family:'Geist',system-ui,sans-serif;color:#161616;-webkit-font-smoothing:antialiased}
+a{color:#161616}a:hover{color:#000000}
+button:focus-visible,a:focus-visible{outline:2px solid #161616;outline-offset:3px}
+:root{--sh-1:0 1px 2px rgba(8,36,24,.08),0 10px 22px -12px rgba(8,36,24,.32);--sh-2:0 2px 6px rgba(8,36,24,.10),0 26px 48px -20px rgba(8,36,24,.48);--sh-3:0 2px 4px rgba(0,0,0,.08),0 18px 40px -14px rgba(0,0,0,.38),0 48px 90px -30px rgba(0,0,0,.45);--ease:cubic-bezier(.2,.7,.2,1)}
+.az-glass{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6)}
+.az-lift{transition:transform .4s var(--ease),box-shadow .4s var(--ease)}.az-lift:hover{transform:translateY(-3px);box-shadow:var(--sh-2) !important}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+.az-x{scrollbar-width:none}.az-x::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #FFFFFF; overflow: hidden;">
+<div class="az-x" style="height: 844px; overflow-y: auto; padding-bottom: 96px; box-sizing: border-box;">
+
+<div style="padding: 18px 20px 6px;">
+<a href="Busca.dc.html" style="display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 10px 0 22px; border-radius: 999px; background: #FFFFFF; box-shadow: var(--sh-2); text-decoration: none;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+<span style="flex: 1;"><strong style="display: block; font-size: 15px; font-weight: 650;">Bora jogar?</strong><span style="font-size: 12px; color: #6A6A6A;">Qualquer lugar · hoje · society</span></span>
+<span style="width: 40px; height: 40px; border-radius: 999px; border: 1px solid #DDDDDD; display: grid; place-items: center;" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg></span>
+</a>
+</div>
+
+<nav aria-label="Esportes" class="az-x" style="display: flex; gap: 22px; overflow-x: auto; padding: 14px 20px 0; border-bottom: 1px solid #EBEBEB;">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+<button onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="{{c.style}}"><img src="{{c.img}}" alt="" style="width: 40px; height: 40px; border-radius: 12px; object-fit: cover;"><span>{{c.label}}</span></button>
+</sc-for>
+</nav>
+
+<section style="padding: 22px 20px 0;">
+<h2 style="margin: 0 0 14px; font-size: 20px; font-weight: 650; letter-spacing: -0.02em;">Livre agora perto de você</h2>
+<a href="Quadra.dc.html" style="display: block; text-decoration: none;">
+<span style="position: relative; display: block; aspect-ratio: 1 / 1; border-radius: 24px; overflow: hidden; box-shadow: var(--sh-2);">
+<img src="/_blob/cd41929848ab8e46f5639b54a8c84853" alt="Campo society iluminado à noite visto de cima" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span style="position: absolute; top: 14px; left: 14px; padding: 7px 11px; border-radius: 999px; background: rgba(255,255,255,0.95); font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 6px;"><span style="width: 7px; height: 7px; border-radius: 999px; background: #12A150;"></span>Livre às 20h</span>
+<span aria-hidden="true" style="position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 9px; background: #FFFFFF;"></span><span style="width: 6px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.6);"></span><span style="width: 6px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.6);"></span></span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px; margin-top: 12px; font-size: 15px;">
+<span style="display: flex; justify-content: space-between;"><strong style="font-weight: 650;">Arena Vila Madalena</strong><span>★ 4,92</span></span>
+<span style="color: #6A6A6A;">Society 7x7 · coberta · 1,2 km</span>
+<span><strong style="font-weight: 650;">R$ 180</strong> <span style="color: #6A6A6A;">/ hora</span></span>
+</span>
+</a>
+<div class="az-x" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 12px;">
+<a href="Quadra.dc.html" style="flex-shrink: 0; font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 10px; border: 1px solid #DDDDDD; text-decoration: none;">20:00</a>
+<a href="Quadra.dc.html" style="flex-shrink: 0; font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 10px; border: 1px solid #DDDDDD; text-decoration: none;">21:00</a>
+<a href="Quadra.dc.html" style="flex-shrink: 0; font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 10px; border: 1px solid #DDDDDD; text-decoration: none;">22:00</a>
+</div>
+</section>
+
+<section style="padding: 28px 0 0;">
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 20px; margin-bottom: 12px;">
+<h2 style="margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.02em;">Falta gente</h2>
+<a href="Busca.dc.html" style="font-size: 14px; font-weight: 600;">Ver todas</a>
+</div>
+<div class="az-x" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 20px 4px;">
+<sc-for list="{{games}}" as="g" hint-placeholder-count="3">
+<a href="Checkout.dc.html" style="flex: 0 0 240px; text-decoration: none; display: flex; flex-direction: column; gap: 8px;">
+<span style="position: relative; display: block; height: 150px; border-radius: 16px; overflow: hidden; box-shadow: var(--sh-1);"><img src="{{g.img}}" alt="{{g.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;"><span style="position: absolute; left: 10px; bottom: 10px; padding: 5px 9px; border-radius: 8px; background: rgba(22,22,22,0.82); color: #FFFFFF; font-size: 12px; font-weight: 600;">{{g.when}}</span></span>
+<span style="font-size: 14px;"><strong style="display: block; font-weight: 650;">{{g.title}}</strong><span style="color: #6A6A6A;">{{g.missing}} · R$ {{g.share}}/pessoa</span></span>
+</a>
+</sc-for>
+</div>
+</section>
+</div>
+
+<nav aria-label="Navegação" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-top: 1px solid #EBEBEB; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 8px 6px 18px; box-sizing: border-box;">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button onClick="{{t.pick}}" aria-current="{{t.current}}" style="{{t.style}}">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"></path></svg>
+<span>{{t.label}}</span>
+</button>
+</sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0B7A4B","options":["#0B7A4B","#161616","#1F4FD8","#E2502B"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cat: 'society', tab: 'explorar' };
+  }
+  renderVals() {
+    const brand = this.props.brand ?? '#0B7A4B';
+    const cdefs = [
+      ['society', 'Society', '/_blob/19c7b1941420120db2f5244eb8a285dc'], ['futsal', 'Futsal', '/_blob/100834a16adce470b7bf51484943d3fb'],
+      ['futevolei', 'Futevôlei', '/_blob/d6e2cf3d296954e656910e445fa1146c'], ['padel', 'Padel', '/_blob/467678fbc8241d566ed0e31af54810c7'],
+      ['tenis', 'Tênis', '/_blob/98efe93ce9aedc546e40aef8112ffa9f'], ['campo', 'Campo', '/_blob/32b03edb5316610ef6a607c72ec099d1']
+    ];
+    const cats = cdefs.map(([id, label, img]) => {
+      const on = this.state.cat === id;
+      return { label, img, pressed: on ? 'true' : 'false', pick: () => this.setState({ cat: id }),
+        style: 'flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 0 12px; border: none; background: transparent; font: inherit; font-size: 12px; cursor: pointer; ' + (on ? 'color: #161616; font-weight: 650; box-shadow: inset 0 -2px 0 #161616;' : 'color: #6A6A6A; font-weight: 500;') };
+    });
+    const games = [
+      { title: 'Fut feminino de quarta', img: '/_blob/ad6207e05dd341f4624ca21b405e20a1', alt: 'Mulheres jogando futebol', when: 'Hoje · 21h', missing: 'Faltam 2', share: '15' },
+      { title: 'Racha do Butantã', img: '/_blob/7c5e3ff1a44a645f6f9e2358f8712db0', alt: 'Jovens jogando futsal ao ar livre', when: 'Hoje · 20h', missing: 'Falta 1', share: '12' },
+      { title: 'Society de quinta', img: '/_blob/9ca3a13f019920086eca8f2741fa6b51', alt: 'Time se aquecendo', when: 'Amanhã · 19h30', missing: 'Faltam 3', share: '18' }
+    ];
+    const tdefs = [
+      ['explorar', 'Explorar', 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.5-4.5'],
+      ['favoritos', 'Favoritos', 'M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2.1 0 3.6 1.1 5 2.9 1.4-1.8 2.9-2.9 5-2.9 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z'],
+      ['partidas', 'Partidas', 'M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M17 12a2.5 2.5 0 1 0 0-5M16 14.6c2.7.1 4.8 1.8 5.5 4.9'],
+      ['reservas', 'Reservas', 'M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2zM3 9.5h18M8 2.5v4M16 2.5v4'],
+      ['perfil', 'Perfil', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.8-4 4-6 8-6s7.2 2 8 6']
+    ];
+    const tabs = tdefs.map(([id, label, icon]) => {
+      const on = this.state.tab === id;
+      return { label, icon, current: on ? 'page' : 'false', pick: () => this.setState({ tab: id }),
+        style: 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: none; background: transparent; font: inherit; font-size: 11px; cursor: pointer; min-height: 48px; ' + (on ? 'color: ' + brand + '; font-weight: 650;' : 'color: #6A6A6A; font-weight: 500;') };
+    });
+    return { brand, cats, games, tabs };
+  }
+}
+</script>
+</body>
+</html>

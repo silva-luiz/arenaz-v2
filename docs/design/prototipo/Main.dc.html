@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ArenaZ — Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Geist:wght@400..700&amp;family=Geist+Mono:wght@500..600&amp;display=swap">
+<style>
+:root{
+--sh-1:0 1px 2px rgba(8,36,24,.08),0 10px 22px -12px rgba(8,36,24,.32);
+--sh-2:0 2px 6px rgba(8,36,24,.10),0 26px 48px -20px rgba(8,36,24,.48);
+--sh-3:0 2px 4px rgba(0,0,0,.08),0 18px 40px -14px rgba(0,0,0,.38),0 48px 90px -30px rgba(0,0,0,.45);
+--ease:cubic-bezier(.2,.7,.2,1)}
+body{margin:0;background:#FFFFFF;color:#161616;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#161616}a:hover{color:#000000}
+button:focus-visible,a:focus-visible{outline:2px solid #161616;outline-offset:3px}
+.az-rail{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 5 * 22px) / 6);gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:6px 0 28px;margin-bottom:-22px}
+.az-rail::-webkit-scrollbar{display:none}
+.az-rail > *{scroll-snap-align:start}
+.az-rail-4{grid-auto-columns:calc((100% - 3 * 22px) / 4)}
+.az-photo{box-shadow:var(--sh-1);transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.az-photo::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(to top,rgba(0,0,0,.34),rgba(0,0,0,0) 38%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.az-photo img{transition:transform .6s var(--ease)}
+.az-card:hover .az-photo{transform:translateY(-6px);box-shadow:var(--sh-2)}
+.az-card:hover .az-photo img{transform:scale(1.05)}
+.az-lift{transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.az-lift:hover{transform:translateY(-6px);box-shadow:0 2px 6px rgba(0,0,0,.2),0 40px 70px -28px rgba(0,0,0,.75) !important}
+.az-glass{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6)}
+.az-glass-dark{background:rgba(14,26,20,.55);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4)}
+.az-seg:hover{background:#F2F2F2}
+.az-tab:hover{color:#161616 !important}
+.az-arrow{box-shadow:var(--sh-1);transition:box-shadow .2s ease,transform .2s ease}
+.az-arrow:hover{box-shadow:var(--sh-2);transform:translateY(-1px)}
+.az-cat:hover .az-cat-img{transform:translateY(-3px);box-shadow:var(--sh-2)}
+.az-cat-img{transition:transform .35s var(--ease),box-shadow .35s var(--ease),opacity .2s ease}
+.az-hero{--mx:0;--my:0}
+.az-par-0{transform:scale(1.08) translate(calc(var(--mx) * -10px),calc(var(--my) * -8px));transition:transform .8s var(--ease)}
+.az-par-1{transform:translate(calc(var(--mx) * 10px),calc(var(--my) * 8px)) rotate(-2deg);transition:transform .8s var(--ease)}
+.az-par-2{transform:translate(calc(var(--mx) * 22px),calc(var(--my) * 16px)) rotate(1.5deg);transition:transform .8s var(--ease)}
+.az-live{animation:az-pulse 2.4s ease-out infinite}
+@keyframes az-pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.55)}70%{box-shadow:0 0 0 10px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+@media (prefers-reduced-motion:reduce){.az-par-0,.az-par-1,.az-par-2,.az-photo,.az-photo img,.az-lift,.az-cat-img{transition:none}.az-live{animation:none}}
+@media (max-width:1100px){.az-rail{grid-auto-columns:calc((100% - 2 * 22px) / 3)}.az-rail-4{grid-auto-columns:calc((100% - 22px) / 2)}.az-float{display:none !important}}
+@media (max-width:760px){
+.az-wrap{padding-left:16px !important;padding-right:16px !important}
+.az-hide-sm{display:none !important}
+.az-rail,.az-rail-4{grid-auto-columns:78%}
+.az-hero{height:auto !important;min-height:440px}
+.az-hero-copy{padding:32px 20px 120px !important}
+.az-hero-copy h1{font-size:44px !important}
+.az-search-wrap{left:12px !important;right:12px !important;transform:none !important}
+.az-search{flex-direction:column !important;align-items:stretch !important;border-radius:28px !important}
+.az-seg{border-left:none !important}
+.az-band{margin:0 -16px !important;border-radius:24px !important;padding:24px 16px !important}
+.az-host{min-height:520px !important}
+}
+</style>
+</helmet>
+<div style="background: #FFFFFF; min-height: 100vh;">
+
+<header style="background: #FFFFFF;">
+<div class="az-wrap" style="max-width: 1360px; margin: 0 auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 84px;">
+<a href="Main.dc.html" aria-label="ArenaZ, início" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: {{brand}}; flex: 1 1 0;">
+<svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect width="34" height="34" rx="10" fill="{{brand}}"></rect><rect x="7" y="10" width="20" height="14" rx="2" stroke="#FFFFFF" stroke-width="1.8"></rect><line x1="17" y1="10" x2="17" y2="24" stroke="#FFFFFF" stroke-width="1.8"></line><circle cx="17" cy="17" r="3.2" stroke="#FFFFFF" stroke-width="1.8"></circle></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 25px; letter-spacing: -0.045em;">arenaz</span>
+</a>
+<nav class="az-hide-sm" aria-label="Principal" style="display: flex; align-items: center; gap: 30px;">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<a class="az-tab" href="{{t.href}}" aria-current="{{t.current}}" style="{{t.style}}">
+<img src="{{t.img}}" alt="" style="width: 34px; height: 34px; border-radius: 999px; object-fit: cover; box-shadow: 0 0 0 2px #FFFFFF, 0 4px 10px -3px rgba(8,36,24,0.45);">
+<span>{{t.label}}</span>
+<sc-if value="{{t.isNew}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: -6px; left: 22px; font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 6px; background: #161616; color: #FFFFFF; box-shadow: 0 3px 8px -2px rgba(0,0,0,0.4);">Novo</span></sc-if>
+</a>
+</sc-for>
+</nav>
+<div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 1 1 0;">
+<a class="az-hide-sm" href="Painel.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 14px; border-radius: 999px;">Anuncie sua quadra</a>
+<button aria-label="Menu e perfil" style="height: 46px; padding: 0 6px 0 14px; display: flex; align-items: center; gap: 12px; border-radius: 999px; border: 1px solid #DDDDDD; background: #FFFFFF; cursor: pointer; box-shadow: 0 2px 8px -4px rgba(8,36,24,0.25);">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #161616; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600;">GR</span>
+</button>
+</div>
+</div>
+</header>
+
+<div class="az-wrap" style="max-width: 1360px; margin: 0 auto; padding: 0 40px;">
+<section class="az-hero" aria-labelledby="hero-h" onMouseMove="{{heroMove}}" onMouseLeave="{{heroLeave}}" style="position: relative; height: 580px;">
+<div style="position: absolute; inset: 0; border-radius: 32px; overflow: hidden; background: #0B1A12; box-shadow: var(--sh-2);">
+<img class="az-par-0" src="/_blob/9575c7806c21cd6ff15e6a539fd6925d" alt="Campo de futebol iluminado por um refletor à noite, com jogadores em campo" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%;">
+<span aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(120% 90% at 0% 100%, rgba(4,14,9,0.88) 0%, rgba(4,14,9,0.5) 42%, rgba(4,14,9,0) 70%), linear-gradient(to top, rgba(4,14,9,0.55), rgba(4,14,9,0) 45%);"></span>
+</div>
+
+<div class="az-hero-copy" style="position: relative; height: 100%; box-sizing: border-box; padding: 0 56px 104px; display: flex; flex-direction: column; justify-content: flex-end; max-width: 640px; color: #FFFFFF;">
+<p style="margin: 0 0 18px; display: inline-flex; align-self: flex-start; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,0.18);" class="az-glass-dark"><span class="az-live" style="width: 8px; height: 8px; border-radius: 999px; background: #3DDC84;"></span>{{freeCount}} quadras com horário livre hoje</p>
+<h1 id="hero-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 76px; font-weight: 750; letter-spacing: -0.05em; line-height: 0.94; text-shadow: 0 6px 30px rgba(0,0,0,0.35);">Bora jogar<br>hoje à noite?</h1>
+<p style="margin: 18px 0 0; font-size: 18px; line-height: 1.5; color: rgba(255,255,255,0.84); max-width: 460px;">Reserve a quadra na hora, chame o time e divida no Pix sem ficar cobrando ninguém.</p>
+</div>
+
+<div class="az-float az-par-1 az-glass-dark" aria-hidden="true" style="position: absolute; right: 250px; top: 300px; width: 270px; border-radius: 20px; padding: 16px; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.16); box-shadow: 0 30px 60px -24px rgba(0,0,0,0.7);">
+<div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: rgba(255,255,255,0.72);"><span>Racha no Pix</span><span style="font-family: 'Geist Mono', monospace;">R$ 33/cada</span></div>
+<div style="margin-top: 8px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em;">9 de 14 pagaram</div>
+<div style="margin-top: 12px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.16); overflow: hidden;"><span style="display: block; width: 64%; height: 100%; border-radius: 9px; background: #3DDC84; box-shadow: 0 0 12px rgba(61,220,132,0.7);"></span></div>
+<div style="margin-top: 14px; display: flex; align-items: center;">
+<sc-for list="{{heroFaces}}" as="f" hint-placeholder-count="5"><span style="{{f.style}}">{{f.ini}}</span></sc-for>
+<span style="margin-left: 10px; font-size: 13px; color: rgba(255,255,255,0.72);">+4</span>
+</div>
+</div>
+
+<div class="az-float az-par-2" aria-hidden="true" style="position: absolute; right: 56px; top: 64px; width: 300px; border-radius: 22px; padding: 12px; background: #FFFFFF; box-shadow: var(--sh-3);">
+<div style="position: relative; height: 150px; border-radius: 14px; overflow: hidden;">
+<img src="{{P.societyNight}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span class="az-glass" style="position: absolute; left: 10px; top: 10px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0B7A4B" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"></polyline></svg>Reserva confirmada</span>
+</div>
+<div style="padding: 12px 6px 4px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;">
+<div><div style="font-size: 15px; font-weight: 650;">Arena Vila Madalena</div><div style="font-size: 13px; color: #6A6A6A; margin-top: 2px;">Hoje · 20h às 22h · quadra 2</div></div>
+<div style="font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600; padding: 6px 8px; border-radius: 8px; background: #F1F6F3; color: {{brand}};">#AZ-4821</div>
+</div>
+</div>
+
+<div class="az-search-wrap" style="position: absolute; left: 50%; bottom: -40px; transform: translateX(-50%); width: calc(100% - 112px); max-width: 940px; z-index: 2;">
+<form class="az-search" role="search" style="display: flex; align-items: center; border-radius: 999px; background: #FFFFFF; padding: 8px; box-shadow: var(--sh-3);">
+<button type="button" class="az-seg" style="flex: 1.3; text-align: left; border: none; background: transparent; padding: 12px 26px; border-radius: 999px; cursor: pointer; font: inherit;">
+<span style="display: block; font-size: 12px; font-weight: 600;">Onde</span>
+<span style="display: block; font-size: 15px; color: #6A6A6A; margin-top: 2px;">Vila Madalena, SP</span>
+</button>
+<span class="az-hide-sm" aria-hidden="true" style="width: 1px; height: 32px; background: #DDDDDD;"></span>
+<button type="button" class="az-seg" style="flex: 1; text-align: left; border: none; background: transparent; padding: 12px 22px; border-radius: 999px; cursor: pointer; font: inherit;">
+<span style="display: block; font-size: 12px; font-weight: 600;">Quando</span>
+<span style="display: block; font-size: 15px; color: #6A6A6A; margin-top: 2px;">Hoje, depois das 19h</span>
+</button>
+<span class="az-hide-sm" aria-hidden="true" style="width: 1px; height: 32px; background: #DDDDDD;"></span>
+<button type="button" class="az-seg" style="flex: 1; text-align: left; border: none; background: transparent; padding: 12px 22px; border-radius: 999px; cursor: pointer; font: inherit;">
+<span style="display: block; font-size: 12px; font-weight: 600;">Esporte</span>
+<span style="display: block; font-size: 15px; color: #6A6A6A; margin-top: 2px;">{{selectedLabel}}</span>
+</button>
+<span class="az-hide-sm" aria-hidden="true" style="width: 1px; height: 32px; background: #DDDDDD;"></span>
+<div class="az-seg" style="flex: 1.45; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 22px; border-radius: 999px;">
+<span style="flex: 1; white-space: nowrap;"><span style="display: block; font-size: 12px; font-weight: 600;">Jogadores</span><span style="display: block; font-size: 15px; color: #6A6A6A; margin-top: 2px;">14 pessoas</span></span>
+<a href="Busca.dc.html" aria-label="Buscar quadras" style="height: 56px; min-width: 56px; padding: 0 22px; border-radius: 999px; background: {{brand}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 22px -8px {{brandShadow}};">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>Buscar</a>
+</div>
+</form>
+</div>
+</section>
+</div>
+
+<nav aria-label="Esportes">
+<div class="az-wrap" style="max-width: 1360px; margin: 0 auto; padding: 76px 40px 0; display: flex; gap: 30px; overflow-x: auto; justify-content: center;">
+<sc-for list="{{categories}}" as="c" hint-placeholder-count="8">
+<button class="az-cat" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="{{c.style}}">
+<img class="az-cat-img" src="{{c.img}}" alt="" style="{{c.imgStyle}}">
+<span>{{c.label}}</span>
+</button>
+</sc-for>
+</div>
+</nav>
+
+<main class="az-wrap" style="max-width: 1360px; margin: 0 auto; padding: 36px 40px 24px; display: flex; flex-direction: column; gap: 60px;">
+
+<section aria-labelledby="s1">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px;">
+<a href="Busca.dc.html" style="text-decoration: none; display: flex; align-items: center; gap: 6px;"><h2 id="s1" style="margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.02em;">{{selectedLabel}} livre hoje à noite, perto de você</h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg></a>
+<div class="az-hide-sm" style="display: flex; gap: 8px;">
+<button class="az-arrow" aria-label="Anteriores" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #EBEBEB; background: #FFFFFF; display: grid; place-items: center; cursor: pointer; opacity: 0.5;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 6 9 12 15 18"></polyline></svg></button>
+<button class="az-arrow" aria-label="Próximos" style="width: 36px; height: 36px; border-radius: 999px; border: 1px solid #EBEBEB; background: #FFFFFF; display: grid; place-items: center; cursor: pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg></button>
+</div>
+</div>
+<div class="az-rail">
+<sc-for list="{{tonight}}" as="v" hint-placeholder-count="6">
+<article class="az-card" style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+<div class="az-photo" style="position: relative; aspect-ratio: 1 / 1; border-radius: 20px; overflow: hidden; background: #EEEEEE;">
+<a href="Quadra.dc.html" style="display: block; width: 100%; height: 100%;"><img src="{{v.img}}" alt="{{v.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></a>
+<span class="az-glass" style="position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px -4px rgba(0,0,0,0.3);"><span style="width: 7px; height: 7px; border-radius: 999px; background: #12A150; box-shadow: 0 0 0 3px rgba(18,161,80,0.2);"></span>Livre às {{v.next}}</span>
+<button onClick="{{v.toggleFav}}" aria-label="{{v.favLabel}}" aria-pressed="{{v.fav}}" style="position: absolute; z-index: 1; top: 6px; right: 6px; width: 44px; height: 44px; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="{{v.heartFill}}" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2.1 0 3.6 1.1 5 2.9 1.4-1.8 2.9-2.9 5-2.9 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"></path></svg>
+</button>
+<span aria-hidden="true" style="position: absolute; z-index: 1; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 9px; background: #FFFFFF;"></span><span style="width: 6px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.6);"></span><span style="width: 6px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.6);"></span><span style="width: 6px; height: 6px; border-radius: 9px; background: rgba(255,255,255,0.6);"></span></span>
+</div>
+<a href="Quadra.dc.html" style="text-decoration: none; display: flex; flex-direction: column; gap: 2px; font-size: 14px; padding: 0 2px;">
+<span style="display: flex; justify-content: space-between; gap: 8px;"><strong style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.name}}</strong><span style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6"></polygon></svg>{{v.rating}}</span></span>
+<span style="color: #6A6A6A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.meta}}</span>
+<span style="margin-top: 2px;"><strong style="font-weight: 600;">R$ {{v.price}}</strong> <span style="color: #6A6A6A;">/ hora</span></span>
+</a>
+</article>
+</sc-for>
+</div>
+</section>
+
+<section class="az-band" aria-labelledby="s2" style="position: relative; overflow: hidden; border-radius: 36px; padding: 44px 40px 40px; margin: 0 -40px; color: #FFFFFF; background: radial-gradient(70% 90% at 12% -20%, rgba(200,255,220,0.20) 0%, rgba(200,255,220,0) 60%), radial-gradient(50% 70% at 92% -30%, rgba(200,255,220,0.12) 0%, rgba(200,255,220,0) 60%), #0E2018; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 30px 60px -40px rgba(8,36,24,0.9);">
+<svg aria-hidden="true" width="100%" height="100%" style="position: absolute; inset: 0; opacity: 0.07; pointer-events: none;" preserveAspectRatio="none" viewBox="0 0 1000 400"><g fill="none" stroke="#FFFFFF" stroke-width="2"><line x1="500" y1="0" x2="500" y2="400"></line><circle cx="500" cy="200" r="70"></circle><rect x="-2" y="110" width="110" height="180"></rect><rect x="892" y="110" width="110" height="180"></rect></g></svg>
+<div style="position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+<div>
+<p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #8FF0B8; display: flex; align-items: center; gap: 10px;"><span class="az-live" style="width: 8px; height: 8px; border-radius: 999px; background: #3DDC84;"></span>{{openCount}} partidas abertas agora</p>
+<h2 id="s2" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 1;">Falta gente? Entra no jogo.</h2>
+<p style="margin: 10px 0 0; font-size: 16px; color: rgba(255,255,255,0.7);">Times com quadra reservada que precisam completar. Você paga só a sua parte.</p>
+</div>
+<a href="Busca.dc.html" style="color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06);">Ver todas</a>
+</div>
+<div class="az-rail az-rail-4" style="position: relative;">
+<sc-for list="{{games}}" as="g" hint-placeholder-count="4">
+<a class="az-card az-lift" href="Checkout.dc.html" style="text-decoration: none; display: flex; flex-direction: column; background: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 24px 48px -24px rgba(0,0,0,0.7); min-width: 0;">
+<span style="position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden;">
+<img src="{{g.img}}" alt="{{g.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+<span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0) 50%);"></span>
+<span class="az-glass-dark" style="position: absolute; left: 12px; bottom: 12px; padding: 6px 10px; border-radius: 10px; color: #FFFFFF; font-size: 12px; font-weight: 600; border: 1px solid rgba(255,255,255,0.18);">{{g.when}}</span>
+<span style="position: absolute; right: 12px; bottom: 12px; padding: 6px 10px; border-radius: 10px; background: #FFFFFF; color: #161616; font-size: 12px; font-weight: 700; box-shadow: 0 6px 14px -6px rgba(0,0,0,0.5);">{{g.missing}}</span>
+</span>
+<span style="padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+<span style="display: flex; flex-direction: column; gap: 2px;"><strong style="font-size: 16px; font-weight: 650;">{{g.title}}</strong><span style="font-size: 13px; color: #6A6A6A;">{{g.place}}</span></span>
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+<span style="display: flex; align-items: center;"><sc-for list="{{g.faces}}" as="f" hint-placeholder-count="4"><span style="{{f.style}}">{{f.ini}}</span></sc-for></span>
+<span style="font-size: 14px;"><strong style="font-weight: 650;">R$ {{g.share}}</strong><span style="color: #6A6A6A;"> /pessoa</span></span>
+</span>
+</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="s3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px;">
+<a href="Busca.dc.html" style="text-decoration: none; display: flex; align-items: center; gap: 6px;"><h2 id="s3" style="margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.02em;">Areia, raquete e sol pro fim de semana</h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"></polyline></svg></a>
+</div>
+<div class="az-rail">
+<sc-for list="{{weekend}}" as="v" hint-placeholder-count="6">
+<article class="az-card" style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+<div class="az-photo" style="position: relative; aspect-ratio: 1 / 1; border-radius: 20px; overflow: hidden; background: #EEEEEE;">
+<a href="Quadra.dc.html" style="display: block; width: 100%; height: 100%;"><img src="{{v.img}}" alt="{{v.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></a>
+<sc-if value="{{v.badge}}" hint-placeholder-val="{{ true }}"><span class="az-glass" style="position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 650; box-shadow: 0 4px 12px -4px rgba(0,0,0,0.3);">{{v.badge}}</span></sc-if>
+<button onClick="{{v.toggleFav}}" aria-label="{{v.favLabel}}" aria-pressed="{{v.fav}}" style="position: absolute; z-index: 1; top: 6px; right: 6px; width: 44px; height: 44px; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="{{v.heartFill}}" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2.1 0 3.6 1.1 5 2.9 1.4-1.8 2.9-2.9 5-2.9 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"></path></svg>
+</button>
+</div>
+<a href="Quadra.dc.html" style="text-decoration: none; display: flex; flex-direction: column; gap: 2px; font-size: 14px; padding: 0 2px;">
+<span style="display: flex; justify-content: space-between; gap: 8px;"><strong style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.name}}</strong><span style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6"></polygon></svg>{{v.rating}}</span></span>
+<span style="color: #6A6A6A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.meta}}</span>
+<span style="margin-top: 2px;"><strong style="font-weight: 600;">R$ {{v.price}}</strong> <span style="color: #6A6A6A;">/ hora</span></span>
+</a>
+</article>
+</sc-for>
+</div>
+</section>
+
+<section class="az-host" aria-labelledby="s4" style="position: relative; min-height: 480px; border-radius: 32px; overflow: hidden; display: flex; align-items: flex-end; box-shadow: var(--sh-2);">
+<img src="/_blob/704643668f685129917cfdddd00c29d7" alt="Campo de futebol vazio ao entardecer, com um gol ao fundo" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%;">
+<span aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,8,6,0.78) 0%, rgba(10,8,6,0.4) 50%, rgba(10,8,6,0.05) 100%);"></span>
+<div style="position: relative; padding: 52px; max-width: 560px; color: #FFFFFF;">
+<p style="margin: 0 0 12px; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.8);">Para donos de quadra</p>
+<h2 id="s4" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 54px; font-weight: 700; letter-spacing: -0.045em; line-height: 0.98;">Quadra vazia às 15h também paga as contas.</h2>
+<p style="margin: 16px 0 26px; font-size: 17px; line-height: 1.5; color: rgba(255,255,255,0.86);">Agenda online, pagamento antecipado no Pix e mensalistas automáticos. Você só abre o portão.</p>
+<a href="Painel.dc.html" style="display: inline-flex; align-items: center; height: 54px; padding: 0 26px; border-radius: 14px; background: #FFFFFF; color: #161616; text-decoration: none; font-weight: 650; font-size: 16px; box-shadow: 0 14px 30px -12px rgba(0,0,0,0.6);">Anunciar minha quadra</a>
+</div>
+<div class="az-float az-glass" aria-hidden="true" style="position: absolute; right: 52px; bottom: 52px; width: 320px; border-radius: 22px; padding: 18px; color: #161616; box-shadow: var(--sh-3); transform: rotate(-1.5deg);">
+<div style="display: flex; justify-content: space-between; font-size: 13px; color: #555555;"><span>Hoje na Arena Vila Madalena</span><span style="font-weight: 650; color: #0B7A4B;">86%</span></div>
+<div style="margin-top: 12px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; align-items: end; height: 54px;">
+<sc-for list="{{occ}}" as="o" hint-placeholder-count="8"><span style="{{o.style}}"></span></sc-for>
+</div>
+<div style="margin-top: 6px; display: flex; justify-content: space-between; font-family: 'Geist Mono', monospace; font-size: 11px; color: #6A6A6A;"><span>16h</span><span>23h</span></div>
+<div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 13px; color: #555555;">Repasse no Pix às 18h</span><strong style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">R$ 1.240</strong></div>
+</div>
+</section>
+</main>
+
+<footer style="margin-top: 56px; background: #F7F7F5; border-top: 1px solid #EBEBEB;">
+<div class="az-wrap" style="max-width: 1360px; margin: 0 auto; padding: 28px 40px 40px; display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; font-size: 14px; color: #6A6A6A;">
+<span>© 2026 ArenaZ · Fotos: Unsplash</span>
+<span style="display: flex; gap: 22px; flex-wrap: wrap;"><a href="Main.dc.html" style="color: #6A6A6A;">Termos</a><a href="Main.dc.html" style="color: #6A6A6A;">Privacidade (LGPD)</a><a href="Main.dc.html" style="color: #6A6A6A;">Ajuda</a></span>
+</div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0B7A4B","options":["#0B7A4B","#161616","#1F4FD8","#E2502B"]},"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cat: 'society', favs: { vm: true, fv: true } };
+  }
+  renderVals() {
+    const brand = this.props.brand ?? '#0B7A4B';
+    const hex = /^#[0-9a-f]{6}$/i.test(brand) ? brand : '#0B7A4B';
+    const brandShadow = 'rgba(' + [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',') + ',0.65)';
+    const P = {
+      societyNight: '/_blob/cd41929848ab8e46f5639b54a8c84853', societyAerial: '/_blob/19c7b1941420120db2f5244eb8a285dc',
+      fieldTop: '/_blob/540d772bf2ae42ec3641b92a31c5cf08', poli: '/_blob/d0425e440acdbbddd8cb3d7f8ce3bcc5',
+      futsalGoal: '/_blob/100834a16adce470b7bf51484943d3fb', futsalMatch: '/_blob/eef9d4700072422f7e86d7f7b7f4eb48',
+      futsalBall: '/_blob/b324a18e9900575093495e4be47d0bb3', openField: '/_blob/32b03edb5316610ef6a607c72ec099d1',
+      futevolei: '/_blob/d6e2cf3d296954e656910e445fa1146c', beachSunset: '/_blob/9bb842143bab0d44789ccdc4c6deac0b',
+      padelCourt: '/_blob/6f494437865a48a320901466e2528c2c', padelRackets: '/_blob/467678fbc8241d566ed0e31af54810c7',
+      clayNet: '/_blob/af961c8d639b03347be346549b093901', clay: '/_blob/98efe93ce9aedc546e40aef8112ffa9f',
+      women: '/_blob/ad6207e05dd341f4624ca21b405e20a1', street: '/_blob/7c5e3ff1a44a645f6f9e2358f8712db0',
+      warmup: '/_blob/9ca3a13f019920086eca8f2741fa6b51', covered: '/_blob/7216bec512a5d2159f74399e1259f61f'
+    };
+    const heroMove = (e) => {
+      const el = e && e.currentTarget;
+      if (!el || !el.getBoundingClientRect) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+      el.style.setProperty('--my', (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+    };
+    const heroLeave = (e) => {
+      const el = e && e.currentTarget;
+      if (!el || !el.style) return;
+      el.style.setProperty('--mx', '0');
+      el.style.setProperty('--my', '0');
+    };
+    const tabBase = 'position: relative; display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 15px; padding: 8px 2px; ';
+    const tabs = [
+      { label: 'Quadras', img: P.societyNight, href: 'Main.dc.html', on: true, isNew: false },
+      { label: 'Partidas', img: P.street, href: 'Busca.dc.html', on: false, isNew: true },
+      { label: 'Mensalistas', img: P.warmup, href: 'Painel.dc.html', on: false, isNew: false }
+    ].map((t) => ({ ...t, current: t.on ? 'page' : 'false', style: tabBase + (t.on ? 'color: #161616; font-weight: 650; box-shadow: inset 0 -2px 0 #161616;' : 'color: #6A6A6A; font-weight: 500;') }));
+    const cats = [
+      ['society', 'Society', P.societyAerial], ['futsal', 'Futsal', P.futsalGoal], ['campo', 'Campo', P.openField],
+      ['futevolei', 'Futevôlei', P.futevolei], ['beach', 'Beach tennis', P.beachSunset], ['padel', 'Padel', P.padelRackets],
+      ['tenis', 'Tênis', P.clay], ['coberta', 'Coberta', P.poli]
+    ];
+    const categories = cats.map(([id, label, img]) => {
+      const on = this.state.cat === id;
+      return {
+        label, img, pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ cat: id }),
+        imgStyle: 'width: 64px; height: 64px; border-radius: 18px; object-fit: cover; ' + (on
+          ? 'opacity: 1; transform: translateY(-3px); box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px ' + hex + ', 0 18px 30px -14px rgba(8,36,24,0.6);'
+          : 'opacity: 0.86; box-shadow: var(--sh-1);'),
+        style: 'display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 4px 8px; border: none; background: transparent; cursor: pointer; font: inherit; font-size: 13px; flex-shrink: 0; ' + (on ? 'color: #161616; font-weight: 650;' : 'color: #6A6A6A; font-weight: 500;')
+      };
+    });
+    const selectedLabel = (cats.find(([id]) => id === this.state.cat) || cats[0])[1];
+    const favs = this.state.favs;
+    const withFav = (v) => {
+      const fav = !!favs[v.id];
+      return { ...v, fav: fav ? 'true' : 'false', favLabel: fav ? 'Remover dos favoritos' : 'Salvar nos favoritos',
+        heartFill: fav ? '#FF385C' : 'rgba(0,0,0,0.45)', toggleFav: () => this.setState({ favs: { ...favs, [v.id]: !fav } }) };
+    };
+    const tonight = [
+      { id: 'vm', name: 'Arena Vila Madalena', img: P.societyNight, alt: 'Campo society iluminado à noite visto de cima, com jogadores', meta: 'Society 7x7 · coberta · 1,2 km', rating: '4,92', price: '180', next: '20h' },
+      { id: 'pi', name: 'Society Pinheiros', img: P.societyAerial, alt: 'Campo society com refletores visto de cima', meta: 'Society 7x7 · 1,9 km', rating: '4,87', price: '190', next: '19h30' },
+      { id: 'pc', name: 'Pacaembu Futsal Club', img: P.futsalMatch, alt: 'Jogo de futsal em quadra de madeira', meta: 'Futsal · taco · 2,4 km', rating: '4,88', price: '140', next: '21h30' },
+      { id: 'pe', name: 'Quadra Coberta Perdizes', img: P.poli, alt: 'Quadra poliesportiva vermelha e azul vista de cima', meta: 'Poliesportiva · 2,1 km', rating: '4,79', price: '120', next: '22h' },
+      { id: 'lp', name: 'Arena Lapa 7', img: P.fieldTop, alt: 'Campo de grama sintética visto de cima', meta: 'Society 7x7 · bar · 2,9 km', rating: '4,81', price: '200', next: '21h' },
+      { id: 'ib', name: 'Campo Ibirapuera FC', img: P.openField, alt: 'Campo de grama natural com gol e árvores', meta: 'Campo 11 · grama natural · 4,6 km', rating: '4,76', price: '420', next: '20h' }
+    ].map(withFav);
+    const weekend = [
+      { id: 'fv', name: 'Futevôlei Praia Urbana', img: P.futevolei, alt: 'Jogador dando bicicleta sobre a rede na areia', meta: 'Futevôlei · areia · 3,1 km', rating: '4,95', price: '90', badge: 'Preferido da galera' },
+      { id: 'pd', name: 'Padel Pinheiros', img: P.padelCourt, alt: 'Dois jogadores em quadra de padel azul', meta: 'Padel · vidro · 1,8 km', rating: '4,97', price: '160', badge: '' },
+      { id: 'bt', name: 'Beach Lapa Sunset', img: P.beachSunset, alt: 'Silhuetas jogando vôlei de praia ao pôr do sol', meta: 'Beach tennis · vôlei · 3,4 km', rating: '4,85', price: '80', badge: '' },
+      { id: 'sb', name: 'Saibro Butantã', img: P.clayNet, alt: 'Quadra de tênis de saibro com rede', meta: 'Tênis · saibro · 3,7 km', rating: '4,94', price: '110', badge: 'Preferido da galera' },
+      { id: 'pr', name: 'Raquete Clube Sumaré', img: P.padelRackets, alt: 'Raquetes de padel e bolas sobre quadra azul', meta: 'Padel · aluguel de raquete · 1,6 km', rating: '4,83', price: '150', badge: '' },
+      { id: 'ft', name: 'Futsal Ball Mooca', img: P.futsalBall, alt: 'Bola de futsal amarela diante do gol', meta: 'Futsal · coberta · 4,9 km', rating: '4,80', price: '130', badge: '' }
+    ].map(withFav);
+    const tones = ['#2D6A4F', '#B5651D', '#3D5A98', '#8E3B5F', '#5A5A5A'];
+    const face = (ini, k) => ({ ini, style: 'width: 28px; height: 28px; border-radius: 999px; border: 2px solid #FFFFFF; background: ' + tones[k % tones.length] + '; color: #FFFFFF; font-size: 10px; font-weight: 650; display: grid; place-items: center; box-shadow: 0 2px 6px -2px rgba(0,0,0,0.4); ' + (k ? 'margin-left: -8px;' : '') });
+    const heroFaces = ['GR', 'AL', 'JP', 'MT', 'BS'].map((ini, k) => ({ ini, style: face(ini, k).style.replace('#FFFFFF;', '#0E2018;') }));
+    const games = [
+      { title: 'Fut feminino de quarta', place: 'Arena Vila Madalena · society 7x7', img: P.women, alt: 'Mulheres jogando futebol em grama sintética', when: 'Hoje · 21h', faces: ['AL', 'BR', 'CM', 'DS'].map(face), missing: 'Faltam 2', share: '15' },
+      { title: 'Racha do Butantã', place: 'Quadra Butantã · futsal ao ar livre', img: P.street, alt: 'Jovens jogando futsal em quadra externa', when: 'Hoje · 20h', faces: ['JP', 'RL', 'MT'].map(face), missing: 'Falta 1', share: '12' },
+      { title: 'Society de quinta', place: 'Society Pinheiros · 7x7', img: P.warmup, alt: 'Time se aquecendo em campo sintético', when: 'Amanhã · 19h30', faces: ['GR', 'LH', 'BM', 'FS'].map(face), missing: 'Faltam 3', share: '18' },
+      { title: 'Futsal coberto pós-trampo', place: 'Pacaembu Futsal Club', img: P.covered, alt: 'Pessoas jogando futsal em quadra coberta', when: 'Sex · 18h30', faces: ['VC', 'TA', 'NK'].map(face), missing: 'Faltam 4', share: '14' }
+    ];
+    const occ = [0.35, 0.6, 1, 1, 1, 0.85, 1, 0.5].map((v, k) => ({
+      style: 'display: block; height: ' + Math.round(v * 100) + '%; border-radius: 5px; background: ' + (v === 1 ? '#0B7A4B' : 'rgba(11,122,75,0.32)') + ';' + (k === 4 ? ' box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3px #0B7A4B;' : '')
+    }));
+    return { brand, brandShadow, P, heroMove, heroLeave, freeCount: 312, openCount: 27, heroFaces, tabs, categories, selectedLabel, tonight, weekend, games, occ };
+  }
+}
+</script>
+</body>
+</html>
