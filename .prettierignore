@@ -1,0 +1,5 @@
+pnpm-lock.yaml
+docs/design/prototipo
+dist
+.next
+coverage
