@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { Gallery } from './gallery';
@@ -94,6 +94,32 @@ describe('Gallery', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(third).toHaveFocus();
+  });
+
+  it('returns focus to the photo even when a mouse click did not focus it', () => {
+    render(<Gallery photos={photos(3)} />);
+
+    const second = screen.getByRole('button', { name: 'Abrir foto 2 de 3' });
+    // Safari and Firefox on macOS do not focus a button on mouse click.
+    fireEvent.click(second);
+    expect(second).not.toHaveFocus();
+    expect(screen.getByRole('dialog')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(second).toHaveFocus();
+  });
+
+  it('gives a lone photo the full width of the mobile row', () => {
+    const { rerender } = render(<Gallery photos={photos(1)} />);
+    const lone = screen.getByRole('button', { name: 'Abrir foto 1 de 1' });
+    expect(lone).toHaveClass('basis-full');
+    expect(lone).not.toHaveClass('basis-[88%]');
+
+    rerender(<Gallery photos={photos(2)} />);
+    const first = screen.getByRole('button', { name: 'Abrir foto 1 de 2' });
+    expect(first).toHaveClass('basis-[88%]');
   });
 
   it('opens the lightbox at the first photo from "Mostrar todas as fotos"', async () => {

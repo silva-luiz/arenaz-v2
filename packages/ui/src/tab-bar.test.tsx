@@ -37,6 +37,26 @@ describe('TabBar', () => {
     );
   });
 
+  it('shows the active item with a non-colour cue too (bar and weight)', () => {
+    render(<TabBar active="buscar" />);
+    const active = screen.getByRole('link', { name: 'Buscar' });
+    const idle = screen.getByRole('link', { name: 'Início' });
+
+    expect(active).toHaveClass('border-brand', 'font-bold');
+    expect(active.className).toContain('border-t-[3px]');
+    expect(idle).toHaveClass('border-transparent', 'font-medium');
+    expect(idle).not.toHaveClass('font-bold');
+  });
+
+  it('renders a mobile-only spacer as tall as the bar plus the safe area', () => {
+    render(<TabBar active="inicio" />);
+    const spacer = screen.getByTestId('tab-bar-spacer');
+    expect(spacer).toHaveAttribute('aria-hidden', 'true');
+    expect(spacer).toHaveClass('md:hidden');
+    expect(spacer.className).toContain('env(safe-area-inset-bottom)');
+    expect(spacer.className).toContain('3.5rem');
+  });
+
   it('is mobile only, fixed to the bottom and safe-area aware', () => {
     render(<TabBar active="conta" />);
     const nav = screen.getByRole('navigation');

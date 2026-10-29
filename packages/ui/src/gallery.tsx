@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { cn } from './cn';
 import { FOCUS_RING } from './link';
 import { Lightbox, type LightboxPhoto } from './lightbox';
@@ -43,6 +43,9 @@ function photoClasses(position: number, visible: number): string {
  */
 export function Gallery({ photos, className }: GalleryProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // The element that opened the lightbox, so focus can go back to it even
+  // when the click did not focus it (Safari, Firefox on macOS).
+  const triggerRef = useRef<HTMLElement | null>(null);
   const baseId = useId();
   const total = photos.length;
   if (total === 0) return null;
@@ -65,11 +68,13 @@ export function Gallery({ photos, className }: GalleryProps) {
               type="button"
               aria-label={`Abrir foto ${String(position + 1)} de ${String(total)}`}
               aria-describedby={descriptionId}
-              onClick={() => {
+              onClick={(event) => {
+                triggerRef.current = event.currentTarget;
                 setOpenIndex(position);
               }}
               className={cn(
-                'group relative aspect-[4/3] basis-[88%] shrink-0 snap-center overflow-hidden rounded-photo bg-surface md:aspect-auto md:basis-auto md:rounded-none',
+                'group relative aspect-[4/3] shrink-0 snap-center overflow-hidden rounded-photo bg-surface md:aspect-auto md:basis-auto md:rounded-none',
+                total > 1 ? 'basis-[88%]' : 'basis-full',
                 'focus-visible:outline-hidden',
                 photoClasses(position, visible),
               )}
@@ -97,7 +102,8 @@ export function Gallery({ photos, className }: GalleryProps) {
       {total >= 2 ? (
         <button
           type="button"
-          onClick={() => {
+          onClick={(event) => {
+            triggerRef.current = event.currentTarget;
             setOpenIndex(0);
           }}
           className={cn(
@@ -125,6 +131,7 @@ export function Gallery({ photos, className }: GalleryProps) {
         <Lightbox
           photos={photos}
           index={openIndex}
+          returnFocusRef={triggerRef}
           onClose={() => {
             setOpenIndex(null);
           }}

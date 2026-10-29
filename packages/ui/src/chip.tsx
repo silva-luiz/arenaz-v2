@@ -24,7 +24,13 @@ const BASE =
 const IDLE = 'border-line-control bg-bg text-ink hover:bg-surface';
 const SELECTED = 'border-ink bg-ink text-white';
 
-/** Filter pill: radius 999px, toggle button or link. */
+/**
+ * Filter pill: radius 999px, toggle button or link.
+ *
+ * Passing `onClick` makes the chip interactive, so the parent must be a client
+ * component (a function prop cannot cross the server boundary). Server pages
+ * should use the `href` form, which needs no JavaScript.
+ */
 export function Chip({
   pressed,
   onClick,

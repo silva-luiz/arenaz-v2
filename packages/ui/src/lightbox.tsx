@@ -3,10 +3,11 @@
 import {
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
-  type KeyboardEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { cn } from './cn';
 
@@ -20,10 +21,20 @@ export interface LightboxProps {
   /** Photo shown when the lightbox opens (it navigates on its own after). */
   index: number;
   onClose: () => void;
+  /**
+   * Element that gets focus back on close. Safari and Firefox on macOS do not
+   * focus a button on mouse click, so `document.activeElement` at mount can be
+   * the body; pass the trigger here to be independent of that. Falls back to
+   * whatever had focus when the lightbox mounted.
+   */
+  returnFocusRef?: RefObject<HTMLElement | null> | undefined;
 }
 
+// Two-tone ring (ink inside, white outside) so it shows over both the night
+// background and light photos; the transparent outline keeps a ring in
+// forced-colors mode.
 const ON_NIGHT_FOCUS =
-  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white';
+  'focus-visible:outline-hidden focus-visible:shadow-[0_0_0_3px_var(--color-ink),0_0_0_6px_var(--color-bg)]';
 
 const ROUND_BUTTON = cn(
   'grid size-12 place-items-center rounded-full bg-white text-ink shadow-2 transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
@@ -59,7 +70,12 @@ function Icon({ children }: { children: ReactNode }) {
  * inert while the modal is open and the dialog uses `overscroll-contain`, so
  * scrolling does not leak to the body.
  */
-export function Lightbox({ photos, index, onClose }: LightboxProps) {
+export function Lightbox({
+  photos,
+  index,
+  onClose,
+  returnFocusRef,
+}: LightboxProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -78,11 +94,15 @@ export function Lightbox({ photos, index, onClose }: LightboxProps) {
         : null;
     if (!dialog.open) dialog.showModal();
     closeRef.current?.focus();
+    // The trigger is set before the lightbox mounts, so read it once here.
+    const returnTo = returnFocusRef?.current ?? openerRef.current;
     return () => {
       // A modal dialog leaves the top layer when it leaves the DOM; only the
       // focus has to be handed back.
-      openerRef.current?.focus();
+      returnTo?.focus();
     };
+    // Mount/unmount only: the focus target is captured once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const go = useCallback(
@@ -92,10 +112,11 @@ export function Lightbox({ photos, index, onClose }: LightboxProps) {
     [total],
   );
 
-  const photo = photos[current];
-  if (!photo) return null;
-
-  function onKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
+  // On `document`, not on the dialog: clicking the photo (not focusable)
+  // moves focus to the body, and a handler on the dialog would stop hearing
+  // the keys. The modal's inert background means nothing else needs them.
+  const onKey = useEffectEvent((event: KeyboardEvent) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       onClose();
@@ -106,13 +127,25 @@ export function Lightbox({ photos, index, onClose }: LightboxProps) {
       event.preventDefault();
       go(-1);
     }
-  }
+  });
+
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => {
+      onKey(event);
+    };
+    document.addEventListener('keydown', listener);
+    return () => {
+      document.removeEventListener('keydown', listener);
+    };
+  }, []);
+
+  const photo = photos[current];
+  if (!photo) return null;
 
   return (
     <dialog
       ref={dialogRef}
       aria-label="Galeria de fotos"
-      onKeyDown={onKeyDown}
       onClose={onClose}
       className="m-0 size-full max-h-none max-w-none overscroll-contain bg-night p-0 text-white backdrop:bg-night open:flex open:flex-col"
     >

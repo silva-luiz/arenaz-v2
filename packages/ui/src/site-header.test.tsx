@@ -17,7 +17,7 @@ describe('initials', () => {
 describe('SiteHeader', () => {
   it('shows the initials linking to the account when signed in', () => {
     render(<SiteHeader user={{ name: 'Gabriel Ribeiro' }} />);
-    const account = screen.getByRole('link', { name: 'Minha conta' });
+    const account = screen.getByRole('link', { name: 'Minha conta (GR)' });
     expect(account).toHaveAttribute('href', '/conta');
     expect(account).toHaveTextContent('GR');
     expect(screen.queryByRole('link', { name: 'Entrar' })).toBeNull();
@@ -29,7 +29,7 @@ describe('SiteHeader', () => {
       'href',
       '/entrar',
     );
-    expect(screen.queryByRole('link', { name: 'Minha conta' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Minha conta/ })).toBeNull();
   });
 
   it('links the logo home and the owner call to action to /painel', () => {
@@ -40,6 +40,21 @@ describe('SiteHeader', () => {
     expect(
       screen.getByRole('link', { name: 'Anuncie sua quadra' }),
     ).toHaveAttribute('href', '/painel');
+  });
+
+  it('keeps the owner link reachable on mobile with a short visible label', () => {
+    render(<SiteHeader user={null} />);
+    const link = screen.getByRole('link', { name: 'Anuncie sua quadra' });
+    // The link itself is never hidden; only the tail of its text is.
+    expect(link.className).not.toMatch(/hidden/);
+    expect(link).toHaveTextContent('Anuncie');
+    const tail = screen.getByText('sua quadra');
+    expect(tail).toHaveClass('max-md:hidden');
+  });
+
+  it('names the account link without initials when the name is empty', () => {
+    render(<SiteHeader user={{ name: '  ' }} />);
+    expect(screen.getByRole('link', { name: 'Minha conta' })).toBeVisible();
   });
 
   it('is sticky and renders the search slot', () => {

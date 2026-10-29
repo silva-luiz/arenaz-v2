@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SearchBar } from './search-bar';
@@ -28,6 +28,7 @@ function mockGeolocation(
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   Reflect.deleteProperty(navigator, 'geolocation');
 });
 
@@ -106,6 +107,36 @@ describe('SearchBar', () => {
     await user.click(screen.getByRole('button', { name: 'Buscar' }));
 
     expect(submitted).toEqual({ q: 'Pinheiros', sport: 'padel' });
+  });
+
+  it('drops empty fields from the URL on submit and restores them after', async () => {
+    const user = userEvent.setup();
+    render(<SearchBar />);
+
+    const form = screen.getByRole<HTMLFormElement>('search');
+    let sent: string[] = [];
+    // On document: bubbles after React's onSubmit, like the real submission.
+    const onSubmit = (event: Event) => {
+      event.preventDefault();
+      sent = [...new FormData(form).keys()];
+    };
+    document.addEventListener('submit', onSubmit);
+
+    const where = screen.getByRole('textbox', { name: 'Onde' });
+    await user.type(where, '   ');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    expect(sent).toEqual([]);
+    await waitFor(() => {
+      expect(where).toBeEnabled();
+    });
+    expect(screen.getByRole('combobox', { name: 'Esporte' })).toBeEnabled();
+
+    await user.clear(where);
+    await user.type(where, 'Pinheiros');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    expect(sent).toEqual(['q']);
+
+    document.removeEventListener('submit', onSubmit);
   });
 
   describe('"Perto de mim"', () => {
@@ -198,6 +229,100 @@ describe('SearchBar', () => {
       expect(onNavigate).toHaveBeenCalledExactlyOnceWith(
         '/buscar?lat=1.000&lng=2.000',
       );
+    });
+
+    it('does not stay disabled: a never-answered request falls back after 12 s', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      mockGeolocation(() => {
+        // Firefox: dismissing the permission prompt fires no callback.
+      });
+      const onNavigate = vi.fn();
+      render(<SearchBar onNavigate={onNavigate} />);
+
+      const button = screen.getByRole('button', { name: 'Perto de mim' });
+      await user.click(button);
+
+      expect(button).toBeEnabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByText('Buscando sua localização…')).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+
+      act(() => {
+        vi.advanceTimersByTime(11_000);
+      });
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+
+      act(() => {
+        vi.advanceTimersByTime(1_500);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Não conseguimos sua localização',
+      );
+      expect(button).not.toHaveAttribute('aria-busy');
+      expect(screen.queryByText('Buscando sua localização…')).toBeNull();
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+
+    it('announces the wait in a polite live region', async () => {
+      const user = userEvent.setup();
+      mockGeolocation(() => {
+        // never answers
+      });
+      render(<SearchBar onNavigate={vi.fn()} />);
+
+      await user.click(screen.getByRole('button', { name: 'Perto de mim' }));
+
+      const status = screen.getByText('Buscando sua localização…');
+      expect(status).toHaveAttribute('aria-live', 'polite');
+    });
+
+    it('makes a single request on a double click', async () => {
+      const user = userEvent.setup();
+      const getCurrentPosition = mockGeolocation(() => {
+        // pending
+      });
+      render(<SearchBar onNavigate={vi.fn()} />);
+
+      const button = screen.getByRole('button', { name: 'Perto de mim' });
+      await user.dblClick(button);
+
+      expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a late answer after the fallback fired', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      let late: PositionCallback = () => undefined;
+      mockGeolocation((success) => {
+        late = success;
+      });
+      const onNavigate = vi.fn();
+      render(<SearchBar onNavigate={onNavigate} />);
+
+      await user.click(screen.getByRole('button', { name: 'Perto de mim' }));
+      act(() => {
+        vi.advanceTimersByTime(12_500);
+      });
+      late({ coords: { latitude: 1, longitude: 2 } });
+
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+
+    it('can try again after the fallback', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const getCurrentPosition = mockGeolocation(() => undefined);
+      render(<SearchBar onNavigate={vi.fn()} />);
+
+      const button = screen.getByRole('button', { name: 'Perto de mim' });
+      await user.click(button);
+      act(() => {
+        vi.advanceTimersByTime(12_500);
+      });
+      await user.click(button);
+
+      expect(getCurrentPosition).toHaveBeenCalledTimes(2);
     });
 
     it('is a plain button that never submits the form', () => {

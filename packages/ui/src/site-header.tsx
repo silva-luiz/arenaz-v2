@@ -61,12 +61,19 @@ export function SiteHeader({
         <div className="flex min-w-0 flex-1 justify-center">{children}</div>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <Link href="/painel" className={cn(PILL_LINK, 'max-md:hidden')}>
-            Anuncie sua quadra
+          {/* Short on mobile, full from md up. The aria-label always holds the
+              whole phrase, which contains the visible text (WCAG 2.5.3). */}
+          <Link
+            href="/painel"
+            aria-label="Anuncie sua quadra"
+            className={PILL_LINK}
+          >
+            Anuncie<span className="max-md:hidden">{' sua quadra'}</span>
           </Link>
           {user ? (
             <Link
               href="/conta"
+              aria-label={letters ? `Minha conta (${letters})` : 'Minha conta'}
               className={cn(
                 'grid size-11 place-items-center rounded-full bg-ink text-xs font-semibold text-white',
                 FOCUS_RING,
@@ -89,7 +96,6 @@ export function SiteHeader({
                   <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
                 </svg>
               )}
-              <span className="sr-only">Minha conta</span>
             </Link>
           ) : (
             <Link

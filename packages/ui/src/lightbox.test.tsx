@@ -89,6 +89,59 @@ describe('Lightbox', () => {
     expect(screen.getByText('1 de 3')).toBeVisible();
   });
 
+  it('keeps the arrow keys working after clicking the photo', async () => {
+    const user = await openLightbox();
+
+    await user.click(screen.getByRole('img', { name: 'Quadra vista de cima' }));
+    await user.keyboard('{ArrowRight}');
+
+    expect(screen.getByText('2 de 3')).toBeVisible();
+
+    await user.click(screen.getByRole('img', { name: 'Vestiário' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('stops listening to the keyboard once unmounted', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <Lightbox photos={PHOTOS} index={0} onClose={onClose} />,
+    );
+    unmount();
+
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('returns focus to returnFocusRef even if the opener never had focus', () => {
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    const { unmount } = render(
+      <Lightbox
+        photos={PHOTOS}
+        index={0}
+        onClose={vi.fn()}
+        returnFocusRef={{ current: trigger }}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Fechar' })).toHaveFocus();
+
+    unmount();
+
+    expect(trigger).toHaveFocus();
+    trigger.remove();
+  });
+
+  it('draws a two-tone focus ring on every control', () => {
+    render(<Lightbox photos={PHOTOS} index={0} onClose={vi.fn()} />);
+    for (const name of ['Fechar', 'Foto anterior', 'Próxima foto']) {
+      const button = screen.getByRole('button', { name });
+      expect(button.className).toContain('focus-visible:shadow-[');
+      expect(button.className).toContain('focus-visible:outline-hidden');
+    }
+  });
+
   it('moves with the previous and next buttons', async () => {
     const user = await openLightbox();
 

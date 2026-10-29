@@ -1,7 +1,7 @@
 'use client';
 
 import { SPORT_LABELS, SPORTS } from '@arenaz/contracts';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Alert } from './alert';
 import { cn } from './cn';
 import { FOCUS_RING } from './link';
@@ -17,7 +17,11 @@ export interface SearchBarProps {
 }
 
 const LOCATION_ERROR = 'Não conseguimos sua localização';
+const SEARCHING = 'Buscando sua localização…';
 const GEOLOCATION_TIMEOUT_MS = 10_000;
+// Slightly longer than the geolocation timeout: Firefox fires no callback at
+// all when the permission prompt is dismissed, so we cannot rely on one.
+const FALLBACK_TIMEOUT_MS = 12_000;
 
 function navigateTo(url: string) {
   window.location.assign(url);
@@ -47,8 +51,9 @@ function Divider() {
  * Search pill. The form is a plain GET (`q`, `sport`) so it works without
  * JavaScript; "Perto de mim" is the only client enhancement (browser
  * geolocation, then navigation to `action?lat=..&lng=..[&sport=..]` with 3
- * decimals, about 100 m). Empty fields are still sent (`q=`, `sport=`), so the
- * search page must treat empty values as absent.
+ * decimals, about 100 m). Without JS the empty fields are still sent (`q=`,
+ * `sport=`), so the search page must treat empty values as absent; with JS
+ * they are left out of the URL on submit.
  */
 export function SearchBar({
   defaultQuery,
@@ -60,17 +65,69 @@ export function SearchBar({
   const formRef = useRef<HTMLFormElement>(null);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The button is never disabled (a request that never answers would lock it
+  // for good); a ref guards double clicks and identifies the live request.
+  const pendingRef = useRef(false);
+  const attemptRef = useRef(0);
+  const fallbackRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+
+  useEffect(
+    () => () => {
+      clearTimeout(fallbackRef.current);
+    },
+    [],
+  );
+
+  /** Ends the live request; false if it was already over (late callback). */
+  function settle(attempt: number): boolean {
+    if (!pendingRef.current || attempt !== attemptRef.current) return false;
+    pendingRef.current = false;
+    clearTimeout(fallbackRef.current);
+    setLocating(false);
+    return true;
+  }
+
+  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
+    // Progressive enhancement: skip empty fields so the URL stays clean. They
+    // are re-enabled right after the browser has built the form data (a
+    // later task), so bfcache never restores a disabled form.
+    const skipped: (HTMLInputElement | HTMLSelectElement)[] = [];
+    for (const control of event.currentTarget.elements) {
+      if (
+        (control instanceof HTMLInputElement ||
+          control instanceof HTMLSelectElement) &&
+        control.name &&
+        !control.disabled &&
+        control.value.trim() === ''
+      ) {
+        control.disabled = true;
+        skipped.push(control);
+      }
+    }
+    setTimeout(() => {
+      for (const control of skipped) control.disabled = false;
+    }, 0);
+  }
 
   function findNearby() {
+    if (pendingRef.current) return;
     setError(null);
     if (typeof navigator.geolocation === 'undefined') {
       setError(LOCATION_ERROR);
       return;
     }
+    pendingRef.current = true;
+    attemptRef.current += 1;
+    const attempt = attemptRef.current;
     setLocating(true);
+    fallbackRef.current = setTimeout(() => {
+      if (settle(attempt)) setError(LOCATION_ERROR);
+    }, FALLBACK_TIMEOUT_MS);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocating(false);
+        if (!settle(attempt)) return;
         const params = new URLSearchParams({
           lat: position.coords.latitude.toFixed(3),
           lng: position.coords.longitude.toFixed(3),
@@ -84,8 +141,7 @@ export function SearchBar({
         onNavigate(`${action}?${params.toString()}`);
       },
       () => {
-        setLocating(false);
-        setError(LOCATION_ERROR);
+        if (settle(attempt)) setError(LOCATION_ERROR);
       },
       { timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: 60_000 },
     );
@@ -98,6 +154,7 @@ export function SearchBar({
         method="get"
         action={action}
         role="search"
+        onSubmit={onSubmit}
         className="flex flex-col gap-3 rounded-card border border-line bg-bg p-4 shadow-3 md:flex-row md:items-center md:gap-1 md:rounded-full md:border-0 md:p-2"
       >
         <label className={cn(SEGMENT, 'md:flex-[1.3]')}>
@@ -133,10 +190,9 @@ export function SearchBar({
           <button
             type="button"
             onClick={findNearby}
-            disabled={locating}
             aria-busy={locating ? true : undefined}
             className={cn(
-              'inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-line-control bg-bg px-5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none md:border-0',
+              'inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-line-control bg-bg px-5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none md:border-0',
               FOCUS_RING,
             )}
           >
@@ -159,7 +215,6 @@ export function SearchBar({
               <line x1="20" y1="12" x2="23" y2="12" />
             </svg>
             Perto de mim
-            {locating ? <span className="sr-only">, Aguarde…</span> : null}
           </button>
           <button
             type="submit"
@@ -185,6 +240,9 @@ export function SearchBar({
           </button>
         </div>
       </form>
+      <p aria-live="polite" className="sr-only">
+        {locating ? SEARCHING : ''}
+      </p>
       <Alert tone="error" className="mt-3">
         {error}
       </Alert>
