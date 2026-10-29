@@ -158,6 +158,85 @@ describe('auth e2e', () => {
     expect(me.statusCode).toBe(200);
   });
 
+  it('get-session com cookie → 200 com o usuário', async () => {
+    const signed = await signUp({
+      name: 'Gil',
+      email: 'gil@mail.com',
+      password: 'Senha@123',
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: cookieOf(signed) },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ user: { email: 'gil@mail.com' } });
+  });
+
+  it('sign-out com cookie → 200 e a sessão deixa de valer', async () => {
+    const signed = await signUp({
+      name: 'Hugo',
+      email: 'hugo@mail.com',
+      password: 'Senha@123',
+    });
+    const out = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-out',
+      payload: {},
+      headers: { cookie: cookieOf(signed), origin: env.WEB_ORIGIN },
+    });
+    expect(out.statusCode).toBe(200);
+    const me = await app.inject({
+      method: 'GET',
+      url: '/api/me',
+      headers: { cookie: cookieOf(signed) },
+    });
+    expect(me.statusCode).toBe(401);
+  });
+
+  it('change-password fora da lista permitida → 404 problem+json', async () => {
+    const signed = await signUp({
+      name: 'Iris',
+      email: 'iris@mail.com',
+      password: 'Senha@123',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/change-password',
+      payload: { currentPassword: 'Senha@123', newPassword: 'fraca' },
+      headers: { cookie: cookieOf(signed), origin: env.WEB_ORIGIN },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect(res.json()).toMatchObject({ status: 404, detail: 'Não encontrado' });
+    const login = await signIn({
+      email: 'iris@mail.com',
+      password: 'Senha@123',
+    });
+    expect(login.statusCode).toBe(200);
+  });
+
+  it('update-user e GET de endpoint desconhecido → 404', async () => {
+    const signed = await signUp({
+      name: 'Jo',
+      email: 'jo@mail.com',
+      password: 'Senha@123',
+    });
+    const upd = await app.inject({
+      method: 'POST',
+      url: '/api/auth/update-user',
+      payload: { name: '' },
+      headers: { cookie: cookieOf(signed), origin: env.WEB_ORIGIN },
+    });
+    expect(upd.statusCode).toBe(404);
+    const list = await app.inject({
+      method: 'GET',
+      url: '/api/auth/list-sessions',
+      headers: { cookie: cookieOf(signed) },
+    });
+    expect(list.statusCode).toBe(404);
+  });
+
   it('cookie de sessão é httpOnly e SameSite=Lax', async () => {
     const res = await signUp({
       name: 'Davi',
@@ -215,6 +294,15 @@ describe('auth e2e: caminhos com segmentos especiais', () => {
     '/api/auth/sign-up/%65mail',
     '/api/auth//sign-up/email/',
   ];
+
+  it.each([
+    '/api/auth/./change-password',
+    '/api/auth/x/../CHANGE-PASSWORD/',
+    '/api/auth/%63hange-password',
+  ])('change-password em %s → 404', async (path) => {
+    const res = await raw(path, { newPassword: 'fraca', currentPassword: 'x' });
+    expect(res.status).toBe(404);
+  });
 
   it.each(SIGN_UP_SPELLINGS)('senha fraca em %s → 422', async (path) => {
     const res = await raw(path, {

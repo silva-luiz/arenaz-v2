@@ -14,6 +14,18 @@ const AUTH_PREFIX = '/api/auth';
 const SIGN_UP_PATH = `${AUTH_PREFIX}/sign-up/email`;
 const SIGN_IN_PATH = `${AUTH_PREFIX}/sign-in/email`;
 
+/**
+ * The only Better Auth endpoints exposed (same normalised key as validation).
+ * Everything else (change-password, update-user, ...) would skip our payload
+ * rules, so it is answered with 404 until it gets its own validation.
+ */
+const ALLOWED_ENDPOINTS = new Set([
+  SIGN_UP_PATH,
+  SIGN_IN_PATH,
+  `${AUTH_PREFIX}/sign-out`,
+  `${AUTH_PREFIX}/get-session`,
+]);
+
 const BODY_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 /** Describe the incoming wire format, which no longer matches once re-built. */
 const SKIPPED_REQUEST_HEADERS = ['content-length', 'transfer-encoding'];
@@ -203,9 +215,19 @@ export function registerAuthRoutes(fastify: FastifyInstance, auth: Auth): void {
       const url = new URL(
         `${request.protocol}://${request.host}${request.url}`,
       );
+      const key = routeKey(url);
+      if (!ALLOWED_ENDPOINTS.has(key)) {
+        sendProblem(target, {
+          type: 'about:blank',
+          title: titleFor(404),
+          status: 404,
+          detail: 'Não encontrado',
+        });
+        return target;
+      }
       let body: unknown = request.body;
       if (request.method === 'POST') {
-        const normalized = normalizeBody(routeKey(url), body);
+        const normalized = normalizeBody(key, body);
         if ('problem' in normalized) {
           sendProblem(target, normalized.problem);
           return target;
