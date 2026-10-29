@@ -9,6 +9,7 @@ import {
   minuteOfDaySchema,
 } from './geo.js';
 import { photoSchema } from './photo.js';
+import { timezoneSchema } from './timezone.js';
 
 export const venueInputSchema = z.object({
   name: z
@@ -31,6 +32,8 @@ export const venueInputSchema = z.object({
   cancellationPolicy: z.enum(CANCELLATION_POLICIES, {
     error: 'Selecione a política de cancelamento',
   }),
+  /** IANA zone; the service defaults it from the state when omitted. */
+  timezone: timezoneSchema.optional(),
 });
 
 export const venueUpdateSchema = venueInputSchema.partial();
@@ -53,20 +56,41 @@ const venueHourSchema = z
     path: ['closeMinute'],
   });
 
-/** Opening hours, at most one entry per weekday (0 = Sunday). */
+export const VENUE_HOURS_OVERLAP_MESSAGE = 'Horários se sobrepõem';
+export const MAX_VENUE_HOURS = 21;
+
+/**
+ * Opening hours (0 = Sunday): several intervals per weekday, at most 21. A
+ * shift past midnight is two intervals (until 24:00, then from 00:00 on the
+ * next weekday). Intervals of one weekday may touch but not overlap.
+ */
 export const venueHoursSchema = z
   .array(venueHourSchema)
+  .max(MAX_VENUE_HOURS, {
+    error: `No máximo ${String(MAX_VENUE_HOURS)} intervalos de funcionamento`,
+  })
   .superRefine((hours, ctx) => {
-    const seen = new Set<number>();
-    hours.forEach((hour, index) => {
-      if (seen.has(hour.weekday)) {
+    const order = hours
+      .map((hour, index) => ({ hour, index }))
+      .sort(
+        (a, b) =>
+          a.hour.weekday - b.hour.weekday ||
+          a.hour.openMinute - b.hour.openMinute ||
+          a.hour.closeMinute - b.hour.closeMinute,
+      );
+    order.forEach((current, position) => {
+      const previous = order[position - 1];
+      if (
+        previous &&
+        previous.hour.weekday === current.hour.weekday &&
+        current.hour.openMinute < previous.hour.closeMinute
+      ) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Dia da semana repetido',
-          path: [index, 'weekday'],
+          message: VENUE_HOURS_OVERLAP_MESSAGE,
+          path: [current.index, 'openMinute'],
         });
       }
-      seen.add(hour.weekday);
     });
   });
 
@@ -82,6 +106,7 @@ export const venueSchema = z.object({
   location: locationSchema,
   amenities: z.array(z.enum(AMENITIES)),
   cancellationPolicy: z.enum(CANCELLATION_POLICIES),
+  timezone: timezoneSchema,
   status: venueStatusSchema,
   hours: venueHoursSchema,
   photos: z.array(photoSchema),

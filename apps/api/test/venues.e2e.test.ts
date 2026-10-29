@@ -463,6 +463,97 @@ describe('owner venues e2e', () => {
     expect(venueOf(cleared).hours).toEqual([]);
   });
 
+  it('fuso: padrão pela UF quando omitido, informado vale, inválido é 422', async () => {
+    const { api } = await newOwner();
+    const am = venueOf(
+      await api.post(
+        '/api/owner/venues',
+        venueBody({ address: { ...venueBody().address, state: 'AM' } }),
+      ),
+    );
+    expect(am.timezone).toBe('America/Manaus');
+
+    const sp = venueOf(await api.post('/api/owner/venues', venueBody()));
+    expect(sp.timezone).toBe('America/Sao_Paulo');
+
+    const chosen = venueOf(
+      await api.post(
+        '/api/owner/venues',
+        venueBody({ timezone: 'America/Noronha' }),
+      ),
+    );
+    expect(chosen.timezone).toBe('America/Noronha');
+
+    const invalid = await api.post(
+      '/api/owner/venues',
+      // Not in the Brazilian list.
+      { ...venueBody(), timezone: 'Europe/Lisbon' },
+    );
+    expect(invalid.statusCode).toBe(422);
+
+    // Editing: only an explicit timezone changes it (the UF alone does not).
+    const moved = venueOf(
+      await api.patch(`/api/owner/venues/${sp.id}`, {
+        address: { ...venueBody().address, state: 'AC' },
+      }),
+    );
+    expect(moved.timezone).toBe('America/Sao_Paulo');
+    const edited = venueOf(
+      await api.patch(`/api/owner/venues/${sp.id}`, {
+        timezone: 'America/Rio_Branco',
+      }),
+    );
+    expect(edited.timezone).toBe('America/Rio_Branco');
+  });
+
+  it('horário aceita vários intervalos no mesmo dia, ordenados', async () => {
+    const { api } = await newOwner();
+    const venue = venueOf(await api.post('/api/owner/venues', venueBody()));
+    const url = `/api/owner/venues/${venue.id}/hours`;
+    const split = [
+      { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+      { weekday: 6, openMinute: 0, closeMinute: 120 },
+      { weekday: 5, openMinute: 480, closeMinute: 720 },
+    ];
+    const res = await api.put(url, split);
+    expect(res.statusCode).toBe(200);
+    expect(venueOf(res).hours).toEqual([
+      { weekday: 5, openMinute: 480, closeMinute: 720 },
+      { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+      { weekday: 6, openMinute: 0, closeMinute: 120 },
+    ]);
+
+    // Touching intervals are fine, overlapping ones are not.
+    const touching = await api.put(url, [
+      { weekday: 2, openMinute: 480, closeMinute: 720 },
+      { weekday: 2, openMinute: 720, closeMinute: 900 },
+    ]);
+    expect(touching.statusCode).toBe(200);
+    const overlap = await api.put(url, [
+      { weekday: 2, openMinute: 480, closeMinute: 720 },
+      { weekday: 2, openMinute: 660, closeMinute: 900 },
+    ]);
+    expect(overlap.statusCode).toBe(422);
+    expect(Object.values(problemOf(overlap).errors ?? {}).flat()).toContain(
+      'Horários se sobrepõem',
+    );
+
+    const tooMany = await api.put(
+      url,
+      Array.from({ length: 22 }, (_, i) => ({
+        weekday: i % 7,
+        openMinute: Math.floor(i / 7) * 240,
+        closeMinute: Math.floor(i / 7) * 240 + 120,
+      })),
+    );
+    expect(tooMany.statusCode).toBe(422);
+
+    // The failed requests left the last valid hours alone.
+    expect(
+      venueOf(await api.get(`/api/owner/venues/${venue.id}`)).hours,
+    ).toHaveLength(2);
+  });
+
   it('apaga o espaço e o que depende dele', async () => {
     const { api } = await newOwner();
     const venue = venueOf(await api.post('/api/owner/venues', venueBody()));

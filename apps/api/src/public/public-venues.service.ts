@@ -200,6 +200,7 @@ export class PublicVenuesService {
         location: selectLocation(venue.approxLocation),
         amenities: venue.amenities,
         cancellationPolicy: venue.cancellationPolicy,
+        timezone: venue.timezone,
         hostName: user.name,
       })
       .from(venue)
@@ -217,7 +218,7 @@ export class PublicVenuesService {
         })
         .from(venueHours)
         .where(eq(venueHours.venueId, row.id))
-        .orderBy(asc(venueHours.weekday)),
+        .orderBy(asc(venueHours.weekday), asc(venueHours.openMinute)),
       db
         .select({
           id: venuePhoto.id,
@@ -257,6 +258,7 @@ export class PublicVenuesService {
       approxLocation: approximate(row.location),
       amenities: row.amenities,
       cancellationPolicy: row.cancellationPolicy,
+      timezone: row.timezone,
       hours,
       photos: photos.map((photo) => ({
         id: photo.id,

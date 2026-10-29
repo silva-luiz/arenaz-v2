@@ -1,4 +1,4 @@
-import type { FieldResponse } from '@arenaz/contracts';
+import type { FieldResponse, Venue } from '@arenaz/contracts';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,10 +31,28 @@ const FIELD: FieldResponse = {
   blocks: [],
 };
 
+const VENUE = {
+  id: VENUE_ID,
+  timezone: 'America/Manaus',
+} as Venue;
+
 describe('/painel/quadras/[fieldId]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.apiGet.mockResolvedValue(FIELD);
+    mocks.apiGet.mockImplementation((path: string) =>
+      Promise.resolve(path.startsWith('/owner/venues/') ? VENUE : FIELD),
+    );
+  });
+
+  it('reads the blocks in the venue time zone and says which one', async () => {
+    render(
+      await QuadraPage({ params: Promise.resolve({ fieldId: FIELD_ID }) }),
+    );
+
+    expect(mocks.apiGet.mock.calls[1]?.[0]).toBe(`/owner/venues/${VENUE_ID}`);
+    expect(
+      screen.getByText(/Horário do espaço: Amazonas \(UTC−4\)\./),
+    ).toBeVisible();
   });
 
   it('loads the field by id, passing its own path for the sign-in redirect', async () => {

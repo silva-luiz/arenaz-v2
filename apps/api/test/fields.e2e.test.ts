@@ -13,7 +13,7 @@ import { NotFoundException } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import type { LightMyRequestResponse } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { DB, type DbHandle } from '../src/db/db.module.js';
 import { findOwnedField } from '../src/venues/owner.js';
 import {
@@ -452,6 +452,32 @@ describe('price rules e2e', () => {
 });
 
 describe('availability blocks e2e', () => {
+  it('23P01 do EXCLUDE (corrida que escapou da checagem) também vira 409', async () => {
+    const { api, field } = await setup();
+    const exclusion = Object.assign(new Error('Failed query'), {
+      // Drizzle wraps the driver error and keeps it in `cause`.
+      cause: Object.assign(new Error('conflicting key value'), {
+        code: '23P01',
+      }),
+    });
+    const spy = vi
+      .spyOn(handle.db, 'transaction')
+      .mockRejectedValueOnce(exclusion);
+    try {
+      const res = await api.post(`/api/owner/fields/${field.id}/blocks`, {
+        startsAt: '2031-04-10T10:00:00.000Z',
+        endsAt: '2031-04-10T12:00:00.000Z',
+      });
+      expect(res.statusCode).toBe(409);
+      expect(problemOf(res)).toMatchObject({
+        status: 409,
+        detail: 'Já existe um bloqueio nesse período',
+      });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('bloqueio sobreposto → 409; encostado → 201', async () => {
     const { api, field } = await setup();
     const url = `/api/owner/fields/${field.id}/blocks`;

@@ -27,6 +27,7 @@ import {
 } from '@nestjs/common';
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
+import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { findOwnedField, findOwnedVenue, isUuid } from '../venues/owner.js';
@@ -249,26 +250,39 @@ export class FieldsService {
       startsAt: new Date(input.startsAt),
       endsAt: new Date(input.endsAt),
     };
-    const created = await this.handle.db.transaction(async (tx) => {
-      await this.lockField(tx, owned.id);
-      const [clash] = await tx
-        .select({ id: availabilityBlock.id })
-        .from(availabilityBlock)
-        .where(
-          and(
-            eq(availabilityBlock.fieldId, owned.id),
-            sql`${availabilityBlock.period} && ${tstzrangeSql(period.startsAt, period.endsAt)}`,
-          ),
-        )
-        .limit(1);
-      if (clash) throw new ConflictException(BLOCK_OVERLAP_MESSAGE);
-      const [row] = await tx
-        .insert(availabilityBlock)
-        .values({ fieldId: owned.id, period, reason: textOrNull(input.reason) })
-        .returning();
-      if (!row) throw new Error('insert do bloqueio não retornou a linha');
-      return row;
-    });
+    let created: AvailabilityBlock;
+    try {
+      created = await this.handle.db.transaction(async (tx) => {
+        await this.lockField(tx, owned.id);
+        const [clash] = await tx
+          .select({ id: availabilityBlock.id })
+          .from(availabilityBlock)
+          .where(
+            and(
+              eq(availabilityBlock.fieldId, owned.id),
+              sql`${availabilityBlock.period} && ${tstzrangeSql(period.startsAt, period.endsAt)}`,
+            ),
+          )
+          .limit(1);
+        if (clash) throw new ConflictException(BLOCK_OVERLAP_MESSAGE);
+        const [row] = await tx
+          .insert(availabilityBlock)
+          .values({
+            fieldId: owned.id,
+            period,
+            reason: textOrNull(input.reason),
+          })
+          .returning();
+        if (!row) throw new Error('insert do bloqueio não retornou a linha');
+        return row;
+      });
+    } catch (error) {
+      // Safety net: the EXCLUDE constraint refused an overlap the check missed.
+      if (hasPgCode(error, EXCLUSION_VIOLATION)) {
+        throw new ConflictException(BLOCK_OVERLAP_MESSAGE);
+      }
+      throw error;
+    }
     return toBlock(created);
   }
 

@@ -1,4 +1,4 @@
-import { fieldSchema } from '@arenaz/contracts';
+import { TIMEZONE_LABELS, fieldSchema, venueSchema } from '@arenaz/contracts';
 import { Card } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -22,6 +22,12 @@ export default async function QuadraPage({
     `/painel/quadras/${fieldId}`,
   );
   const venuePath = `/painel/espacos/${field.venueId}` as const;
+  // Blocks are read and written in the venue's time zone.
+  const venue = await apiGet(
+    `/owner/venues/${encodeURIComponent(field.venueId)}`,
+    venueSchema,
+    `/painel/quadras/${fieldId}`,
+  );
 
   return (
     <div className="flex max-w-3xl flex-col gap-8">
@@ -57,9 +63,13 @@ export default async function QuadraPage({
           Bloqueios
         </h2>
         <p className="mb-4 text-sm text-muted">
-          Períodos em que a quadra não pode ser reservada. Horário de São Paulo.
+          {`Períodos em que a quadra não pode ser reservada. Horário do espaço: ${TIMEZONE_LABELS[venue.timezone]}.`}
         </p>
-        <BlocksEditor fieldId={field.id} initialBlocks={field.blocks} />
+        <BlocksEditor
+          fieldId={field.id}
+          timezone={venue.timezone}
+          initialBlocks={field.blocks}
+        />
       </Card>
 
       <Card aria-labelledby="quadra-excluir">

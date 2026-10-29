@@ -4,7 +4,6 @@ import {
   check,
   index,
   pgTable,
-  primaryKey,
   smallint,
   text,
   timestamp,
@@ -50,6 +49,9 @@ export const venue = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     cancellationPolicy: text('cancellation_policy').notNull(),
+    // IANA zone (BRAZIL_TIMEZONES in @arenaz/contracts). Wall-clock times of
+    // the venue (hours, price rules, bookings) are read in this zone.
+    timezone: text('timezone').notNull(),
     status: text('status').notNull().default('draft'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -67,12 +69,20 @@ export const venue = pgTable(
       sql`${t.cancellationPolicy} in ('flexivel', 'moderada', 'rigida')`,
     ),
     check('venue_status_check', sql`${t.status} in ('draft', 'published')`),
+    // Keep in sync with BRAZIL_TIMEZONES (a contracts test parses migration 0006).
+    check(
+      'venue_timezone_check',
+      sql`${t.timezone} in ('America/Sao_Paulo', 'America/Bahia', 'America/Fortaleza', 'America/Recife', 'America/Maceio', 'America/Belem', 'America/Araguaina', 'America/Manaus', 'America/Boa_Vista', 'America/Porto_Velho', 'America/Cuiaba', 'America/Campo_Grande', 'America/Rio_Branco', 'America/Noronha', 'America/Santarem', 'America/Eirunepe')`,
+    ),
   ],
 );
 
 export const venueHours = pgTable(
   'venue_hours',
   {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     venueId: uuid('venue_id')
       .notNull()
       .references(() => venue.id, { onDelete: 'cascade' }),
@@ -81,7 +91,8 @@ export const venueHours = pgTable(
     closeMinute: smallint('close_minute').notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.venueId, t.weekday] }),
+    // Several intervals per weekday (a shift past midnight is two of them).
+    index('venue_hours_venue_id_weekday_idx').on(t.venueId, t.weekday),
     check('venue_hours_weekday_check', sql`${t.weekday} between 0 and 6`),
     check(
       'venue_hours_range_check',

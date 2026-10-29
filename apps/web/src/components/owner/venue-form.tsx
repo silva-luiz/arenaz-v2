@@ -6,8 +6,11 @@ import {
   CANCELLATION_POLICIES,
   CANCELLATION_POLICY_DESCRIPTIONS,
   CANCELLATION_POLICY_LABELS,
+  BRAZIL_TIMEZONES,
+  TIMEZONE_LABELS,
   UF,
   cepLookupResponseSchema,
+  defaultTimezoneForUf,
   venueInputSchema,
   venueSchema,
   type Venue,
@@ -32,6 +35,10 @@ import { formatCep, formatPhoneBr } from '@/lib/format-br';
 import { LocationPicker } from './location-picker';
 
 const UF_OPTIONS = UF.map((uf) => ({ value: uf, label: uf }));
+const TIMEZONE_OPTIONS = BRAZIL_TIMEZONES.map((zone) => ({
+  value: zone,
+  label: TIMEZONE_LABELS[zone],
+}));
 const INVALID_MESSAGE = 'Corrija os campos destacados.';
 const LOCATION_BLANK_MESSAGE = 'Informe a localização do espaço';
 
@@ -55,6 +62,7 @@ const EMPTY_VALUES: DefaultValues<VenueFormInput> = {
   },
   location: UNSET_LOCATION,
   amenities: [],
+  timezone: defaultTimezoneForUf(''),
 };
 
 function toFormValues(venue: Venue): VenueFormInput {
@@ -74,6 +82,7 @@ function toFormValues(venue: Venue): VenueFormInput {
     location: venue.location,
     amenities: venue.amenities,
     cancellationPolicy: venue.cancellationPolicy,
+    timezone: venue.timezone,
   };
 }
 
@@ -98,6 +107,7 @@ const SERVER_FIELDS = [
   'phone',
   'amenities',
   'cancellationPolicy',
+  'timezone',
 ] as const;
 type ServerField = (typeof SERVER_FIELDS)[number];
 
@@ -124,6 +134,12 @@ export function VenueForm({ venue }: VenueFormProps) {
   // CEP (digits) being looked up right now, if any.
   const pendingLookup = useRef('');
   const lookupTicket = useRef(0);
+  // Once the owner picks a zone by hand the UF stops changing it. A saved zone
+  // that differs from the UF's usual one was picked by hand before.
+  const timezoneChosen = useRef(
+    venue !== undefined &&
+      venue.timezone !== defaultTimezoneForUf(venue.address.state),
+  );
 
   const {
     register,
@@ -140,6 +156,13 @@ export function VenueForm({ venue }: VenueFormProps) {
   });
 
   const cep = register('address.cep');
+  const state = register('address.state');
+  const timezone = register('timezone');
+
+  function followState(uf: string) {
+    if (timezoneChosen.current) return;
+    setValue('timezone', defaultTimezoneForUf(uf), { shouldDirty: true });
+  }
 
   async function lookupCep(raw: string) {
     const digits = raw.replace(/\D/g, '');
@@ -186,6 +209,7 @@ export function VenueForm({ venue }: VenueFormProps) {
     }
     if (data.city) setValue('address.city', data.city, fill);
     setValue('address.state', data.state, fill);
+    followState(data.state);
     // Without coordinates the owner places the pin.
     if (data.location) setValue('location', data.location, fill);
     setCepStatus('Endereço preenchido.');
@@ -347,10 +371,29 @@ export function VenueForm({ venue }: VenueFormProps) {
             <Select
               options={UF_OPTIONS}
               placeholder="Selecione"
-              {...register('address.state')}
+              {...state}
+              onChange={(event) => {
+                followState(event.target.value);
+                void state.onChange(event);
+              }}
             />
           </Field>
         </div>
+        <Field
+          label="Fuso horário"
+          hint="Os horários das quadras e das reservas seguem este fuso."
+          error={errors.timezone?.message}
+          className="sm:max-w-96"
+        >
+          <Select
+            options={TIMEZONE_OPTIONS}
+            {...timezone}
+            onChange={(event) => {
+              timezoneChosen.current = true;
+              void timezone.onChange(event);
+            }}
+          />
+        </Field>
       </section>
 
       <section

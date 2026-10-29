@@ -22,6 +22,8 @@ vi.mock('next/navigation', () => ({
 
 import { BlocksEditor } from './blocks-editor';
 
+const SP = 'America/Sao_Paulo';
+const MANAUS = 'America/Manaus';
 const FIELD_ID = '8a1d6c34-2f0b-4b52-8d65-5c7f2f6f9a21';
 
 const MAINTENANCE: Block = {
@@ -60,6 +62,7 @@ describe('BlocksEditor', () => {
     render(
       <BlocksEditor
         fieldId={FIELD_ID}
+        timezone={SP}
         initialBlocks={[MAINTENANCE, NO_REASON]}
       />,
     );
@@ -70,8 +73,39 @@ describe('BlocksEditor', () => {
     expect(screen.getByText('Sáb, 07/11 das 09:00 às 11:00')).toBeVisible();
   });
 
+  it('lists and creates blocks in the venue time zone (Manaus, -04:00)', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: true,
+      data: { ...MAINTENANCE, reason: null },
+    });
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        timezone={MANAUS}
+        initialBlocks={[MAINTENANCE]}
+      />,
+    );
+
+    // 21:00Z-01:00Z is 17:00-21:00 in Manaus.
+    expect(
+      screen.getByText('Sáb, 31/10 das 17:00 às 21:00 — Manutenção'),
+    ).toBeVisible();
+
+    await fill('2026-11-02', '18:00', '24:00');
+
+    await waitFor(() => {
+      expect(mocks.apiSend).toHaveBeenCalled();
+    });
+    expect(mocks.apiSend.mock.calls[0]?.[2]).toEqual({
+      startsAt: '2026-11-02T18:00:00-04:00',
+      endsAt: '2026-11-03T00:00:00-04:00',
+    });
+  });
+
   it('says there are no blocks', () => {
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     expect(screen.getByText('Nenhum bloqueio futuro.')).toBeVisible();
   });
@@ -81,7 +115,9 @@ describe('BlocksEditor', () => {
       ok: true,
       data: { ...MAINTENANCE, reason: 'Torneio' },
     });
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     await fill('2026-10-31', '18:00', '22:00', '  Torneio ');
 
@@ -112,7 +148,9 @@ describe('BlocksEditor', () => {
 
   it('sends an end of 24:00 as midnight of the next day and no empty reason', async () => {
     mocks.apiSend.mockResolvedValue({ ok: true, data: MAINTENANCE });
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     await fill('2026-10-31', '22:00', '24:00');
 
@@ -127,7 +165,9 @@ describe('BlocksEditor', () => {
 
   it('asks for the date', async () => {
     const user = userEvent.setup();
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Bloquear período' }));
 
@@ -137,7 +177,9 @@ describe('BlocksEditor', () => {
   });
 
   it('does not call the API when the end is not after the start', async () => {
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     await fill('2026-10-31', '22:00', '18:00');
 
@@ -155,7 +197,9 @@ describe('BlocksEditor', () => {
       fieldErrors: {},
       message: 'Já existe um bloqueio nesse período',
     });
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     await fill('2026-10-31', '18:00', '22:00');
 
@@ -171,6 +215,7 @@ describe('BlocksEditor', () => {
     render(
       <BlocksEditor
         fieldId={FIELD_ID}
+        timezone={SP}
         initialBlocks={[MAINTENANCE, NO_REASON]}
       />,
     );
@@ -199,7 +244,13 @@ describe('BlocksEditor', () => {
 
   it('cancels the deletion without calling the API', async () => {
     const user = userEvent.setup();
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[MAINTENANCE]} />);
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        timezone={SP}
+        initialBlocks={[MAINTENANCE]}
+      />,
+    );
 
     await user.click(
       screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
@@ -217,7 +268,13 @@ describe('BlocksEditor', () => {
 
   it('returns the focus to the trigger after cancelling', async () => {
     const user = userEvent.setup();
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[MAINTENANCE]} />);
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        timezone={SP}
+        initialBlocks={[MAINTENANCE]}
+      />,
+    );
 
     await user.click(
       screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
@@ -235,6 +292,7 @@ describe('BlocksEditor', () => {
     render(
       <BlocksEditor
         fieldId={FIELD_ID}
+        timezone={SP}
         initialBlocks={[MAINTENANCE, NO_REASON]}
       />,
     );
@@ -260,6 +318,7 @@ describe('BlocksEditor', () => {
     render(
       <BlocksEditor
         fieldId={FIELD_ID}
+        timezone={SP}
         initialBlocks={[MAINTENANCE, NO_REASON]}
       />,
     );
@@ -294,7 +353,9 @@ describe('BlocksEditor', () => {
         answer = resolve;
       }),
     );
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+    render(
+      <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+    );
 
     const pending = fill('2026-10-31', '18:00', '22:00', 'Torneio');
     await waitFor(() => {
@@ -313,12 +374,35 @@ describe('BlocksEditor', () => {
     });
   });
 
+  it('does not offer days before today in the venue time zone', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 03:30 UTC is already the 30th in São Paulo but still the 29th in Manaus.
+    vi.setSystemTime(new Date('2026-10-30T03:30:00.000Z'));
+    try {
+      render(
+        <BlocksEditor
+          fieldId={FIELD_ID}
+          timezone={MANAUS}
+          initialBlocks={[]}
+        />,
+      );
+      expect(screen.getByLabelText('Data')).toHaveAttribute(
+        'min',
+        '2026-10-29',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not offer days before today in São Paulo', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     // 01:00 UTC is still the evening of the 29th in São Paulo.
     vi.setSystemTime(new Date('2026-10-30T01:00:00.000Z'));
     try {
-      render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+      render(
+        <BlocksEditor fieldId={FIELD_ID} timezone={SP} initialBlocks={[]} />,
+      );
 
       expect(screen.getByLabelText('Data')).toHaveAttribute(
         'min',
@@ -337,7 +421,13 @@ describe('BlocksEditor', () => {
       message: 'Não foi possível concluir. Tente novamente.',
     });
     const user = userEvent.setup();
-    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[MAINTENANCE]} />);
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        timezone={SP}
+        initialBlocks={[MAINTENANCE]}
+      />,
+    );
 
     await user.click(
       screen.getByRole('button', { name: 'Excluir bloqueio 1' }),

@@ -1,4 +1,5 @@
 import {
+  defaultTimezoneForUf,
   fieldSummarySchema,
   venueSchema,
   venueSummarySchema,
@@ -84,7 +85,7 @@ export function toFieldSummary(
 
 /**
  * DB rows → `Venue`, the one response mapper for owner venues. Hours are
- * sorted by weekday, photos by position (URLs from `photoUrl`, i.e. the
+ * sorted by weekday then opening minute, photos by position (URLs from `photoUrl`, i.e. the
  * storage's public URL), timestamps are ISO strings, and the result is
  * validated with the contract schema before it leaves the API.
  */
@@ -113,6 +114,7 @@ export function toVenue(
     location: row.location,
     amenities: row.amenities,
     cancellationPolicy: row.cancellationPolicy,
+    timezone: row.timezone,
     status: row.status,
     hours: hours
       .map(({ weekday, openMinute, closeMinute }) => ({
@@ -120,7 +122,7 @@ export function toVenue(
         openMinute,
         closeMinute,
       }))
-      .sort((a, b) => a.weekday - b.weekday),
+      .sort((a, b) => a.weekday - b.weekday || a.openMinute - b.openMinute),
     photos: [...photos]
       .sort((a, b) => a.position - b.position)
       .map((photo) => ({
@@ -213,6 +215,8 @@ export class VenuesService {
             location: input.location,
             amenities: input.amenities,
             cancellationPolicy: input.cancellationPolicy,
+            // Omitted: the usual zone of the state.
+            timezone: input.timezone ?? defaultTimezoneForUf(address.state),
           })
           .returning({ id: venue.id });
         if (!created) throw new Error('insert do espaço não retornou a linha');
@@ -262,6 +266,8 @@ export class VenuesService {
     if (input.cancellationPolicy !== undefined) {
       changes.cancellationPolicy = input.cancellationPolicy;
     }
+    // Only an explicit timezone changes it: moving the state does not.
+    if (input.timezone !== undefined) changes.timezone = input.timezone;
 
     if (Object.keys(changes).length > 0) {
       await this.handle.db
@@ -295,7 +301,10 @@ export class VenuesService {
     await deleteQuietly(this.storage, keys, this.logger);
   }
 
-  /** Replaces all opening hours at once, in a single transaction. */
+  /**
+   * Replaces all opening intervals at once, in a single transaction. A
+   * weekday may have several (the schema already refused overlaps).
+   */
   async replaceHours(
     userId: string,
     venueId: string,

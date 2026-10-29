@@ -39,18 +39,28 @@ function Section({
   );
 }
 
+/** "08:00–12:00, 17:00–24:00": every interval of the day, earliest first. */
+function describeIntervals(intervals: PublicVenue['hours']): string {
+  return [...intervals]
+    .sort((a, b) => a.openMinute - b.openMinute)
+    .map(
+      (hour) =>
+        `${formatMinute(hour.openMinute)}–${formatMinute(hour.closeMinute)}`,
+    )
+    .join(', ');
+}
+
 function OpeningHours({ hours }: { hours: PublicVenue['hours'] }) {
   return (
     <dl className="max-w-md divide-y divide-line">
       {WEEK_FROM_MONDAY.map((weekday) => {
-        const day = hours.find((hour) => hour.weekday === weekday);
+        const intervals = hours.filter((hour) => hour.weekday === weekday);
+        const open = intervals.length > 0;
         return (
           <div key={weekday} className="flex justify-between gap-4 py-2.5">
             <dt>{WEEKDAY_LABELS[weekday]}</dt>
-            <dd className={day ? 'font-medium' : 'text-muted'}>
-              {day
-                ? `${formatMinute(day.openMinute)} – ${formatMinute(day.closeMinute)}`
-                : 'Fechado'}
+            <dd className={open ? 'text-right font-medium' : 'text-muted'}>
+              {open ? describeIntervals(intervals) : 'Fechado'}
             </dd>
           </div>
         );

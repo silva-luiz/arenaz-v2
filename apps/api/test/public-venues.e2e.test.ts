@@ -55,6 +55,7 @@ interface SeedVenue {
   hours?: { weekday: number; openMinute: number; closeMinute: number }[];
   createdAt?: Date;
   description?: string | null;
+  timezone?: string;
 }
 
 /** Inserts straight into the database; a venue gets one active field by default. */
@@ -78,6 +79,7 @@ async function seed(input: SeedVenue = {}, owner: string = ownerId) {
       location: input.location ?? { lat: -23.55678, lng: -46.69123 },
       amenities: ['bar'],
       cancellationPolicy: 'flexivel',
+      timezone: input.timezone ?? 'America/Sao_Paulo',
       status: input.status ?? 'published',
       ...(input.createdAt ? { createdAt: input.createdAt } : {}),
     })
@@ -483,8 +485,10 @@ describe('GET /api/venues/:slug', () => {
         { key: `det-${token}-b`, position: 1 },
         { key: `det-${token}-a`, position: 0 },
       ],
+      timezone: 'America/Manaus',
       hours: [
-        { weekday: 5, openMinute: 480, closeMinute: 1320 },
+        { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+        { weekday: 5, openMinute: 480, closeMinute: 720 },
         { weekday: 1, openMinute: 540, closeMinute: 1200 },
       ],
       fields: [
@@ -512,7 +516,12 @@ describe('GET /api/venues/:slug', () => {
       cancellationPolicy: 'flexivel',
       host: { firstName: 'Maria' },
     });
-    expect(body.hours.map((hour) => hour.weekday)).toEqual([1, 5]);
+    expect(body.timezone).toBe('America/Manaus');
+    expect(body.hours).toEqual([
+      { weekday: 1, openMinute: 540, closeMinute: 1200 },
+      { weekday: 5, openMinute: 480, closeMinute: 720 },
+      { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+    ]);
     expect(body.photos.map((photo) => photo.position)).toEqual([0, 1]);
     expect(body.photos[0]?.url).toContain(`det-${token}-a`);
     expect(body.fields).toHaveLength(1);

@@ -3,6 +3,7 @@ import { AMENITIES, CANCELLATION_POLICIES, SPORTS } from './catalog.js';
 import { fieldSchema, priceRuleSchema } from './field.js';
 import { locationSchema } from './geo.js';
 import { photoSchema } from './photo.js';
+import { timezoneSchema } from './timezone.js';
 import { venueHoursSchema } from './venue.js';
 
 export const PUBLIC_PAGE_SIZE = 20;
@@ -156,6 +157,7 @@ export const publicVenueSchema = z.object({
   approxLocation: locationSchema,
   amenities: z.array(z.enum(AMENITIES)),
   cancellationPolicy: z.enum(CANCELLATION_POLICIES),
+  timezone: timezoneSchema,
   hours: venueHoursSchema,
   photos: z.array(photoSchema),
   host: z.object({ firstName: z.string() }),

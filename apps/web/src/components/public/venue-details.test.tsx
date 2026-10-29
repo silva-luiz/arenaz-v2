@@ -95,10 +95,35 @@ describe('VenueDetails', () => {
     const wednesday = hours.getByText('Quarta').parentElement;
     const saturday = hours.getByText('Sábado').parentElement;
     const sunday = hours.getByText('Domingo').parentElement;
-    expect(monday).toHaveTextContent('08:00 – 22:00');
+    expect(monday).toHaveTextContent('08:00–22:00');
     expect(wednesday).toHaveTextContent('Fechado');
-    expect(saturday).toHaveTextContent('09:00 – 24:00');
+    expect(saturday).toHaveTextContent('09:00–24:00');
     expect(sunday).toHaveTextContent('Fechado');
+  });
+
+  it('lists every interval of a day, earliest first, on one line', () => {
+    render(
+      <VenueDetails
+        venue={makeVenue({
+          hours: [
+            { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+            { weekday: 5, openMinute: 480, closeMinute: 720 },
+            { weekday: 6, openMinute: 0, closeMinute: 120 },
+          ],
+        })}
+      />,
+    );
+
+    const hours = within(section('Horário de funcionamento'));
+    expect(hours.getByText('Sexta').parentElement).toHaveTextContent(
+      '08:00–12:00, 17:00–24:00',
+    );
+    expect(hours.getByText('Sábado').parentElement).toHaveTextContent(
+      '00:00–02:00',
+    );
+    expect(hours.getByText('Segunda').parentElement).toHaveTextContent(
+      'Fechado',
+    );
   });
 
   it('shows the cancellation policy with its label and description', () => {

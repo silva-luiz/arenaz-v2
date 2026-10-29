@@ -5,11 +5,7 @@ import { Alert, Button, Field, Input, Select } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
-import {
-  formatBlockRange,
-  todayInSaoPaulo,
-  toSaoPauloIso,
-} from '@/lib/sao-paulo';
+import { formatBlockRange, todayInZone, toZonedIso } from '@/lib/zoned-time';
 import { TIME_OPTIONS } from './time-options';
 
 const DEFAULT_START = 18 * 60;
@@ -30,12 +26,18 @@ function byStart(a: Block, b: Block): number {
 
 export interface BlocksEditorProps {
   fieldId: string;
+  /** IANA zone of the venue: every time here is read and written in it. */
+  timezone: string;
   /** Blocks that have not ended yet, as the API lists them. */
   initialBlocks: Block[];
 }
 
-/** Closed periods of one court. All times are São Paulo time. */
-export function BlocksEditor({ fieldId, initialBlocks }: BlocksEditorProps) {
+/** Closed periods of one court. All times are in the venue's time zone. */
+export function BlocksEditor({
+  fieldId,
+  timezone,
+  initialBlocks,
+}: BlocksEditorProps) {
   const router = useRouter();
   const [blocks, setBlocks] = useState(initialBlocks);
   const [date, setDate] = useState('');
@@ -47,7 +49,7 @@ export function BlocksEditor({ fieldId, initialBlocks }: BlocksEditorProps) {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [removing, setRemoving] = useState(false);
-  const [today] = useState(todayInSaoPaulo);
+  const [today] = useState(() => todayInZone(timezone));
   const list = useRef<HTMLUListElement>(null);
   const dateInput = useRef<HTMLInputElement>(null);
   // Where the focus goes once the next render is committed: a block id whose
@@ -79,8 +81,8 @@ export function BlocksEditor({ fieldId, initialBlocks }: BlocksEditorProps) {
 
     const trimmed = reason.trim();
     const payload = {
-      startsAt: toSaoPauloIso(date, startMinute),
-      endsAt: toSaoPauloIso(date, endMinute),
+      startsAt: toZonedIso(date, startMinute, timezone),
+      endsAt: toZonedIso(date, endMinute, timezone),
       ...(trimmed ? { reason: trimmed } : {}),
     };
     const parsed = blockInputSchema.safeParse(payload);
@@ -154,7 +156,12 @@ export function BlocksEditor({ fieldId, initialBlocks }: BlocksEditorProps) {
                 className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
                 <span>
-                  {formatBlockRange(block.startsAt, block.endsAt, block.reason)}
+                  {formatBlockRange(
+                    block.startsAt,
+                    block.endsAt,
+                    block.reason,
+                    timezone,
+                  )}
                 </span>
                 {confirming === block.id ? (
                   <span className="flex flex-wrap gap-2">

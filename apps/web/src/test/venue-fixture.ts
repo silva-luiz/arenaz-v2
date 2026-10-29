@@ -28,6 +28,7 @@ export function makeVenue(overrides: Partial<PublicVenue> = {}): PublicVenue {
     approxLocation: { lat: -23.55, lng: -46.69 },
     amenities: ['vestiario', 'estacionamento'],
     cancellationPolicy: 'moderada',
+    timezone: 'America/Sao_Paulo',
     hours: [
       { weekday: 1, openMinute: 480, closeMinute: 1320 },
       { weekday: 2, openMinute: 480, closeMinute: 1320 },

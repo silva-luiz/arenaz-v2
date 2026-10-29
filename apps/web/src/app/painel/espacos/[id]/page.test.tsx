@@ -34,6 +34,7 @@ const VENUE: Venue = {
   location: { lat: -23.5614, lng: -46.6559 },
   amenities: [],
   cancellationPolicy: 'flexivel',
+  timezone: 'America/Sao_Paulo',
   status: 'draft',
   hours: [{ weekday: 1, openMinute: 480, closeMinute: 1320 }],
   photos: [],

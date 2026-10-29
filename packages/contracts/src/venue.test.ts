@@ -55,6 +55,18 @@ describe('venueInputSchema', () => {
     expect(bad({ description: 'x'.repeat(2001) })).toBe(false);
   });
 
+  it('fuso é opcional e só aceita a lista brasileira', () => {
+    expect(venueInputSchema.parse(validInput).timezone).toBeUndefined();
+    expect(
+      venueInputSchema.parse({ ...validInput, timezone: 'America/Manaus' })
+        .timezone,
+    ).toBe('America/Manaus');
+    expect(
+      venueInputSchema.safeParse({ ...validInput, timezone: 'Europe/Lisbon' })
+        .success,
+    ).toBe(false);
+  });
+
   it('update aceita parcial', () => {
     expect(venueUpdateSchema.safeParse({ name: 'Nova Arena' }).success).toBe(
       true,
@@ -74,7 +86,7 @@ describe('venueHoursSchema', () => {
     ).toBe(true);
   });
 
-  it('rejeita horário com fechamento antes da abertura e dia repetido', () => {
+  it('rejeita horário com fechamento antes da abertura', () => {
     const closing = venueHoursSchema.safeParse([
       { weekday: 1, openMinute: 600, closeMinute: 600 },
     ]);
@@ -82,13 +94,60 @@ describe('venueHoursSchema', () => {
     expect(JSON.stringify(closing.error?.issues)).toContain(
       'O fechamento precisa ser depois da abertura',
     );
+  });
 
-    const dup = venueHoursSchema.safeParse([
-      { weekday: 1, openMinute: 480, closeMinute: 600 },
-      { weekday: 1, openMinute: 660, closeMinute: 720 },
+  it('aceita dois intervalos no mesmo dia, inclusive encostados', () => {
+    expect(
+      venueHoursSchema.safeParse([
+        { weekday: 5, openMinute: 480, closeMinute: 720 },
+        { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+        { weekday: 6, openMinute: 0, closeMinute: 120 },
+      ]).success,
+    ).toBe(true);
+    expect(
+      venueHoursSchema.safeParse([
+        { weekday: 5, openMinute: 480, closeMinute: 720 },
+        { weekday: 5, openMinute: 720, closeMinute: 900 },
+      ]).success,
+    ).toBe(true);
+  });
+
+  it('rejeita intervalos que se cruzam no mesmo dia, apontando o mais tarde', () => {
+    const cross = venueHoursSchema.safeParse([
+      { weekday: 1, openMinute: 480, closeMinute: 720 },
+      { weekday: 1, openMinute: 660, closeMinute: 900 },
     ]);
-    expect(dup.success).toBe(false);
-    expect(dup.error?.issues[0]?.path).toEqual([1, 'weekday']);
+    expect(cross.success).toBe(false);
+    expect(cross.error?.issues[0]?.message).toBe('Horários se sobrepõem');
+    expect(cross.error?.issues[0]?.path).toEqual([1, 'openMinute']);
+
+    // Out of order in the payload: the LATER interval (by time) is flagged.
+    const reversed = venueHoursSchema.safeParse([
+      { weekday: 1, openMinute: 660, closeMinute: 900 },
+      { weekday: 1, openMinute: 480, closeMinute: 720 },
+    ]);
+    expect(reversed.success).toBe(false);
+    expect(reversed.error?.issues[0]?.path).toEqual([0, 'openMinute']);
+
+    // Same interval twice.
+    expect(
+      venueHoursSchema.safeParse([
+        { weekday: 1, openMinute: 480, closeMinute: 720 },
+        { weekday: 1, openMinute: 480, closeMinute: 720 },
+      ]).success,
+    ).toBe(false);
+  });
+
+  it('aceita no máximo 21 intervalos', () => {
+    const slot = (weekday: number, index: number) => ({
+      weekday,
+      openMinute: index * 240,
+      closeMinute: index * 240 + 120,
+    });
+    const make = (count: number) =>
+      Array.from({ length: count }, (_, i) => slot(i % 7, Math.floor(i / 7)));
+    expect(venueHoursSchema.safeParse(make(21)).success).toBe(true);
+    expect(venueHoursSchema.safeParse(make(22)).success).toBe(false);
   });
 
   it('rejeita minuto fora de múltiplo de 30 e dia fora de 0–6', () => {
@@ -131,6 +190,7 @@ describe('response schemas', () => {
       location: validInput.location,
       amenities: ['bar'],
       cancellationPolicy: 'moderada',
+      timezone: 'America/Manaus',
       status: 'draft',
       hours: [{ weekday: 1, openMinute: 480, closeMinute: 1380 }],
       photos: [{ id: ID, url: 'https://cdn.example.com/a.png', position: 0 }],
@@ -139,6 +199,13 @@ describe('response schemas', () => {
       updatedAt: '2026-10-29T12:00:00.000Z',
     });
     expect(r.success).toBe(true);
+  });
+
+  it('venueSchema exige o fuso', () => {
+    expect(venueSchema.shape.timezone.safeParse('America/Bahia').success).toBe(
+      true,
+    );
+    expect(venueSchema.shape.timezone.safeParse(undefined).success).toBe(false);
   });
 
   it('venueSummarySchema aceita item de lista', () => {

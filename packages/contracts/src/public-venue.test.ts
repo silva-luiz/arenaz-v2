@@ -152,6 +152,7 @@ describe('publicVenueSchema', () => {
     approxLocation,
     amenities: ['bar'],
     cancellationPolicy: 'flexivel',
+    timezone: 'America/Sao_Paulo',
     hours: [{ weekday: 1, openMinute: 480, closeMinute: 1320 }],
     photos: [{ id: ID, url: 'http://x/y.png', position: 0 }],
     host: { firstName: 'Maria' },
@@ -181,6 +182,12 @@ describe('publicVenueSchema', () => {
 
   it('aceita um espaço público válido', () => {
     expect(publicVenueSchema.parse(venue)).toEqual(venue);
+  });
+
+  it('exige o fuso do espaço', () => {
+    const without: Partial<typeof venue> = { ...venue };
+    delete without.timezone;
+    expect(publicVenueSchema.safeParse(without).success).toBe(false);
   });
 
   it('não deixa passar dado privado nem ids do dono', () => {

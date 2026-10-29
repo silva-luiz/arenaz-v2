@@ -223,3 +223,192 @@ describe('HoursEditor', () => {
     ).toBeVisible();
   });
 });
+
+function interval(weekday: string, number: number) {
+  return within(
+    within(day(weekday)).getByRole('group', {
+      name: `Intervalo ${String(number)}`,
+    }),
+  );
+}
+
+function payload(): unknown {
+  return (mocks.apiSend.mock.calls[0] as unknown[] | undefined)?.[2];
+}
+
+describe('HoursEditor with several intervals per day', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.apiSend.mockResolvedValue({ ok: true, data: {} });
+  });
+
+  it('shows each saved interval of a day, earliest first', () => {
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 1020, closeMinute: 1440 },
+          { weekday: 5, openMinute: 480, closeMinute: 720 },
+        ]}
+      />,
+    );
+
+    expect(interval('Sexta', 1).getByLabelText('Abertura')).toHaveValue('480');
+    expect(interval('Sexta', 1).getByLabelText('Fechamento')).toHaveValue(
+      '720',
+    );
+    expect(interval('Sexta', 2).getByLabelText('Abertura')).toHaveValue('1020');
+    expect(interval('Sexta', 2).getByLabelText('Fechamento')).toHaveValue(
+      '1440',
+    );
+  });
+
+  it('adds an interval after the last one and saves both', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[{ weekday: 5, openMinute: 480, closeMinute: 720 }]}
+      />,
+    );
+
+    expect(
+      within(day('Sexta')).queryByRole('button', { name: /^Remover/ }),
+    ).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: '+ Intervalo (Sexta)' }),
+    );
+
+    expect(interval('Sexta', 2).getByLabelText('Abertura')).toHaveValue('720');
+    await user.selectOptions(
+      interval('Sexta', 2).getByLabelText('Fechamento'),
+      '23:00',
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+
+    expect(payload()).toEqual([
+      { weekday: 5, openMinute: 480, closeMinute: 720 },
+      { weekday: 5, openMinute: 720, closeMinute: 1380 },
+    ]);
+  });
+
+  it('removes an interval by its own button, named after the day', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 480, closeMinute: 720 },
+          { weekday: 5, openMinute: 1020, closeMinute: 1320 },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remover intervalo 1 de Sexta' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+
+    expect(payload()).toEqual([
+      { weekday: 5, openMinute: 1020, closeMinute: 1320 },
+    ]);
+    expect(
+      within(day('Sexta')).queryByRole('button', { name: /^Remover/ }),
+    ).toBeNull();
+  });
+
+  it('flags overlapping intervals on the later one and does not call the API', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 480, closeMinute: 720 },
+          { weekday: 5, openMinute: 660, closeMinute: 900 },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+
+    expect(
+      interval('Sexta', 2).getByText('Horários se sobrepõem'),
+    ).toBeVisible();
+    expect(interval('Sexta', 2).getByLabelText('Abertura')).toBeInvalid();
+    expect(
+      interval('Sexta', 1).queryByText('Horários se sobrepõem'),
+    ).toBeNull();
+    expect(mocks.apiSend).not.toHaveBeenCalled();
+  });
+
+  it('"Vira a madrugada até" closes at 24:00 and creates the next-day interval', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[{ weekday: 5, openMinute: 1080, closeMinute: 1320 }]}
+      />,
+    );
+
+    await user.selectOptions(
+      interval('Sexta', 1).getByLabelText('Vira a madrugada até'),
+      '03:00',
+    );
+
+    expect(interval('Sexta', 1).getByLabelText('Fechamento')).toHaveValue(
+      '1440',
+    );
+    expect(
+      within(day('Sábado')).getByRole('checkbox', { name: 'Aberto' }),
+    ).toBeChecked();
+    expect(interval('Sábado', 1).getByLabelText('Abertura')).toHaveValue('0');
+    expect(interval('Sábado', 1).getByLabelText('Fechamento')).toHaveValue(
+      '180',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+    expect(payload()).toEqual([
+      { weekday: 5, openMinute: 1080, closeMinute: 1440 },
+      { weekday: 6, openMinute: 0, closeMinute: 180 },
+    ]);
+  });
+
+  it('the madrugada shortcut on Saturday wraps to Sunday and reuses a 00:00 interval', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 0, openMinute: 0, closeMinute: 60 },
+          { weekday: 0, openMinute: 600, closeMinute: 900 },
+          { weekday: 6, openMinute: 1080, closeMinute: 1320 },
+        ]}
+      />,
+    );
+
+    await user.selectOptions(
+      interval('Sábado', 1).getByLabelText('Vira a madrugada até'),
+      '02:00',
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+
+    expect(payload()).toEqual([
+      { weekday: 0, openMinute: 0, closeMinute: 120 },
+      { weekday: 0, openMinute: 600, closeMinute: 900 },
+      { weekday: 6, openMinute: 1080, closeMinute: 1440 },
+    ]);
+  });
+
+  it('does not offer more than 21 intervals', () => {
+    const hours = Array.from({ length: 21 }, (_, i) => ({
+      weekday: i % 7,
+      openMinute: Math.floor(i / 7) * 480,
+      closeMinute: Math.floor(i / 7) * 480 + 240,
+    }));
+    render(<HoursEditor venueId={VENUE_ID} initialHours={hours} />);
+
+    expect(
+      screen.getByRole('button', { name: '+ Intervalo (Sexta)' }),
+    ).toBeDisabled();
+  });
+});

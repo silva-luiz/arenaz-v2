@@ -72,6 +72,15 @@ export const priceRule = pgTable(
     index('price_rule_field_id_idx').on(t.fieldId),
     check('price_rule_minutes_check', sql`${t.startMinute} < ${t.endMinute}`),
     check('price_rule_price_check', sql`${t.priceCentsPerHour} > 0`),
+    check(
+      'price_rule_bounds_check',
+      sql`${t.startMinute} >= 0 and ${t.endMinute} <= 1440 and ${t.startMinute} % 30 = 0 and ${t.endMinute} % 30 = 0`,
+    ),
+    check(
+      'price_rule_weekdays_check',
+      sql`cardinality(${t.weekdays}) > 0 and ${t.weekdays} <@ array[0, 1, 2, 3, 4, 5, 6]::smallint[]`,
+    ),
+    check('price_rule_price_max_check', sql`${t.priceCentsPerHour} <= 1000000`),
   ],
 );
 
@@ -96,6 +105,14 @@ export const availabilityBlock = pgTable(
     index('availability_block_field_id_idx').on(t.fieldId),
     index('availability_block_period_idx').using('gist', t.period),
     check('availability_block_period_check', sql`not isempty(${t.period})`),
+    // Always a finite half-open [start, end).
+    check(
+      'availability_block_bounds_check',
+      sql`lower_inc(${t.period}) and not upper_inc(${t.period}) and not lower_inf(${t.period}) and not upper_inf(${t.period})`,
+    ),
+    // Also in migration 0006, drizzle cannot express it:
+    // EXCLUDE USING gist (field_id WITH =, period WITH &&)
+    // named availability_block_no_overlap (btree_gist is installed by 0000).
   ],
 );
 

@@ -1,5 +1,5 @@
 import type { Venue } from '@arenaz/contracts';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,6 +48,7 @@ const VENUE: Venue = {
   location: { lat: -23.5614, lng: -46.6559 },
   amenities: ['bar', 'wifi'],
   cancellationPolicy: 'moderada',
+  timezone: 'America/Sao_Paulo',
   status: 'draft',
   hours: [],
   photos: [],
@@ -288,6 +289,7 @@ describe('VenueForm (create)', () => {
       location: { lat: -23.5614, lng: -46.6559 },
       amenities: ['vestiario', 'bar'],
       cancellationPolicy: 'flexivel',
+      timezone: 'America/Sao_Paulo',
     });
   });
 
@@ -481,5 +483,97 @@ describe('VenueForm (edit)', () => {
       );
     });
     expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+});
+
+describe('VenueForm time zone', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('offers the Brazilian zones with pt-BR labels, Brasília first and selected', () => {
+    render(<VenueForm />);
+
+    const select = screen.getByLabelText('Fuso horário');
+    expect(select).toHaveValue('America/Sao_Paulo');
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(labels).toHaveLength(16);
+    expect(labels[0]).toBe('Horário de Brasília');
+    expect(labels).toContain('Amazonas (UTC−4)');
+  });
+
+  it('follows the UF until the owner picks a zone by hand', async () => {
+    const user = userEvent.setup();
+    render(<VenueForm />);
+    const zone = screen.getByLabelText('Fuso horário');
+
+    await user.selectOptions(screen.getByLabelText('UF'), 'AM');
+    expect(zone).toHaveValue('America/Manaus');
+    await user.selectOptions(screen.getByLabelText('UF'), 'AC');
+    expect(zone).toHaveValue('America/Rio_Branco');
+
+    await user.selectOptions(zone, 'America/Noronha');
+    await user.selectOptions(screen.getByLabelText('UF'), 'BA');
+    expect(zone).toHaveValue('America/Noronha');
+  });
+
+  it('follows the state filled in by the CEP lookup', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: true,
+      data: { ...CEP_OK.data, city: 'Manaus', state: 'AM' },
+    });
+    const user = userEvent.setup();
+    render(<VenueForm />);
+
+    await user.type(screen.getByLabelText('CEP'), '69000-000');
+    await user.tab();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('UF')).toHaveValue('AM');
+    });
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue('America/Manaus');
+  });
+
+  it('edit: shows the saved zone and follows the UF only if it was the default', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<VenueForm venue={VENUE} />);
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
+      'America/Sao_Paulo',
+    );
+    await user.selectOptions(screen.getByLabelText('UF'), 'AM');
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue('America/Manaus');
+    unmount();
+
+    render(<VenueForm venue={{ ...VENUE, timezone: 'America/Noronha' }} />);
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
+      'America/Noronha',
+    );
+    await user.selectOptions(screen.getByLabelText('UF'), 'AM');
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
+      'America/Noronha',
+    );
+  });
+
+  it('edit: saves the chosen zone', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: true,
+      data: { ...VENUE, timezone: 'America/Manaus' },
+    });
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    await user.selectOptions(
+      screen.getByLabelText('Fuso horário'),
+      'America/Manaus',
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => {
+      expect(mocks.apiSend).toHaveBeenCalled();
+    });
+    const patch = mocks.apiSend.mock.calls.find((call) => call[0] === 'PATCH');
+    expect(patch?.[2]).toMatchObject({ timezone: 'America/Manaus' });
   });
 });

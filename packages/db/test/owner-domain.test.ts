@@ -16,10 +16,10 @@ import { venue, venuePhoto } from '../src/schema/venue.js';
 
 const venueInsert = `
   insert into venue (owner_id, slug, name, phone, cep, street, number,
-    neighborhood, city, state, location, cancellation_policy)
+    neighborhood, city, state, location, cancellation_policy, timezone)
   values ($1, $2, 'Arena Pinheiros', '11999999999', '05422000', 'Rua A', '10',
     'Pinheiros', 'São Paulo', 'SP',
-    ST_SetSRID(ST_MakePoint(-46.6911, -23.5614), 4326)::geography, 'flexivel')
+    ST_SetSRID(ST_MakePoint(-46.6911, -23.5614), 4326)::geography, 'flexivel', 'America/Sao_Paulo')
   returning id`;
 
 describe('domínio do dono', () => {
@@ -219,6 +219,7 @@ describe('domínio do dono', () => {
         state: 'SP',
         location: { lat: -23.5614, lng: -46.6911 },
         cancellationPolicy: 'moderada',
+        timezone: 'America/Sao_Paulo',
       })
       .returning({ id: venue.id, location: selectLocation(venue.location) });
     const venueId = first(created).id;
@@ -303,10 +304,11 @@ describe('domínio do dono', () => {
     const insert = async (lat: number, lng: number): Promise<string> => {
       const { rows } = await pool.query<{ id: string }>(
         `insert into venue (owner_id, slug, name, phone, cep, street, number,
-           neighborhood, city, state, location, cancellation_policy)
+           neighborhood, city, state, location, cancellation_policy, timezone)
          values ($1, $2, 'Arena', '11999999999', '05422000', 'Rua A', '10',
            'Pinheiros', 'São Paulo', 'SP',
-           ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, 'flexivel')
+           ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, 'flexivel',
+           'America/Sao_Paulo')
          returning id`,
         [owner, `arena-${randomUUID()}`, lng, lat],
       );

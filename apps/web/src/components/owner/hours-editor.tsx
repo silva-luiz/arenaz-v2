@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  MAX_VENUE_HOURS,
   WEEKDAY_LABELS,
   venueHoursSchema,
   venueSchema,
@@ -14,87 +15,213 @@ import { TIME_OPTIONS } from './time-options';
 
 const DEFAULT_OPEN = 8 * 60;
 const DEFAULT_CLOSE = 22 * 60;
+const DAY_END = 24 * 60;
+/** Length of an interval added with "+ Intervalo". */
+const NEW_INTERVAL_MINUTES = 3 * 60;
+/** "Vira a madrugada até": 00:30 to 08:00. */
+const OVERNIGHT_OPTIONS = TIME_OPTIONS.filter(
+  (option) => Number(option.value) >= 30 && Number(option.value) <= 8 * 60,
+);
 
-interface DayState {
-  open: boolean;
+interface IntervalState {
+  /** Stable React key; never sent to the API. */
+  key: number;
   openMinute: number;
   closeMinute: number;
 }
 
+interface DayState {
+  open: boolean;
+  intervals: IntervalState[];
+}
+
+/** React keys for interval rows (stable while rows are added and removed). */
+let lastKey = 0;
+const newKey = (): number => ++lastKey;
+
 type Notice = { tone: 'error' | 'success'; text: string } | null;
 
-function initialDays(hours: VenueHours): DayState[] {
-  return WEEKDAY_LABELS.map((_, weekday) => {
-    const found = hours.find((hour) => hour.weekday === weekday);
-    return found
-      ? {
-          open: true,
-          openMinute: found.openMinute,
-          closeMinute: found.closeMinute,
-        }
-      : { open: false, openMinute: DEFAULT_OPEN, closeMinute: DEFAULT_CLOSE };
-  });
-}
+/** Where an error belongs: `${weekday}:${position within the day}`. */
+const errorKey = (weekday: number, position: number): string =>
+  `${String(weekday)}:${String(position)}`;
 
 export interface HoursEditorProps {
   venueId: string;
   initialHours: VenueHours;
 }
 
-/** Seven rows, Domingo to Sábado; a closed day is simply absent from the payload. */
+/**
+ * Seven days, Domingo to Sábado, each with one or more intervals (a closed
+ * day is simply absent from the payload). A shift past midnight is two
+ * intervals: "Vira a madrugada até" creates the second one on the next day.
+ */
 export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
   const router = useRouter();
-  const [days, setDays] = useState(() => initialDays(initialHours));
-  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [days, setDays] = useState<DayState[]>(() =>
+    WEEKDAY_LABELS.map((_, weekday) => {
+      const saved = initialHours
+        .filter((hour) => hour.weekday === weekday)
+        .sort((a, b) => a.openMinute - b.openMinute);
+      return saved.length > 0
+        ? {
+            open: true,
+            intervals: saved.map((hour) => ({
+              key: newKey(),
+              openMinute: hour.openMinute,
+              closeMinute: hour.closeMinute,
+            })),
+          }
+        : {
+            open: false,
+            intervals: [
+              {
+                key: newKey(),
+                openMinute: DEFAULT_OPEN,
+                closeMinute: DEFAULT_CLOSE,
+              },
+            ],
+          };
+    }),
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
   const [saving, setSaving] = useState(false);
 
-  function update(weekday: number, patch: Partial<DayState>) {
-    setDays((current) =>
-      current.map((day, index) =>
-        index === weekday ? { ...day, ...patch } : day,
-      ),
-    );
+  const total = days.reduce(
+    (sum, day) => sum + (day.open ? day.intervals.length : 0),
+    0,
+  );
+
+  /** Applies `change` to the days and forgets the errors (they may be stale). */
+  function edit(change: (current: DayState[]) => DayState[]) {
+    setDays(change);
     setNotice(null);
-    setRowErrors((current) =>
-      Object.fromEntries(
-        Object.entries(current).filter(([key]) => Number(key) !== weekday),
+    setErrors({});
+  }
+
+  function editDay(weekday: number, change: (day: DayState) => DayState) {
+    edit((current) =>
+      current.map((day, index) => (index === weekday ? change(day) : day)),
+    );
+  }
+
+  function editInterval(
+    weekday: number,
+    position: number,
+    patch: Partial<IntervalState>,
+  ) {
+    editDay(weekday, (day) => ({
+      ...day,
+      intervals: day.intervals.map((item, index) =>
+        index === position ? { ...item, ...patch } : item,
       ),
+    }));
+  }
+
+  function addInterval(weekday: number) {
+    editDay(weekday, (day) => {
+      const base = Math.max(...day.intervals.map((item) => item.closeMinute));
+      return {
+        ...day,
+        intervals: [
+          ...day.intervals,
+          {
+            key: newKey(),
+            openMinute: base,
+            closeMinute: Math.min(base + NEW_INTERVAL_MINUTES, DAY_END),
+          },
+        ],
+      };
+    });
+  }
+
+  function removeInterval(weekday: number, position: number) {
+    editDay(weekday, (day) => ({
+      ...day,
+      intervals: day.intervals.filter((_, index) => index !== position),
+    }));
+  }
+
+  /**
+   * The interval runs to 24:00 and the next weekday gets 00:00 to `until`
+   * (an interval already starting at 00:00 there is changed instead, and a
+   * closed day is opened).
+   */
+  function overnight(weekday: number, position: number, until: number) {
+    const nextDay = (weekday + 1) % WEEKDAY_LABELS.length;
+    edit((current) =>
+      current.map((day, index) => {
+        if (index === weekday) {
+          return {
+            ...day,
+            intervals: day.intervals.map((item, at) =>
+              at === position ? { ...item, closeMinute: DAY_END } : item,
+            ),
+          };
+        }
+        if (index !== nextDay) return day;
+        const intervals = day.open ? day.intervals : [];
+        const midnight = intervals.find((item) => item.openMinute === 0);
+        return {
+          open: true,
+          intervals: midnight
+            ? intervals.map((item) =>
+                item === midnight ? { ...item, closeMinute: until } : item,
+              )
+            : [
+                { key: newKey(), openMinute: 0, closeMinute: until },
+                ...intervals,
+              ],
+        };
+      }),
     );
   }
 
   async function save() {
     setNotice(null);
-    setRowErrors({});
+    setErrors({});
 
-    // The schema reports positions in the payload, which only holds open days.
-    const payload = days.flatMap((day, weekday) =>
+    // The schema reports positions in the payload, which only holds open
+    // days; `origin` maps each one back to its row.
+    const entries = days.flatMap((day, weekday) =>
       day.open
-        ? [
-            {
-              weekday,
-              openMinute: day.openMinute,
-              closeMinute: day.closeMinute,
-            },
-          ]
+        ? day.intervals.map((item, position) => ({
+            weekday,
+            position,
+            openMinute: item.openMinute,
+            closeMinute: item.closeMinute,
+          }))
         : [],
     );
-    const weekdayAt = (index: number): number | undefined =>
-      payload[index]?.weekday;
+    const payload = entries.map(({ weekday, openMinute, closeMinute }) => ({
+      weekday,
+      openMinute,
+      closeMinute,
+    }));
+    const keyAt = (index: number): string | undefined => {
+      const entry = entries[index];
+      return entry ? errorKey(entry.weekday, entry.position) : undefined;
+    };
 
     const parsed = venueHoursSchema.safeParse(payload);
     if (!parsed.success) {
-      const errors: Record<number, string> = {};
+      const found: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
         const index = issue.path[0];
-        const weekday =
-          typeof index === 'number' ? weekdayAt(index) : undefined;
-        if (weekday !== undefined && errors[weekday] === undefined) {
-          errors[weekday] = issue.message;
+        const key = typeof index === 'number' ? keyAt(index) : undefined;
+        if (key !== undefined && found[key] === undefined) {
+          found[key] = issue.message;
         }
       }
-      setRowErrors(errors);
-      setNotice({ tone: 'error', text: 'Corrija os horários destacados.' });
+      setErrors(found);
+      setNotice({
+        tone: 'error',
+        text:
+          Object.keys(found).length > 0
+            ? 'Corrija os horários destacados.'
+            : (parsed.error.issues[0]?.message ??
+              'Corrija os horários destacados.'),
+      });
       return;
     }
 
@@ -108,14 +235,14 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
     setSaving(false);
 
     if (!result.ok) {
-      const errors: Record<number, string> = {};
-      for (const [key, messages] of Object.entries(result.fieldErrors)) {
-        const weekday = weekdayAt(Number(key));
-        if (weekday !== undefined && messages[0] !== undefined) {
-          errors[weekday] = messages[0];
+      const found: Record<string, string> = {};
+      for (const [index, messages] of Object.entries(result.fieldErrors)) {
+        const key = keyAt(Number(index));
+        if (key !== undefined && messages[0] !== undefined) {
+          found[key] = messages[0];
         }
       }
-      setRowErrors(errors);
+      setErrors(found);
       setNotice({ tone: 'error', text: result.message });
       return;
     }
@@ -135,62 +262,126 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
       <div className="flex flex-col divide-y divide-line">
         {days.map((day, weekday) => {
           const label = WEEKDAY_LABELS[weekday] ?? '';
-          const error = rowErrors[weekday];
-          const errorId = `hours-${String(weekday)}-error`;
           return (
             <fieldset
               key={label}
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3"
+              className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:gap-x-6"
             >
               <legend className="sr-only">{label}</legend>
-              <span aria-hidden="true" className="w-20 font-semibold">
-                {label}
-              </span>
-              <Checkbox
-                label="Aberto"
-                checked={day.open}
-                onChange={(event) => {
-                  update(weekday, { open: event.target.checked });
-                }}
-              />
+              <div className="flex items-center gap-x-6 sm:min-h-10">
+                <span aria-hidden="true" className="w-20 font-semibold">
+                  {label}
+                </span>
+                <Checkbox
+                  label="Aberto"
+                  checked={day.open}
+                  onChange={(event) => {
+                    editDay(weekday, (current) => ({
+                      ...current,
+                      open: event.target.checked,
+                    }));
+                  }}
+                />
+              </div>
               {day.open ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select
-                    aria-label="Abertura"
-                    aria-invalid={error ? true : undefined}
-                    aria-describedby={error ? errorId : undefined}
-                    options={TIME_OPTIONS}
-                    value={String(day.openMinute)}
-                    className="h-10 w-28"
-                    onChange={(event) => {
-                      update(weekday, {
-                        openMinute: Number(event.target.value),
-                      });
+                <div className="flex flex-col gap-3">
+                  {day.intervals.map((item, position) => {
+                    const number = String(position + 1);
+                    const error = errors[errorKey(weekday, position)];
+                    const errorId = `hours-${String(weekday)}-${number}-error`;
+                    return (
+                      <div
+                        key={item.key}
+                        role="group"
+                        aria-label={`Intervalo ${number}`}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <Select
+                          aria-label="Abertura"
+                          aria-invalid={error ? true : undefined}
+                          aria-describedby={error ? errorId : undefined}
+                          options={TIME_OPTIONS}
+                          value={String(item.openMinute)}
+                          className="h-10 w-28"
+                          onChange={(event) => {
+                            editInterval(weekday, position, {
+                              openMinute: Number(event.target.value),
+                            });
+                          }}
+                        />
+                        <span aria-hidden="true">às</span>
+                        <Select
+                          aria-label="Fechamento"
+                          aria-invalid={error ? true : undefined}
+                          aria-describedby={error ? errorId : undefined}
+                          options={TIME_OPTIONS}
+                          value={String(item.closeMinute)}
+                          className="h-10 w-28"
+                          onChange={(event) => {
+                            editInterval(weekday, position, {
+                              closeMinute: Number(event.target.value),
+                            });
+                          }}
+                        />
+                        <Select
+                          aria-label="Vira a madrugada até"
+                          options={OVERNIGHT_OPTIONS}
+                          placeholder="Vira a madrugada até"
+                          value=""
+                          className="h-10 w-52"
+                          onChange={(event) => {
+                            overnight(
+                              weekday,
+                              position,
+                              Number(event.target.value),
+                            );
+                          }}
+                        />
+                        {day.intervals.length > 1 ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Remover intervalo ${number} de ${label}`}
+                            onClick={() => {
+                              removeInterval(weekday, position);
+                            }}
+                          >
+                            <span aria-hidden="true">Remover</span>
+                          </Button>
+                        ) : null}
+                        {error ? (
+                          <p
+                            id={errorId}
+                            className="w-full text-sm text-red-700"
+                          >
+                            {error}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="self-start"
+                    aria-label={`+ Intervalo (${label})`}
+                    disabled={
+                      total >= MAX_VENUE_HOURS ||
+                      Math.max(...day.intervals.map((i) => i.closeMinute)) >=
+                        DAY_END
+                    }
+                    onClick={() => {
+                      addInterval(weekday);
                     }}
-                  />
-                  <span aria-hidden="true">às</span>
-                  <Select
-                    aria-label="Fechamento"
-                    aria-invalid={error ? true : undefined}
-                    aria-describedby={error ? errorId : undefined}
-                    options={TIME_OPTIONS}
-                    value={String(day.closeMinute)}
-                    className="h-10 w-28"
-                    onChange={(event) => {
-                      update(weekday, {
-                        closeMinute: Number(event.target.value),
-                      });
-                    }}
-                  />
+                  >
+                    <span aria-hidden="true">+ Intervalo</span>
+                  </Button>
                 </div>
               ) : (
-                <span className="text-sm text-muted">Fechado</span>
+                <span className="text-sm text-muted sm:min-h-10 sm:leading-10">
+                  Fechado
+                </span>
               )}
-              {error ? (
-                <p id={errorId} className="w-full text-sm text-red-700">
-                  {error}
-                </p>
-              ) : null}
             </fieldset>
           );
         })}
