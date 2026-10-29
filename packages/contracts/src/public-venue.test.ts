@@ -80,6 +80,54 @@ describe('publicSearchQuerySchema', () => {
     expect(Object.keys(issuesOf(input))).toContain(field);
   });
 
+  it('amenities: lista separada por vírgula, todas exigidas, sem repetição', () => {
+    expect(
+      publicSearchQuerySchema.parse({ amenities: 'coberta, vestiario,coberta' })
+        .amenities,
+    ).toEqual(['coberta', 'vestiario']);
+    expect(
+      publicSearchQuerySchema.parse({ amenities: 'wifi' }).amenities,
+    ).toEqual(['wifi']);
+  });
+
+  it.each([
+    ['comodidade desconhecida', 'coberta,piscina'],
+    ['só vírgula', ','],
+    ['vazio', ''],
+    ['só espaços', '   '],
+    ['item vazio', 'coberta,,bar'],
+    ['caixa diferente', 'Coberta'],
+  ])('amenities recusa %s', (_name, amenities) => {
+    expect(issuesOf({ amenities })).toEqual({
+      amenities: ['Comodidade inválida'],
+    });
+  });
+
+  it('amenities repetido na query string é inválido', () => {
+    expect(issuesOf({ amenities: ['bar', 'wifi'] })).toEqual({
+      amenities: ['Comodidade inválida'],
+    });
+  });
+
+  it('maxPrice: inteiro em reais de 1 a 10000', () => {
+    expect(publicSearchQuerySchema.parse({ maxPrice: '150' }).maxPrice).toBe(
+      150,
+    );
+    expect(publicSearchQuerySchema.parse({ maxPrice: '1' }).maxPrice).toBe(1);
+    expect(publicSearchQuerySchema.parse({ maxPrice: '10000' }).maxPrice).toBe(
+      10000,
+    );
+  });
+
+  it.each(['0', '-1', '10001', 'abc', '', '12.5', ' '])(
+    'maxPrice recusa %j',
+    (maxPrice) => {
+      expect(issuesOf({ maxPrice })).toEqual({
+        maxPrice: ['Preço máximo inválido'],
+      });
+    },
+  );
+
   it('lat e lng andam juntos: o erro fica no que falta', () => {
     expect(issuesOf({ lat: '-23.5' })).toEqual({
       lng: ['Informe a latitude e a longitude juntas'],
@@ -104,10 +152,39 @@ describe('publicVenueCardSchema', () => {
     minPriceCentsPerHour: 8000,
     approxLocation,
     distanceKm: null,
+    nextFreeTime: '20:00',
   };
 
   it('aceita um card válido', () => {
     expect(publicVenueCardSchema.parse(card)).toEqual(card);
+  });
+
+  it.each(['19:30', '00:00', '23:30'])('aceita nextFreeTime %s', (time) => {
+    expect(
+      publicVenueCardSchema.parse({ ...card, nextFreeTime: time }),
+    ).toEqual({ ...card, nextFreeTime: time });
+  });
+
+  it('nextFreeTime null quer dizer nada livre hoje', () => {
+    expect(
+      publicVenueCardSchema.parse({ ...card, nextFreeTime: null }).nextFreeTime,
+    ).toBeNull();
+  });
+
+  it.each(['8:00', '20h', '20:00:00', '', 2000])(
+    'recusa nextFreeTime %s',
+    (time) => {
+      expect(
+        publicVenueCardSchema.safeParse({ ...card, nextFreeTime: time })
+          .success,
+      ).toBe(false);
+    },
+  );
+
+  it('exige nextFreeTime (null explícito, não ausente)', () => {
+    const without: Partial<typeof card> = { ...card };
+    delete without.nextFreeTime;
+    expect(publicVenueCardSchema.safeParse(without).success).toBe(false);
   });
 
   it('descarta campos privados que sobrarem', () => {

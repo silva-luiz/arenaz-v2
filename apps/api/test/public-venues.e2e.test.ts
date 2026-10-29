@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto';
 import {
   publicSearchResponseSchema,
   publicVenueSchema,
+  type Amenity,
   type Problem,
   type Sport,
 } from '@arenaz/contracts';
+import { localMinuteOf } from '@arenaz/booking-core';
 import { schema } from '@arenaz/db';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq } from 'drizzle-orm';
@@ -12,10 +14,13 @@ import type { LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.factory.js';
 import { DB, type DbHandle } from '../src/db/db.module.js';
+import { loadNextFreeTimes } from '../src/public/next-free.js';
 import { STORAGE, type StoragePort } from '../src/storage/storage.port.js';
+import { SP, at, insertBooking, spDate } from './booking-seed.js';
 import { buildTestApp, signUpAs, testEnv, uniqueToken } from './helpers.js';
 
-const { venue, venueHours, venuePhoto, field, priceRule } = schema;
+const { venue, venueHours, venuePhoto, field, priceRule, availabilityBlock } =
+  schema;
 
 let app: NestFastifyApplication;
 let handle: DbHandle;
@@ -56,6 +61,7 @@ interface SeedVenue {
   createdAt?: Date;
   description?: string | null;
   timezone?: string;
+  amenities?: Amenity[];
 }
 
 /** Inserts straight into the database; a venue gets one active field by default. */
@@ -77,7 +83,7 @@ async function seed(input: SeedVenue = {}, owner: string = ownerId) {
       city: input.city ?? 'Cidade Teste',
       state: 'SP',
       location: input.location ?? { lat: -23.55678, lng: -46.69123 },
-      amenities: ['bar'],
+      amenities: input.amenities ?? ['bar'],
       cancellationPolicy: 'flexivel',
       timezone: input.timezone ?? 'America/Sao_Paulo',
       status: input.status ?? 'published',
@@ -169,6 +175,8 @@ describe('GET /api/venues', () => {
       minPriceCentsPerHour: 9000,
       approxLocation: { lat: -23.56, lng: -46.69 },
       distanceKm: null,
+      // No opening hours: nothing is free today.
+      nextFreeTime: null,
     });
     const raw = res.body;
     for (const secret of [
@@ -194,6 +202,7 @@ describe('GET /api/venues', () => {
         'coverUrl',
         'distanceKm',
         'minPriceCentsPerHour',
+        'nextFreeTime',
         'name',
         'neighborhood',
         'slug',
@@ -452,6 +461,14 @@ describe('GET /api/venues', () => {
     ['q=a'],
     ['lat=abc&lng=-46'],
     ['radiusKm=5.5'],
+    ['amenities=piscina'],
+    ['amenities=coberta,piscina'],
+    ['amenities='],
+    ['maxPrice=0'],
+    ['maxPrice=-1'],
+    ['maxPrice=10001'],
+    ['maxPrice=abc'],
+    ['maxPrice='],
     ['q=ab%00'],
     ['q=ab%0Acd'],
   ])('parâmetro inválido %s → 422', async (qs) => {
@@ -472,6 +489,303 @@ describe('GET /api/venues', () => {
   it('ignora parâmetros desconhecidos e não exige login', async () => {
     const res = await get(`/api/venues?${q(uniqueToken())}&foo=bar`);
     expect(res.statusCode).toBe(200);
+  });
+});
+
+describe('GET /api/venues: filtros de comodidade e preço', () => {
+  it('amenities devolve só quem tem todas (AND)', async () => {
+    const token = uniqueToken();
+    const neighborhood = `Comodidades ${token}`;
+    const both = await seed({
+      neighborhood,
+      amenities: ['coberta', 'vestiario', 'bar'],
+    });
+    await seed({ neighborhood, amenities: ['coberta', 'bar'] });
+    await seed({ neighborhood, amenities: ['vestiario'] });
+    await seed({ neighborhood, amenities: [] });
+    const exact = await seed({
+      neighborhood,
+      amenities: ['vestiario', 'coberta'],
+    });
+
+    const slugs = async (qs: string) =>
+      (await search(`${q(token)}&${qs}`)).items.map((item) => item.slug).sort();
+    expect(await slugs('amenities=coberta,vestiario')).toEqual(
+      [both.slug, exact.slug].sort(),
+    );
+    // Order, spaces and repeats in the list do not matter.
+    expect(await slugs('amenities=vestiario,%20coberta,coberta')).toEqual(
+      [both.slug, exact.slug].sort(),
+    );
+    expect(await slugs('amenities=coberta,vestiario,bar')).toEqual([both.slug]);
+    expect(await slugs('amenities=wifi')).toEqual([]);
+    expect(await slugs('page=1')).toHaveLength(5);
+  });
+
+  it('amenities inválido responde 422 com "Comodidade inválida"', async () => {
+    const res = await get('/api/venues?amenities=coberta,piscina');
+    expect(res.statusCode).toBe(422);
+    expect(res.json<Problem>().errors).toEqual({
+      amenities: ['Comodidade inválida'],
+    });
+  });
+
+  it('maxPrice (reais) mantém quem tem a partir de <= maxPrice, faixa mais barata incluída', async () => {
+    const token = uniqueToken();
+    const neighborhood = `Preço máx ${token}`;
+    const cheap = await seed({ neighborhood, fields: [{ price: 9000 }] });
+    const edge = await seed({ neighborhood, fields: [{ price: 15000 }] });
+    const viaRule = await seed({
+      neighborhood,
+      fields: [{ price: 20000, rules: [{ price: 12000 }] }],
+    });
+    await seed({ neighborhood, fields: [{ price: 18000 }] });
+    // Only an INACTIVE field is cheap: it does not count.
+    await seed({
+      neighborhood,
+      fields: [{ price: 5000, active: false }, { price: 18000 }],
+    });
+
+    const slugs = async (qs: string) =>
+      (await search(`${q(token)}&${qs}`)).items.map((item) => item.slug).sort();
+    expect(await slugs('maxPrice=150')).toEqual(
+      [cheap.slug, edge.slug, viaRule.slug].sort(),
+    );
+    expect(await slugs('maxPrice=149')).toEqual(
+      [cheap.slug, viaRule.slug].sort(),
+    );
+    expect(await slugs('maxPrice=180')).toHaveLength(5);
+    expect(await slugs('maxPrice=90')).toEqual([cheap.slug]);
+    expect(await slugs('maxPrice=1')).toEqual([]);
+  });
+
+  it('combina amenities, maxPrice e esporte', async () => {
+    const token = uniqueToken();
+    const neighborhood = `Combo ${token}`;
+    const match = await seed({
+      neighborhood,
+      amenities: ['coberta'],
+      fields: [{ sports: ['padel'], price: 10000 }],
+    });
+    await seed({
+      neighborhood,
+      amenities: ['coberta'],
+      fields: [{ sports: ['padel'], price: 20000 }],
+    });
+    await seed({
+      neighborhood,
+      amenities: ['bar'],
+      fields: [{ sports: ['padel'], price: 10000 }],
+    });
+    await seed({
+      neighborhood,
+      amenities: ['coberta'],
+      fields: [{ sports: ['futsal'], price: 10000 }],
+    });
+    const body = await search(
+      `${q(token)}&amenities=coberta&maxPrice=150&sport=padel`,
+    );
+    expect(body.items.map((item) => item.slug)).toEqual([match.slug]);
+  });
+});
+
+/** Ids of the venue's fields, oldest first. */
+async function fieldIdsOf(venueId: string): Promise<string[]> {
+  const rows = await handle.db
+    .select({ id: field.id })
+    .from(field)
+    .where(eq(field.venueId, venueId))
+    .orderBy(field.createdAt, field.id);
+  return rows.map((row) => row.id);
+}
+
+const everyDay = (openMinute: number, closeMinute: number) =>
+  [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
+    weekday,
+    openMinute,
+    closeMinute,
+  }));
+
+describe('nextFreeTime (relógio fixo, banco real)', () => {
+  const today = spDate(0);
+  const hhmm = (time: string): Date => at(today, time);
+  const tomorrow = (time: string): Date => at(spDate(1), time);
+
+  /** The venue as `loadNextFreeTimes` sees it. */
+  async function asInput(
+    row: { id: string },
+    hours: { weekday: number; openMinute: number; closeMinute: number }[],
+  ) {
+    const fields = (await fieldIdsOf(row.id)).map((id) => ({
+      id,
+      minSlotMinutes: 60,
+    }));
+    return { id: row.id, timezone: SP, hours, fields };
+  }
+
+  it('reserva confirmada 19:30-21:00 com agora 19:10: 21:00; bloqueio e hold vivo também ocupam', async () => {
+    const hours = everyDay(420, 1440);
+    const row = await seed({ hours });
+    const [fieldId] = await fieldIdsOf(row.id);
+    if (!fieldId) throw new Error('sem quadra');
+    const seeded = {
+      slug: row.slug,
+      venueId: row.id,
+      fieldId,
+      inactiveFieldId: fieldId,
+    };
+    const input = await asInput(row, hours);
+    const now = hhmm('19:10');
+    const free = async () =>
+      (await loadNextFreeTimes(handle.db, [input], now)).get(row.id);
+
+    expect(await free()).toBe('19:30');
+    await insertBooking(
+      handle,
+      seeded,
+      ownerId,
+      hhmm('19:30'),
+      hhmm('21:00'),
+      'confirmed',
+    );
+    expect(await free()).toBe('21:00');
+
+    // A block from 21:00 to 22:00 pushes it on.
+    await handle.db.insert(availabilityBlock).values({
+      fieldId,
+      period: { startsAt: hhmm('21:00'), endsAt: hhmm('22:00') },
+      reason: 'manutenção',
+    });
+    expect(await free()).toBe('22:00');
+
+    // A hold still alive at `now` occupies it...
+    await insertBooking(
+      handle,
+      seeded,
+      ownerId,
+      hhmm('22:00'),
+      hhmm('23:00'),
+      'held',
+      hhmm('22:30'),
+    );
+    expect(await free()).toBe('23:00');
+    // ...a cancelled booking and a hold already expired at `now` do not.
+    await insertBooking(
+      handle,
+      seeded,
+      ownerId,
+      hhmm('23:00'),
+      tomorrow('00:00'),
+      'cancelled',
+    );
+    await insertBooking(
+      handle,
+      seeded,
+      ownerId,
+      tomorrow('00:00'),
+      tomorrow('01:00'),
+      'held',
+      hhmm('19:00'),
+    );
+    expect(await free()).toBe('23:00');
+  });
+
+  it('tudo ocupado, fechado hoje e 23:40 com mínimo de 60 min: null', async () => {
+    const allDay = everyDay(0, 1440);
+    const blocked = await seed({ hours: allDay });
+    const [blockedField] = await fieldIdsOf(blocked.id);
+    if (!blockedField) throw new Error('sem quadra');
+    await handle.db.insert(availabilityBlock).values({
+      fieldId: blockedField,
+      period: {
+        startsAt: at(spDate(-1), '00:00'),
+        endsAt: at(spDate(2), '00:00'),
+      },
+      reason: 'reforma',
+    });
+    const todayWeekday = new Date(`${today}T12:00:00Z`).getUTCDay();
+    const closedHours = everyDay(420, 1440).filter(
+      (row) => row.weekday !== todayWeekday,
+    );
+    const closed = await seed({ hours: closedHours });
+    const lateHours = everyDay(420, 1440);
+    const late = await seed({ hours: lateHours });
+
+    const result = await loadNextFreeTimes(
+      handle.db,
+      [
+        await asInput(blocked, allDay),
+        await asInput(closed, closedHours),
+        await asInput(late, lateHours),
+      ],
+      hhmm('12:00'),
+    );
+    expect(result.get(blocked.id)).toBeNull();
+    expect(result.get(closed.id)).toBeNull();
+    expect(result.get(late.id)).toBe('12:00');
+
+    const lateAt2340 = await loadNextFreeTimes(
+      handle.db,
+      [await asInput(late, lateHours)],
+      hhmm('23:40'),
+    );
+    expect(lateAt2340.get(late.id)).toBeNull();
+  });
+
+  it('uma consulta de ocupação para todas as quadras de todos os espaços', async () => {
+    const hours = everyDay(420, 1440);
+    const rows = [
+      await seed({ hours, fields: [{}, {}] }),
+      await seed({ hours }),
+      await seed({ hours, fields: [] }),
+    ];
+    const inputs = [];
+    for (const row of rows) inputs.push(await asInput(row, hours));
+    const spy = vi.spyOn(handle.pool, 'query');
+    const result = await loadNextFreeTimes(handle.db, inputs, hhmm('10:00'));
+    const queries = spy.mock.calls.length;
+    spy.mockRestore();
+    expect(queries).toBe(1);
+    expect(rows.map((row) => result.get(row.id))).toEqual([
+      '10:00',
+      '10:00',
+      null,
+    ]);
+  });
+});
+
+describe('GET /api/venues: nextFreeTime (relógio do banco)', () => {
+  it('cada card traz o seu próximo horário livre de hoje; ocupado ou sem horário é null', async (ctx) => {
+    // The slot grid follows the clock: too close to midnight nothing is free.
+    if (localMinuteOf(new Date(), SP) > 21 * 60) ctx.skip();
+    const token = uniqueToken();
+    const neighborhood = `Livre hoje ${token}`;
+    const open = await seed({ neighborhood, hours: everyDay(0, 1440) });
+    const blocked = await seed({ neighborhood, hours: everyDay(0, 1440) });
+    const noHours = await seed({ neighborhood });
+    const [blockedField] = await fieldIdsOf(blocked.id);
+    if (!blockedField) throw new Error('sem quadra');
+    await handle.db.insert(availabilityBlock).values({
+      fieldId: blockedField,
+      period: {
+        startsAt: at(spDate(-1), '00:00'),
+        endsAt: at(spDate(2), '00:00'),
+      },
+      reason: 'reforma',
+    });
+
+    const before = localMinuteOf(new Date(), SP);
+    const body = await search(q(token));
+    const bySlug = new Map(body.items.map((item) => [item.slug, item]));
+    expect(bySlug.get(blocked.slug)?.nextFreeTime).toBeNull();
+    expect(bySlug.get(noHours.slug)?.nextFreeTime).toBeNull();
+    const time = bySlug.get(open.slug)?.nextFreeTime;
+    expect(time).toMatch(/^\d{2}:\d{2}$/);
+    const [h, m] = (time ?? '00:00').split(':').map(Number) as [number, number];
+    // First 30 minute slot start at or after now.
+    expect(h * 60 + m).toBeGreaterThanOrEqual(before);
+    expect(h * 60 + m).toBeLessThanOrEqual(before + 31);
+    expect((h * 60 + m) % 30).toBe(0);
   });
 });
 

@@ -21,6 +21,7 @@ function card(index: number) {
     minPriceCentsPerHour: 12000,
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm: null,
+    nextFreeTime: null,
   };
 }
 

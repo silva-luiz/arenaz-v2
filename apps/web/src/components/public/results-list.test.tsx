@@ -41,6 +41,7 @@ function venue(index: number): PublicVenueCard {
     minPriceCentsPerHour: 18000,
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm: null,
+    nextFreeTime: null,
   };
 }
 

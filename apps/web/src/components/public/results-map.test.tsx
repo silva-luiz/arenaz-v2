@@ -90,6 +90,7 @@ function venue(
     minPriceCentsPerHour: cents,
     approxLocation: { lat, lng },
     distanceKm: null,
+    nextFreeTime: null,
   };
 }
 

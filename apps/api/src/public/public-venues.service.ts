@@ -15,6 +15,7 @@ import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { STORAGE, type StoragePort } from '../storage/storage.port.js';
+import { loadNextFreeTimes, type NextFreeVenue } from './next-free.js';
 
 const { venue, venueHours, venuePhoto, field, priceRule, user } = schema;
 
@@ -23,6 +24,7 @@ const HOST_FALLBACK_NAME = 'Dono';
 
 /** What a search card needs, straight from the (single) card query. */
 interface CardRow extends Record<string, unknown> {
+  id: string;
   slug: string;
   name: string;
   neighborhood: string;
@@ -34,6 +36,12 @@ interface CardRow extends Record<string, unknown> {
   sports: string[];
   cover_key: string | null;
   distance_m: number | null;
+  timezone: string;
+  /** Opening hours and active fields, for the next free time. */
+  hours: NextFreeVenue['hours'];
+  fields: NextFreeVenue['fields'];
+  /** The database clock, read in the same statement. */
+  now: Date | string;
 }
 
 /**
@@ -81,6 +89,9 @@ export class PublicVenuesService {
    * field, each with its lowest price (the cheapest of the base prices AND
    * the price rules of its active fields: that is what "a partir de" means),
    * the sports of its active fields and its cover photo. Fetches one extra row to know `hasMore`.
+   * Then ONE more query (`loadNextFreeTimes`) gives every card its next free time today.
+   * Optional filters: `amenities` (the venue has all of them) and `maxPrice`
+   * (reais; the "a partir de" price is at most that).
    *
    * Privacy: everything geographic (radius filter, ordering, distance, the
    * returned point) uses `approx_location`, never the exact `location`. Any
@@ -88,7 +99,7 @@ export class PublicVenuesService {
    * inverted to recover it.
    */
   async search(query: PublicSearchQuery): Promise<PublicSearchResponse> {
-    const { q, sport, lat, lng, radiusKm, page } = query;
+    const { q, sport, lat, lng, radiusKm, page, amenities, maxPrice } = query;
     const point =
       lat !== undefined && lng !== undefined
         ? sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography`
@@ -104,6 +115,18 @@ export class PublicVenuesService {
       where.push(
         sql`(${likeSearch(sql`v.city`, pattern)} OR ${likeSearch(sql`v.neighborhood`, pattern)})`,
       );
+    }
+    if (amenities !== undefined) {
+      // All of them (AND): the venue's list contains the requested ones.
+      where.push(
+        sql`v.amenities @> ARRAY[${sql.join(
+          amenities.map((amenity) => sql`${amenity}::text`),
+          sql`, `,
+        )}]::text[]`,
+      );
+    }
+    if (maxPrice !== undefined) {
+      where.push(sql`fa.min_price <= ${maxPrice * 100}`);
     }
     if (point) {
       where.push(
@@ -121,7 +144,7 @@ export class PublicVenuesService {
       : sql`NULL::float8`;
 
     const { rows } = await this.handle.db.execute<CardRow>(sql`
-      SELECT v.slug, v.name, v.neighborhood, v.city, v.state,
+      SELECT v.id, v.slug, v.name, v.neighborhood, v.city, v.state, v.timezone,
              ST_Y(v.approx_location::geometry) AS lat,
              ST_X(v.approx_location::geometry) AS lng,
              fa.min_price,
@@ -130,7 +153,19 @@ export class PublicVenuesService {
                WHERE p.venue_id = v.id
                ORDER BY p.position, p.created_at
                LIMIT 1) AS cover_key,
-             ${distance} AS distance_m
+             ${distance} AS distance_m,
+             (SELECT coalesce(jsonb_agg(jsonb_build_object(
+                       'weekday', h.weekday,
+                       'openMinute', h.open_minute,
+                       'closeMinute', h.close_minute)), '[]'::jsonb)
+                FROM venue_hours h
+               WHERE h.venue_id = v.id) AS hours,
+             (SELECT coalesce(jsonb_agg(jsonb_build_object(
+                       'id', f3.id,
+                       'minSlotMinutes', f3.min_slot_minutes)), '[]'::jsonb)
+                FROM field f3
+               WHERE f3.venue_id = v.id AND f3.is_active) AS fields,
+             clock_timestamp() AS now
         FROM venue v
         CROSS JOIN LATERAL (
           SELECT (SELECT min(price.cents)
@@ -154,7 +189,23 @@ export class PublicVenuesService {
        LIMIT ${PUBLIC_PAGE_SIZE + 1} OFFSET ${(page - 1) * PUBLIC_PAGE_SIZE}
     `);
 
-    const items = rows.slice(0, PUBLIC_PAGE_SIZE).map((row) =>
+    const pageRows = rows.slice(0, PUBLIC_PAGE_SIZE);
+    // The database clock (same one the booking paths use), and one busy query
+    // for every field of the page.
+    const nextFree =
+      pageRows[0] === undefined
+        ? new Map<string, string | null>()
+        : await loadNextFreeTimes(
+            this.handle.db,
+            pageRows.map((row) => ({
+              id: row.id,
+              timezone: row.timezone,
+              hours: row.hours,
+              fields: row.fields,
+            })),
+            new Date(pageRows[0].now),
+          );
+    const items = pageRows.map((row) =>
       publicVenueCardSchema.parse({
         slug: row.slug,
         name: row.name,
@@ -171,6 +222,7 @@ export class PublicVenuesService {
           row.distance_m === null
             ? null
             : Math.round(row.distance_m / 100) / 10,
+        nextFreeTime: nextFree.get(row.id) ?? null,
       }),
     );
     return publicSearchResponseSchema.parse({

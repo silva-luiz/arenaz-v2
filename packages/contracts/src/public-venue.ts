@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { AMENITIES, CANCELLATION_POLICIES, SPORTS } from './catalog.js';
+import {
+  AMENITIES,
+  CANCELLATION_POLICIES,
+  SPORTS,
+  type Amenity,
+} from './catalog.js';
 import { fieldSchema, priceRuleSchema } from './field.js';
 import { locationSchema } from './geo.js';
 import { photoSchema } from './photo.js';
@@ -51,6 +56,30 @@ const queryTextSchema = z
       .max(80, 'A busca pode ter no máximo 80 caracteres'),
   );
 
+/** Largest `maxPrice` accepted, in reais per hour. */
+export const PUBLIC_MAX_PRICE_REAIS = 10_000;
+
+const INVALID_AMENITY = 'Comodidade inválida';
+const INVALID_MAX_PRICE = 'Preço máximo inválido';
+
+/**
+ * Comma separated AMENITIES values ("coberta,vestiario"), all required (AND).
+ * Whitespace around an item is ignored; repeats collapse; a blank item, an
+ * unknown value or a repeated query parameter is refused.
+ */
+const amenitiesQuerySchema = z
+  .string({ error: INVALID_AMENITY })
+  .transform((raw, ctx) => {
+    const items = raw.split(',').map((item) => item.trim());
+    const known = new Set<string>(AMENITIES);
+    if (!items.every((item) => known.has(item))) {
+      // One issue on `amenities` itself (not `amenities.0`), whichever item failed.
+      ctx.addIssue({ code: 'custom', message: INVALID_AMENITY });
+      return z.NEVER;
+    }
+    return [...new Set(items)] as Amenity[];
+  });
+
 /**
  * `GET /venues` query string (every value arrives as a string). `lat` and
  * `lng` go together; unknown parameters are ignored.
@@ -72,6 +101,16 @@ export const publicSearchQuerySchema = z
           `O raio máximo é ${String(PUBLIC_MAX_RADIUS_KM)} km`,
         ),
     ).default(PUBLIC_DEFAULT_RADIUS_KM),
+    amenities: amenitiesQuerySchema.optional(),
+    /** Whole reais per hour: keeps venues whose "a partir de" is at most this. */
+    maxPrice: queryNumber(
+      INVALID_MAX_PRICE,
+      z
+        .number()
+        .int(INVALID_MAX_PRICE)
+        .min(1, INVALID_MAX_PRICE)
+        .max(PUBLIC_MAX_PRICE_REAIS, INVALID_MAX_PRICE),
+    ).optional(),
     page: queryNumber(
       'Página inválida',
       z
@@ -119,6 +158,15 @@ export const publicVenueCardSchema = z.object({
    * `null` without `lat`/`lng`. Never derived from the exact location.
    */
   distanceKm: z.number().nonnegative().nullable(),
+  /**
+   * Start ("HH:MM", venue wall clock) of the first free slot from now to the
+   * end of TODAY (the venue's local date) on any active field; `null` when
+   * nothing is free today. Slots that start after midnight do not count.
+   */
+  nextFreeTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable(),
 });
 
 export const publicSearchResponseSchema = z.object({
