@@ -1,18 +1,15 @@
 import { formatCents, venueSchema } from '@arenaz/contracts';
 import { Badge, Card, buttonClasses } from '@arenaz/ui';
-import type { Metadata, Route } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { DeleteVenueButton } from '@/components/owner/delete-venue-button';
 import { HoursEditor } from '@/components/owner/hours-editor';
+import { PhotoUploader } from '@/components/owner/photo-uploader';
 import { PublishToggle } from '@/components/owner/publish-toggle';
 import { VenueForm } from '@/components/owner/venue-form';
 import { apiGet } from '@/lib/api';
 
 export const metadata: Metadata = { title: 'Espaço' };
-
-function photosLabel(count: number): string {
-  return count === 1 ? '1 foto' : `${String(count)} fotos`;
-}
 
 const BACK_LINK =
   'text-sm font-semibold text-brand underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
@@ -65,9 +62,8 @@ export default async function EspacoPage({
           <h2 id="espaco-quadras" className="text-lg font-bold">
             Quadras
           </h2>
-          {/* The court pages arrive with the next task, so typedRoutes does not know them yet. */}
           <Link
-            href={`/painel/espacos/${venue.id}/quadras/novo` as Route}
+            href={`/painel/espacos/${venue.id}/quadras/novo`}
             className={buttonClasses({ variant: 'secondary', size: 'sm' })}
           >
             + Nova quadra
@@ -80,7 +76,7 @@ export default async function EspacoPage({
             {venue.fields.map((field) => (
               <li key={field.id}>
                 <Link
-                  href={`/painel/quadras/${field.id}` as Route}
+                  href={`/painel/quadras/${field.id}`}
                   className="flex flex-wrap items-center justify-between gap-2 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 >
                   <span className="font-semibold">{field.name}</span>
@@ -96,10 +92,10 @@ export default async function EspacoPage({
       </Card>
 
       <Card aria-labelledby="espaco-fotos">
-        <h2 id="espaco-fotos" className="mb-2 text-lg font-bold">
+        <h2 id="espaco-fotos" className="mb-4 text-lg font-bold">
           Fotos
         </h2>
-        <p className="text-muted">{photosLabel(venue.photos.length)}</p>
+        <PhotoUploader venueId={venue.id} photos={venue.photos} />
       </Card>
 
       <Card aria-labelledby="espaco-excluir">

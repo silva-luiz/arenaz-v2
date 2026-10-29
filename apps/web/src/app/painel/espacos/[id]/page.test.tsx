@@ -105,6 +105,25 @@ describe('/painel/espacos/[id]', () => {
     expect(screen.getByRole('button', { name: 'Despublicar' })).toBeVisible();
   });
 
+  it('shows the photo uploader with the venue photos', async () => {
+    mocks.apiGet.mockResolvedValue({
+      ...VENUE,
+      photos: [
+        {
+          id: '00000000-0000-4000-8000-000000000001',
+          url: 'http://localhost:9000/arenaz-photos/a.png',
+          position: 0,
+        },
+      ],
+    });
+
+    render(await VenuePage({ params: Promise.resolve({ id: ID }) }));
+
+    expect(screen.getByLabelText('Adicionar fotos')).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Foto 1 do espaço' })).toBeVisible();
+    expect(screen.getByText('Capa')).toBeVisible();
+  });
+
   it('says there are no courts yet', async () => {
     mocks.apiGet.mockResolvedValue({ ...VENUE, fields: [] });
 

@@ -189,8 +189,10 @@ export const fieldSummarySchema = z.object({
   priceRulesCount: z.number().int().nonnegative(),
 });
 
+/** Full field; `venueId` lets the panel link back to the venue. */
 export const fieldSchema = z.object({
   ...fieldResponseShape,
+  venueId: z.uuid(),
   priceRules: z.array(priceRuleSchema),
   blocks: z.array(blockSchema),
 });

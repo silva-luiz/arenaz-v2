@@ -235,9 +235,11 @@ describe('response schemas', () => {
   it('fieldSchema inclui priceRules e blocks', () => {
     const r = fieldSchema.parse({
       ...field,
+      venueId: '3f0c2b9e-6a4e-4d6b-9a52-1b6e0c7d9f10',
       priceRules: [priceRule],
       blocks: [block],
     });
+    expect(r.venueId).toBe('3f0c2b9e-6a4e-4d6b-9a52-1b6e0c7d9f10');
     expect(r.priceRules).toHaveLength(1);
     expect(r.blocks).toHaveLength(1);
     expect(fieldSchema.safeParse(field).success).toBe(false);

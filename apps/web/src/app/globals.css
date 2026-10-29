@@ -4,10 +4,14 @@
 /* Class names used inside the shared package must end up in this stylesheet. */
 @source "../../../../packages/ui/src";
 
-/* Font families come from next/font (CSS variables set on <html>). */
+/*
+ * Font families come from next/font (CSS variables set on <html>). The
+ * fallbacks matter for global-error, which replaces the root layout and so has
+ * no font classes: it falls back to the system font instead of a broken var().
+ */
 @theme inline {
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --font-wordmark: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist, ui-sans-serif, system-ui, sans-serif);
+  --font-wordmark: var(--font-bricolage, ui-sans-serif, system-ui, sans-serif);
 }
 
 @layer base {

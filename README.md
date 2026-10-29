@@ -59,6 +59,12 @@ As fotos dos espaços vão direto do navegador para um storage compatível com S
 - A imagem (`alpine/minio`, build automático da release oficial; o MinIO não
   publica mais `minio/minio` no Docker Hub) é fixada por tag de release em
   `infra/docker-compose.yml`; os testes (`pnpm test`) sobem o mesmo MinIO via Testcontainers.
+- CORS: o painel envia a foto com um POST do navegador direto ao storage
+  (origem diferente da web). O MinIO local aceita qualquer origem por padrão
+  (`MINIO_API_CORS_ALLOW_ORIGIN=*`), então nada a configurar em desenvolvimento.
+  **Em produção (S3, R2 etc.) é preciso configurar o CORS do bucket**: permitir
+  a origem da web (`WEB_ORIGIN`) com o método `POST`; sem isso o navegador
+  bloqueia o envio das fotos.
 
 ## Testes
 

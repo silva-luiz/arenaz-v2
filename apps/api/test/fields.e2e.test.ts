@@ -131,6 +131,7 @@ describe('owner fields e2e', () => {
     expect(created.statusCode).toBe(201);
     const field = fieldSchema.parse(created.json());
     expect(field).toMatchObject({
+      venueId: venue.id,
       name: 'Quadra 1',
       sports: ['futsal', 'volei_praia'],
       surface: 'piso_rigido',

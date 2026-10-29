@@ -6,24 +6,14 @@ import {
   venueSchema,
   type VenueHours,
 } from '@arenaz/contracts';
-import { Alert, Button, Checkbox, Select, type SelectOption } from '@arenaz/ui';
+import { Alert, Button, Checkbox, Select } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { apiSend } from '@/lib/api-client';
-import { formatMinute } from '@/lib/format-br';
+import { TIME_OPTIONS } from './time-options';
 
 const DEFAULT_OPEN = 8 * 60;
 const DEFAULT_CLOSE = 22 * 60;
-const STEP = 30;
-const DAY_END = 24 * 60;
-
-const TIME_OPTIONS: SelectOption[] = Array.from(
-  { length: DAY_END / STEP + 1 },
-  (_, index) => ({
-    value: String(index * STEP),
-    label: formatMinute(index * STEP),
-  }),
-);
 
 interface DayState {
   open: boolean;

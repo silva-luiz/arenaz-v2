@@ -85,6 +85,7 @@ export function toField(
 ): FieldResponse {
   return fieldSchema.parse({
     id: row.id,
+    venueId: row.venueId,
     name: row.name,
     sports: row.sports,
     surface: row.surface,

@@ -119,7 +119,10 @@ export function VenueForm({ venue }: VenueFormProps) {
   const [notice, setNotice] = useState<Notice>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [cepStatus, setCepStatus] = useState('');
+  // CEP (digits) whose lookup last succeeded; in edit mode, the saved one.
   const lastLookup = useRef(venue?.address.cep ?? '');
+  // CEP (digits) being looked up right now, if any.
+  const pendingLookup = useRef('');
   const lookupTicket = useRef(0);
 
   const {
@@ -140,8 +143,14 @@ export function VenueForm({ venue }: VenueFormProps) {
 
   async function lookupCep(raw: string) {
     const digits = raw.replace(/\D/g, '');
-    if (digits.length !== 8 || digits === lastLookup.current) return;
-    lastLookup.current = digits;
+    if (
+      digits.length !== 8 ||
+      digits === lastLookup.current ||
+      digits === pendingLookup.current
+    ) {
+      return;
+    }
+    pendingLookup.current = digits;
     const ticket = ++lookupTicket.current;
     setCepStatus('Buscando endereço…');
 
@@ -154,8 +163,8 @@ export function VenueForm({ venue }: VenueFormProps) {
     // A newer lookup (the owner kept editing the CEP) wins.
     if (ticket !== lookupTicket.current) return;
 
+    pendingLookup.current = '';
     if (!result.ok) {
-      lastLookup.current = '';
       setCepStatus('');
       setError('address.cep', {
         type: 'lookup',
@@ -164,6 +173,7 @@ export function VenueForm({ venue }: VenueFormProps) {
       return;
     }
 
+    lastLookup.current = digits;
     const { data } = result;
     const fill = { shouldDirty: true, shouldValidate: true };
     clearErrors('address.cep');
@@ -288,9 +298,14 @@ export function VenueForm({ venue }: VenueFormProps) {
             autoComplete="postal-code"
             {...cep}
             onChange={(event) => {
-              // Whatever lookup is still in flight is about the old value.
-              lookupTicket.current += 1;
-              lastLookup.current = '';
+              // A lookup still in flight is about the old value. Typing a digit
+              // and taking it back leaves lastLookup alone, so the CEP is not
+              // looked up again over a pin the owner placed by hand.
+              const digits = event.target.value.replace(/\D/g, '');
+              if (digits !== pendingLookup.current) {
+                lookupTicket.current += 1;
+                pendingLookup.current = '';
+              }
               setCepStatus('');
               if (errors.address?.cep?.type === 'lookup') {
                 clearErrors('address.cep');

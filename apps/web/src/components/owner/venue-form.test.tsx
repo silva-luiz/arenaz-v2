@@ -385,6 +385,55 @@ describe('VenueForm (edit)', () => {
     expect(mocks.apiSend).not.toHaveBeenCalled();
   });
 
+  it('does not look the CEP up again when the owner types a digit and takes it back', async () => {
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    const cep = screen.getByLabelText('CEP');
+    await user.click(cep);
+    await user.keyboard('9');
+    await user.keyboard('{Backspace}');
+    await user.tab();
+
+    expect(cep).toHaveValue('01310-100');
+    expect(cepCalls()).toHaveLength(0);
+  });
+
+  it('keeps a pin moved by hand when the CEP is typed again to the same value', async () => {
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    const latitude = screen.getByLabelText('Latitude');
+    await user.clear(latitude);
+    await user.type(latitude, '-23.5');
+    const cep = screen.getByLabelText('CEP');
+    await user.type(cep, '1');
+    await user.keyboard('{Backspace}');
+    await user.tab();
+
+    expect(cepCalls()).toHaveLength(0);
+    expect(latitude).toHaveValue('-23.5');
+  });
+
+  it('looks up a different complete CEP in edit mode', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ...CEP_OK,
+      data: { ...CEP_OK.data, cep: '20040020', street: 'Rua da Assembleia' },
+    });
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    const cep = screen.getByLabelText('CEP');
+    await user.clear(cep);
+    await user.type(cep, '20040020');
+    await user.tab();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Rua')).toHaveValue('Rua da Assembleia');
+    });
+    expect(cepCalls()).toHaveLength(1);
+  });
+
   it('saves with PATCH, announces it and refreshes', async () => {
     mocks.apiSend.mockResolvedValue({
       ok: true,
