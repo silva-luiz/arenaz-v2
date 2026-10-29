@@ -20,6 +20,8 @@ coverage
 
 # Environment
 .env
+# Demo seed password (written by the demo setup, never committed)
+infra/demo/.env.demo
 
 # Test output
 playwright-report

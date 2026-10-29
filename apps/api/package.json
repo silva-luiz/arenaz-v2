@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "node scripts/dev.mjs",
     "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "demo:seed": "node --env-file-if-exists=../../.env scripts/demo-seed.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "test": "vitest run"

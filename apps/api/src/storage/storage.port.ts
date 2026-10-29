@@ -35,6 +35,11 @@ export interface StoragePort {
    * file), or `null` when it does not exist.
    */
   readHead(key: string, bytes: number): Promise<Uint8Array | null>;
+  /**
+   * Stores `body` under `key`. Only the demo seed writes objects server-side;
+   * everything else goes through `createUploadPost`.
+   */
+  put(key: string, body: Uint8Array, contentType: string): Promise<void>;
   /** Deletes objects; keys that do not exist are not an error. */
   delete(keys: string[]): Promise<void>;
   /** Public (anonymous GET) URL of a stored object. */
