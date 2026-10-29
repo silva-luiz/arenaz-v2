@@ -38,9 +38,17 @@ function BookingItem({ item }: { item: Booking }) {
   );
 }
 
-function Section({ title, items }: { title: string; items: Booking[] }) {
+function Section({
+  id,
+  title,
+  items,
+}: {
+  id: string;
+  title: string;
+  items: Booking[];
+}) {
   if (items.length === 0) return null;
-  const headingId = `reservas-${title.toLowerCase()}`;
+  const headingId = `reservas-${id}`;
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
       <h2 id={headingId} className="text-lg font-semibold text-ink">
@@ -74,8 +82,8 @@ export default async function BookingsPage() {
         />
       ) : (
         <>
-          <Section title="Próximas" items={upcoming} />
-          <Section title="Anteriores" items={past} />
+          <Section id="proximas" title="Próximas" items={upcoming} />
+          <Section id="anteriores" title="Anteriores" items={past} />
         </>
       )}
     </div>

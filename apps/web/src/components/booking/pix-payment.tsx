@@ -17,6 +17,8 @@ export interface PixPaymentProps {
   /** The server's deadline for this hold. */
   holdExpiresAt: string;
   venueSlug: string;
+  /** The server's clock at render time; see `Countdown`. */
+  serverNow?: string | undefined;
 }
 
 type ChargeState =
@@ -37,10 +39,16 @@ export function PixPayment({
   bookingId,
   holdExpiresAt,
   venueSlug,
+  serverNow,
 }: PixPaymentProps) {
   const router = useRouter();
   const [state, setState] = useState<ChargeState>({ status: 'loading' });
-  const [expired, setExpired] = useState(false);
+  // Which render of the page the local clock gave up on. A refreshed page
+  // that still says "held" has a new stamp, which makes the payment payable
+  // again (the local clock was ahead of the server).
+  const stamp = `${holdExpiresAt}|${serverNow ?? ''}`;
+  const [expiredStamp, setExpiredStamp] = useState<string | null>(null);
+  const expired = expiredStamp === stamp;
   const [copyMessage, setCopyMessage] = useState('');
   const [payError, setPayError] = useState<string | undefined>();
   const [paying, setPaying] = useState(false);
@@ -60,7 +68,11 @@ export function PixPayment({
         ? { status: 'ready', charge: result.data }
         : { status: 'error', message: result.message },
     );
-  }, [bookingId]);
+    // The booking is gone or no longer waiting: the server says what it is now.
+    if (!result.ok && (result.status === 404 || result.status === 409)) {
+      router.refresh();
+    }
+  }, [bookingId, router]);
 
   useEffect(() => {
     if (requested.current) return;
@@ -69,12 +81,14 @@ export function PixPayment({
   }, [load]);
 
   const onExpire = useCallback(() => {
-    setExpired(true);
-    // The server now shows the booking as expired.
+    setExpiredStamp(stamp);
+    // The server tells whether it really expired.
     router.refresh();
-  }, [router]);
+  }, [router, stamp]);
 
   async function copy(code: string) {
+    // Clear first, so repeating the copy is announced again.
+    setCopyMessage('');
     try {
       await navigator.clipboard.writeText(code);
       setCopyMessage('Código copiado');
@@ -97,6 +111,7 @@ export function PixPayment({
     if (!result.ok) {
       setPaying(false);
       setPayError(result.message);
+      if (result.status === 404 || result.status === 409) router.refresh();
       return;
     }
     // Stays busy: the page reloads as a confirmed booking.
@@ -105,7 +120,12 @@ export function PixPayment({
 
   return (
     <section aria-label="Pagamento com Pix" className="flex flex-col gap-4">
-      <Countdown expiresAt={holdExpiresAt} onExpire={onExpire} />
+      <Countdown
+        key={stamp}
+        expiresAt={holdExpiresAt}
+        serverNow={serverNow}
+        onExpire={onExpire}
+      />
 
       {expired ? (
         <AppLink

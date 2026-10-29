@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 export const EXPIRED_TEXT = 'O prazo para pagamento acabou';
 
@@ -22,6 +22,12 @@ function minutesText(minutes: number): string {
 export interface CountdownProps {
   /** The server's deadline (ISO with offset). */
   expiresAt: string;
+  /**
+   * The server's clock when the page was rendered. The browser clock is
+   * shifted by the difference, so a device that runs fast or slow does not
+   * expire the hold early or late.
+   */
+  serverNow?: string | undefined;
   /** Called once, when the deadline is reached. */
   onExpire?: (() => void) | undefined;
 }
@@ -32,13 +38,17 @@ export interface CountdownProps {
  * readers; a polite status region speaks only when the minute changes and at
  * the end. No animation, so nothing to reduce for `prefers-reduced-motion`.
  */
-export function Countdown({ expiresAt, onExpire }: CountdownProps) {
+export function Countdown({ expiresAt, serverNow, onExpire }: CountdownProps) {
   const deadline = new Date(expiresAt).getTime();
+  // Fixed when the component mounts (the parent re-keys it on a new render).
+  const [skew] = useState(() =>
+    serverNow === undefined ? 0 : new Date(serverNow).getTime() - Date.now(),
+  );
   // Whole seconds left: the snapshot only changes once a second. The server
   // renders nothing (null), so the clocks of server and browser never clash.
   const seconds = useSyncExternalStore(
     subscribe,
-    () => Math.max(0, Math.ceil((deadline - Date.now()) / 1000)),
+    () => Math.max(0, Math.ceil((deadline - (Date.now() + skew)) / 1000)),
     () => null,
   );
   const expired = seconds === 0;

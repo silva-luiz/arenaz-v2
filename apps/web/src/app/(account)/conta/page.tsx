@@ -19,6 +19,12 @@ export default async function ContaPage() {
       <p className="mt-1 mb-6 text-muted">{session.email}</p>
       <div className="flex flex-col gap-3">
         <Link
+          href="/reservas"
+          className={buttonClasses({ variant: 'secondary' })}
+        >
+          Minhas reservas
+        </Link>
+        <Link
           href="/painel"
           className={buttonClasses({ variant: 'secondary' })}
         >

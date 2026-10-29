@@ -45,6 +45,9 @@ describe('/conta', () => {
     expect(screen.getByText('maria@mail.com')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Sair' })).toBeVisible();
     expect(
+      screen.getByRole('link', { name: 'Minhas reservas' }),
+    ).toHaveAttribute('href', '/reservas');
+    expect(
       screen.getByRole('link', { name: 'Painel do dono' }),
     ).toHaveAttribute('href', '/painel');
     expect(mocks.redirect).not.toHaveBeenCalled();

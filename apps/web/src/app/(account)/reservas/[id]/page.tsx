@@ -113,6 +113,9 @@ export default async function BookingPage({
     `/reservas/${id}`,
   );
 
+  const now = new Date();
+  const started = new Date(booking.startsAt).getTime() <= now.getTime();
+
   const heading =
     booking.status === 'held'
       ? 'Pague para garantir'
@@ -139,6 +142,7 @@ export default async function BookingPage({
               bookingId={booking.id}
               holdExpiresAt={booking.holdExpiresAt}
               venueSlug={booking.venue.slug}
+              serverNow={now.toISOString()}
             />
           ) : null}
         </>
@@ -148,7 +152,7 @@ export default async function BookingPage({
         <>
           <Address booking={booking} />
           <p className="text-sm text-muted">{CANCEL_POLICY}</p>
-          <CancelBooking bookingId={booking.id} />
+          {started ? null : <CancelBooking bookingId={booking.id} />}
         </>
       ) : null}
 

@@ -144,7 +144,141 @@ describe('PixPayment', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'O prazo para pagamento acabou',
     );
+    // The server's state decides what the page is now.
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
+  it('keeps the page when the simulation fails for another reason', async () => {
+    mocks.apiSend.mockImplementation((_method: string, path: string) =>
+      Promise.resolve(
+        path.endsWith('/payment')
+          ? { ok: true, data: charge() }
+          : { ok: false, status: 500, fieldErrors: {}, message: 'Falhou' },
+      ),
+    );
+    const user = userEvent.setup();
+    renderPix();
+    await user.click(
+      await screen.findByRole('button', { name: 'Simular pagamento' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Falhou');
     expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it.each([404, 409])(
+    'reloads the page when the charge answers %i',
+    async (status) => {
+      mocks.apiSend.mockResolvedValue({
+        ok: false,
+        status,
+        fieldErrors: {},
+        message: 'Essa reserva não está mais aguardando pagamento',
+      });
+      renderPix();
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'não está mais aguardando',
+      );
+      await waitFor(() => {
+        expect(mocks.refresh).toHaveBeenCalled();
+      });
+    },
+  );
+
+  it('announces a repeated copy again (clears, then sets)', async () => {
+    mockCharge();
+    const user = userEvent.setup();
+    let release: () => void = () => undefined;
+    vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve;
+        }),
+    );
+    renderPix();
+    const button = await screen.findByRole('button', {
+      name: 'Copiar código',
+    });
+    await user.click(button);
+    release();
+    expect(await screen.findByText('Código copiado')).toBeVisible();
+    await user.click(button);
+    expect(screen.queryByText('Código copiado')).toBeNull();
+    release();
+    expect(await screen.findByText('Código copiado')).toBeVisible();
+  });
+
+  describe('clock skew', () => {
+    function renderWith(serverNow: string | undefined) {
+      return render(
+        <PixPayment
+          bookingId={ID}
+          holdExpiresAt={holdExpiresAt}
+          venueSlug="arena"
+          serverNow={serverNow}
+        />,
+      );
+    }
+
+    it('a device clock ahead of the server does not expire the hold early', async () => {
+      mockCharge();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      // The device says 12:05, the server 12:00: 10 minutes are left.
+      vi.setSystemTime(new Date(NOW.getTime() + 5 * 60_000));
+      renderWith(NOW.toISOString());
+      await screen.findByRole('button', { name: 'Copiar código' });
+      act(() => {
+        vi.advanceTimersByTime(6 * 60_000);
+      });
+      expect(screen.queryByText('O prazo para pagamento acabou')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Copiar código' }),
+      ).toBeVisible();
+      expect(mocks.refresh).not.toHaveBeenCalled();
+    });
+
+    it('a device clock behind the server does not expire the hold late', async () => {
+      mockCharge();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(new Date(NOW.getTime() - 5 * 60_000));
+      renderWith(NOW.toISOString());
+      await screen.findByRole('button', { name: 'Copiar código' });
+      act(() => {
+        vi.advanceTimersByTime(10 * 60_000 + 1000);
+      });
+      expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+    });
+
+    it('goes back to payable when the refreshed page still says held', async () => {
+      mockCharge();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(NOW);
+      // No server clock yet: the local one gives up at 12:10.
+      const view = renderWith(undefined);
+      await screen.findByRole('button', { name: 'Copiar código' });
+      act(() => {
+        vi.advanceTimersByTime(10 * 60_000 + 1000);
+      });
+      expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+      expect(
+        screen.queryByRole('button', { name: 'Copiar código' }),
+      ).toBeNull();
+      expect(mocks.refresh).toHaveBeenCalled();
+
+      // The refreshed page: same hold, and the server says it is 12:08.
+      view.rerender(
+        <PixPayment
+          bookingId={ID}
+          holdExpiresAt={holdExpiresAt}
+          venueSlug="arena"
+          serverNow={new Date(NOW.getTime() + 8 * 60_000).toISOString()}
+        />,
+      );
+      expect(screen.queryByText('O prazo para pagamento acabou')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Copiar código' }),
+      ).toBeVisible();
+      expect(screen.getByText('02:00')).toBeVisible();
+    });
   });
 
   it('offers a retry when the charge fails', async () => {

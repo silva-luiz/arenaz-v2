@@ -44,33 +44,37 @@ describe('Countdown', () => {
     expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
   });
 
-  it('announces to screen readers only when the minute changes', () => {
+  it('announces only once per minute and at the end', () => {
     render(<Countdown expiresAt={inSeconds(125)} />);
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Faltam 3 minutos para pagar');
-    // The ticking digits are not read out.
     expect(
       screen.getByText('02:05').closest('[aria-hidden="true"]'),
     ).not.toBeNull();
 
-    const seen: string[] = [status.textContent];
-    const observer = new MutationObserver(() => {
-      seen.push(status.textContent);
-    });
-    observer.observe(status, {
-      childList: true,
-      characterData: true,
-      subtree: true,
-    });
-    act(() => {
-      vi.advanceTimersByTime(4000); // 02:01 left, same minute
-    });
-    expect(status).toHaveTextContent('Faltam 3 minutos para pagar');
-    act(() => {
-      vi.advanceTimersByTime(5000); // 01:56 left
-    });
-    expect(status).toHaveTextContent('Faltam 2 minutos para pagar');
-    observer.disconnect();
+    const spoken = [screen.getByRole('status').textContent];
+    for (let second = 0; second < 130; second += 1) {
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      const text = screen.getByRole('status').textContent;
+      if (text !== spoken.at(-1)) spoken.push(text);
+    }
+    expect(spoken).toEqual([
+      'Faltam 3 minutos para pagar',
+      'Faltam 2 minutos para pagar',
+      'Falta 1 minuto para pagar',
+      'O prazo para pagamento acabou',
+    ]);
+  });
+
+  it('follows the server clock when it differs from the device clock', () => {
+    // The device says 12:00:00, the server 11:59:00: 3 minutes are left.
+    render(
+      <Countdown
+        expiresAt={inSeconds(120)}
+        serverNow={new Date(NOW.getTime() - 60_000).toISOString()}
+      />,
+    );
+    expect(screen.getByText('03:00')).toBeVisible();
   });
 
   it('uses the singular for the last minute', () => {

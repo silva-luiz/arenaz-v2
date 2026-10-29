@@ -14,8 +14,16 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
 vi.mock('@/components/booking/pix-payment', () => ({
-  PixPayment: (props: { bookingId: string; holdExpiresAt: string }) => (
-    <div data-testid="pix" data-hold={props.holdExpiresAt} />
+  PixPayment: (props: {
+    bookingId: string;
+    holdExpiresAt: string;
+    serverNow?: string;
+  }) => (
+    <div
+      data-testid="pix"
+      data-hold={props.holdExpiresAt}
+      data-now={props.serverNow}
+    />
   ),
 }));
 vi.mock('@/components/booking/cancel-booking', () => ({
@@ -119,6 +127,39 @@ describe('/reservas/[id]', () => {
       screen.getByRole('button', { name: 'Cancelar reserva' }),
     ).toBeVisible();
     expect(screen.queryByTestId('pix')).toBeNull();
+  });
+
+  it('confirmed and already started: no cancellation', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-02T21:30:00.000Z'));
+    try {
+      await renderPage(
+        make({
+          status: 'confirmed',
+          holdExpiresAt: null,
+          address: {
+            street: 'Rua Harmonia',
+            number: '123',
+            complement: null,
+            cep: '05435000',
+            phone: '+5511987654321',
+          },
+        }),
+      );
+      expect(screen.getByText(/Rua Harmonia, 123/)).toBeVisible();
+      expect(
+        screen.queryByRole('button', { name: 'Cancelar reserva' }),
+      ).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('hands the payment the server clock', async () => {
+    await renderPage(make());
+    expect(screen.getByTestId('pix').getAttribute('data-now')).toMatch(
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
   });
 
   it.each([
