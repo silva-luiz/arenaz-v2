@@ -54,6 +54,7 @@ describe('booking contracts', () => {
           number: '1',
           complement: null,
           cep: '01310100',
+          phone: '(11) 98765-4321',
         },
       }).success,
     ).toBe(true);

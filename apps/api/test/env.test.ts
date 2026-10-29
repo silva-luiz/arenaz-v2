@@ -170,11 +170,17 @@ describe('loadEnv', () => {
   });
 
   it('aceita GEO_PROVIDER=http em produção', () => {
-    // Production cannot boot until the real payment provider exists (Plano 4),
-    // so the only complaint left must be about PAYMENT_PROVIDER.
-    expect(() =>
-      loadEnv({ ...valid, GEO_PROVIDER: 'http', NODE_ENV: 'production' }),
-    ).not.toThrow(/GEO_PROVIDER/);
+    // Production cannot boot until the real payment provider exists (Plano 4):
+    // the only complaint left must be about PAYMENT_PROVIDER, none about GEO.
+    let message = '';
+    try {
+      loadEnv({ ...valid, GEO_PROVIDER: 'http', NODE_ENV: 'production' });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toMatch(/PAYMENT_PROVIDER/);
+    expect(message).not.toMatch(/GEO_PROVIDER/);
+    expect(message.trim().split(String.fromCharCode(10))).toHaveLength(2);
   });
 
   it('rejeita GEO_PROVIDER desconhecido', () => {

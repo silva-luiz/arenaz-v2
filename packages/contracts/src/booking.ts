@@ -42,12 +42,13 @@ export const createBookingInputSchema = z.object({
 });
 export type CreateBookingInput = z.infer<typeof createBookingInputSchema>;
 
-/** Exact address: only shown to the owner of a confirmed booking. */
+/** Exact address and phone: only shown to the owner of a confirmed booking. */
 const bookingAddressSchema = z.object({
   street: z.string(),
   number: z.string(),
   complement: z.string().nullable(),
   cep: z.string(),
+  phone: z.string(),
 });
 
 /** The player's view of a booking. */

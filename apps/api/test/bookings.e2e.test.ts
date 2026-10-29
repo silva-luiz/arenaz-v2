@@ -283,6 +283,65 @@ describe('POST /api/bookings', () => {
     ).toBe(201);
   });
 
+  it('EXCLUDE real: reserva concorrente invisível à checagem vira 409', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const rival = await newPlayer();
+    const date = spDate(3);
+    const raw = await handle.pool.connect();
+    try {
+      await raw.query('begin');
+      // The FK checks would take share locks on the field row and make the
+      // service wait at its own field lock instead; skip them (test superuser).
+      await raw.query('set local session_replication_role = replica');
+      const {
+        rows: [self],
+      } = await raw.query<{ pid: number }>('select pg_backend_pid() as pid');
+      await raw.query(
+        `insert into booking (field_id, venue_id, user_id, origin, status, period,
+                              total_cents, price_breakdown, hold_expires_at)
+         values ($1, $2, $3, 'app', 'held', tstzrange($4::timestamptz, $5::timestamptz, '[)'),
+                 8000, '[]'::jsonb, now() + interval '10 minutes')`,
+        [
+          s.fieldId,
+          s.venueId,
+          rival.userId,
+          at(date, '09:00').toISOString(),
+          at(date, '10:00').toISOString(),
+        ],
+      );
+      // Uncommitted: the service cannot see it, so its checks pass and its
+      // insert waits on this transaction, then fails with 23P01.
+      const pending = p.api.post(
+        '/api/bookings',
+        request(s, date, '09:00', 60),
+      );
+      let waiting = false;
+      for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
+        const { rowCount } = await handle.pool.query(
+          'select 1 from pg_stat_activity where $1 = any(pg_blocking_pids(pid))',
+          [self?.pid],
+        );
+        waiting = (rowCount ?? 0) > 0;
+        if (!waiting) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      expect(waiting).toBe(true);
+      await raw.query('commit');
+
+      const res = await pending;
+      expect(res.statusCode).toBe(409);
+      expect(problem(res).detail).toBe('Esse horário acabou de ser reservado');
+    } finally {
+      await raw.query('rollback').catch(() => undefined);
+      raw.release();
+    }
+    const rows = await handle.db
+      .select({ userId: booking.userId })
+      .from(booking)
+      .where(eq(booking.fieldId, s.fieldId));
+    expect(rows).toEqual([{ userId: rival.userId }]);
+  });
+
   describe('concorrência', () => {
     it('10 jogadores no mesmo horário: 1 vence, 9 recebem 409', async () => {
       const s = await seedVenue(handle, ownerId);
@@ -568,6 +627,7 @@ describe('pagamento simulado e confirmação', () => {
       number: '43210',
       complement: 'Fundos',
       cep: '01310100',
+      phone: '(11) 98765-4321',
     });
     const [row] = await handle.db
       .select()
@@ -575,6 +635,35 @@ describe('pagamento simulado e confirmação', () => {
       .where(eq(booking.id, created.id));
     expect(row?.confirmedAt).toBeInstanceOf(Date);
     expect(row?.holdExpiresAt).toBeNull();
+  });
+
+  it('endereço e telefone só na reserva confirmada', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const date = spDate(3);
+    const held = bookingSchema.parse(
+      (await p.api.post('/api/bookings', request(s, date, '08:00', 60))).json(),
+    );
+    const toCancel = bookingSchema.parse(
+      (await p.api.post('/api/bookings', request(s, date, '09:00', 60))).json(),
+    );
+    await p.api.post(`/api/bookings/${toCancel.id}/cancel`);
+    const toExpire = bookingSchema.parse(
+      (await p.api.post('/api/bookings', request(s, date, '10:00', 60))).json(),
+    );
+    await expireHold(handle, toExpire.id);
+    const list = bookingSchema
+      .array()
+      .parse((await p.api.get('/api/bookings/me')).json());
+    expect(list.map((b) => b.status).sort()).toEqual([
+      'cancelled',
+      'expired',
+      'held',
+    ]);
+    for (const item of list) expect(item.address).toBeNull();
+    const raw = (await p.api.get('/api/bookings/me')).body;
+    expect(raw).not.toContain('98765-4321');
+    expect(held.address).toBeNull();
   });
 
   it('é idempotente: pagar de novo continua confirmada', async () => {

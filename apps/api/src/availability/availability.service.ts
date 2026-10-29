@@ -3,7 +3,6 @@ import {
   daySlots,
   localDateOf,
   localDayRange,
-  type Interval,
 } from '@arenaz/booking-core';
 import {
   AVAILABILITY_HORIZON_DAYS,
@@ -18,7 +17,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
+import { loadBusy } from '../booking/busy.js';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 
@@ -27,12 +27,6 @@ const { venue, venueHours, field, priceRule } = schema;
 const DAY_MS = 86_400_000;
 /** A slot starting late in the day can run past midnight; look this far on. */
 const LOOKAHEAD_MS = DAY_MS;
-
-interface BusyRow extends Record<string, unknown> {
-  field_id: string;
-  starts_at: Date | string;
-  ends_at: Date | string;
-}
 
 @Injectable()
 export class AvailabilityService {
@@ -97,43 +91,17 @@ export class AvailabilityService {
       });
     }
     const fieldIds = fields.map((item) => item.id);
-    const idList = sql.join(
-      fieldIds.map((id) => sql`${id}::uuid`),
-      sql`, `,
-    );
 
     const range = localDayRange(date, row.timezone);
     const windowEnd = new Date(range.end.getTime() + LOOKAHEAD_MS);
-    const [rules, busyRows] = await Promise.all([
+    const [rules, busyByField] = await Promise.all([
       db
         .select()
         .from(priceRule)
         .where(inArray(priceRule.fieldId, fieldIds))
         .orderBy(asc(priceRule.startMinute), asc(priceRule.id)),
-      db.execute<BusyRow>(sql`
-        SELECT field_id, lower(period) AS starts_at, upper(period) AS ends_at
-          FROM (
-            SELECT field_id, period FROM availability_block
-             WHERE field_id IN (${idList})
-            UNION ALL
-            SELECT field_id, period FROM booking
-             WHERE field_id IN (${idList})
-               AND (status = 'confirmed'
-                    OR (status = 'held' AND hold_expires_at > ${now.toISOString()}::timestamptz))
-          ) busy
-         WHERE period && tstzrange(${range.start.toISOString()}::timestamptz, ${windowEnd.toISOString()}::timestamptz, '[)')
-      `),
+      loadBusy(db, fieldIds, range.start, windowEnd, now),
     ]);
-
-    const busyByField = new Map<string, Interval[]>();
-    for (const busy of busyRows.rows) {
-      const list = busyByField.get(busy.field_id) ?? [];
-      list.push({
-        start: new Date(busy.starts_at),
-        end: new Date(busy.ends_at),
-      });
-      busyByField.set(busy.field_id, list);
-    }
 
     return availabilitySchema.parse({
       date,

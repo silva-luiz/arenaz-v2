@@ -114,6 +114,7 @@ const viewColumns = {
   number: venue.number,
   complement: venue.complement,
   cep: venue.cep,
+  phone: venue.phone,
   fieldId: field.id,
   fieldName: field.name,
 };
@@ -158,6 +159,7 @@ function toBooking(row: ViewRow, now: Date): Booking {
             number: row.number,
             complement: row.complement,
             cep: row.cep,
+            phone: row.phone,
           }
         : null,
   });
@@ -276,13 +278,18 @@ export class BookingsService {
     return this.get(userId, createdId);
   }
 
-  /** The player's bookings: upcoming first (soonest first), then past ones (latest first). */
+  /**
+   * The player's bookings: upcoming first (soonest first), then past ones
+   * (latest first). Only the 200 most recently created are read: enough for
+   * the "minhas reservas" screen; pagination can come with a real need.
+   */
   async listMine(userId: string): Promise<Booking[]> {
     const rows = await viewQuery(this.handle.db)
       .where(eq(booking.userId, userId))
       .orderBy(desc(booking.createdAt))
       .limit(LIST_LIMIT);
-    const now = new Date();
+    // The database clock, the same one the writes use, decides what is stale.
+    const now = await dbNow(this.handle.db);
     const list = rows.map((row) => toBooking(row, now));
     const time = (item: Booking): number => new Date(item.startsAt).getTime();
     const upcoming = list
@@ -301,10 +308,15 @@ export class BookingsService {
       .where(and(eq(booking.id, bookingId), eq(booking.userId, userId)))
       .limit(1);
     if (!row) throw new NotFoundException(BOOKING_NOT_FOUND);
-    return toBooking(row, new Date());
+    return toBooking(row, await dbNow(this.handle.db));
   }
 
-  /** The booking to charge: the player's own, still held and within its deadline. */
+  /**
+   * The booking to charge: the player's own, still held and within its
+   * deadline. This is a plain read (no lock), so the answer can be stale by the
+   * time the charge exists; that is fine because `confirmPaid` re-checks the
+   * deadline under the field lock before confirming anything.
+   */
   async chargeable(userId: string, bookingId: string): Promise<Chargeable> {
     if (!isUuid(bookingId)) throw new NotFoundException(BOOKING_NOT_FOUND);
     const [row] = await this.handle.db
