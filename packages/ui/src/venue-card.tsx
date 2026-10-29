@@ -146,8 +146,11 @@ export function VenueCard({
         </div>
 
         <div className="mt-3 flex flex-col gap-0.5 px-0.5 text-sm">
-          <span className="flex items-baseline justify-between gap-2">
-            <span id={nameId} className="truncate font-semibold text-ink">
+          <span className="flex items-start justify-between gap-2">
+            <span
+              id={nameId}
+              className="line-clamp-2 min-w-0 font-semibold text-ink"
+            >
               {name}
             </span>
             {rating ? (

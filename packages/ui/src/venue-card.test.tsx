@@ -212,6 +212,35 @@ describe('VenueCard', () => {
     expect(img?.className).toContain('motion-reduce:group-hover:scale-100');
   });
 
+  describe('long names', () => {
+    const LONG =
+      'Complexo Esportivo Arena Society e Futsal Vila Madalena Premium';
+
+    it('clamps a 40+ character name to two lines and keeps the rating aligned to the top', () => {
+      expect(LONG.length).toBeGreaterThan(40);
+      render(<VenueCard {...BASE} name={LONG} rating="4,92" />);
+
+      const name = screen.getByText(LONG);
+      expect(name).toHaveClass('line-clamp-2');
+      expect(name).not.toHaveClass('truncate');
+      expect(name.parentElement).toHaveClass('items-start');
+      expect(screen.getByRole('link')).toHaveAccessibleName(LONG);
+    });
+
+    it('stays plain with a long name, no photo, no seal, no rating and no heart', () => {
+      const { container } = render(
+        <VenueCard {...BASE} name={LONG} imageUrl={null} nextFreeTime={null} />,
+      );
+
+      expect(screen.getByTestId('venue-card-fallback')).toBeVisible();
+      expect(container.querySelector('img')).toBeNull();
+      expect(screen.queryByText(/Livre às/)).toBeNull();
+      expect(screen.queryByTestId('venue-card-rating')).toBeNull();
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+      expect(screen.getByText(LONG)).toHaveClass('line-clamp-2');
+    });
+  });
+
   it('puts className on the outer element', () => {
     const { container } = render(<VenueCard {...BASE} className="w-72" />);
     expect(container.firstElementChild).toHaveClass('w-72');
