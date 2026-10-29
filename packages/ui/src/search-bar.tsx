@@ -9,6 +9,12 @@ import { FOCUS_RING } from './link';
 export interface SearchBarProps {
   defaultQuery?: string | undefined;
   defaultSport?: string | undefined;
+  /** "YYYY-MM-DD" preselected in "Quando". Default: none ("Qualquer dia"). */
+  defaultDate?: string | undefined;
+  /** Preselected "Jogadores" ("14"). Default: none. */
+  defaultPlayers?: string | undefined;
+  /** "YYYY-MM-DD" of today. Default: today in São Paulo. */
+  today?: string | undefined;
   /** Search page. Must not carry a query string of its own. */
   action?: string;
   /** Called with the URL "Perto de mim" resolves to. Default: full navigation. */
@@ -23,20 +29,76 @@ const GEOLOCATION_TIMEOUT_MS = 10_000;
 // all when the permission prompt is dismissed, so we cannot rely on one.
 const FALLBACK_TIMEOUT_MS = 12_000;
 
+const DATE_DAYS = 7;
+const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 30;
+
+/** Today in São Paulo, "YYYY-MM-DD" (en-CA formats dates that way). */
+function todayInSaoPaulo(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+const WEEKDAY = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'UTC',
+  weekday: 'short',
+});
+
+/**
+ * "Qualquer dia", "Hoje", "Amanhã", then "Sáb, 31/10" for the next five
+ * days. Calendar arithmetic in UTC, so no zone can shift a day.
+ */
+function dateOptions(today: string): { value: string; label: string }[] {
+  const [year = 0, month = 1, day = 1] = today.split('-').map(Number);
+  const options = [{ value: '', label: 'Qualquer dia' }];
+  for (let offset = 0; offset < DATE_DAYS; offset += 1) {
+    const date = new Date(Date.UTC(year, month - 1, day + offset));
+    const value = date.toISOString().slice(0, 10);
+    const [, mm = '', dd = ''] = value.split('-');
+    const weekday = WEEKDAY.format(date).replace('.', '');
+    const label =
+      offset === 0
+        ? 'Hoje'
+        : offset === 1
+          ? 'Amanhã'
+          : `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dd}/${mm}`;
+    options.push({ value, label });
+  }
+  return options;
+}
+
+const PLAYER_COUNTS = Array.from(
+  { length: MAX_PLAYERS - MIN_PLAYERS + 1 },
+  (_, index) => String(MIN_PLAYERS + index),
+);
+
 function navigateTo(url: string) {
   window.location.assign(url);
 }
 
 /*
  * The field wrappers are cards on mobile (bordered, 3:1 against the page) and
- * borderless pill segments from md up. The focus indicator sits on the label
- * because the inner control has no box of its own.
+ * borderless pill segments from md up, as in the prototype (label 12px over a
+ * 15px value). The focus indicator sits on the label because the inner
+ * control has no box of its own.
  */
 const SEGMENT =
-  'flex min-w-0 flex-1 flex-col rounded-button border border-line-control px-4 py-2 transition-colors duration-150 hover:bg-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand motion-reduce:transition-none md:rounded-full md:border-0 md:px-6';
+  'flex min-w-0 flex-1 flex-col rounded-button border border-line-control px-4 py-2 transition-colors duration-150 hover:bg-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand motion-reduce:transition-none md:rounded-full md:border-0 md:px-[22px] md:py-3';
 const SEGMENT_LABEL = 'text-xs font-semibold text-ink';
 const SEGMENT_CONTROL =
-  'w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-muted';
+  'mt-0.5 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-muted';
+/*
+ * Selects read like the prototype's segments from md up: no arrow, and the
+ * "any" choice in the muted placeholder colour (a chosen value turns ink).
+ */
+const SEGMENT_SELECT = cn(
+  SEGMENT_CONTROL,
+  "cursor-pointer has-[option[value='']:checked]:text-muted md:appearance-none",
+);
 
 function Divider() {
   return (
@@ -48,8 +110,9 @@ function Divider() {
 }
 
 /**
- * Search pill. The form is a plain GET (`q`, `sport`) so it works without
- * JavaScript; "Perto de mim" is the only client enhancement (browser
+ * Search pill of the prototype: Onde · Quando · Esporte · Jogadores + Buscar.
+ * The form is a plain GET (`q`, `data`, `sport`, `jogadores`) so it works
+ * without JavaScript; "Perto de mim" is the only client enhancement (browser
  * geolocation, then navigation to `action?lat=..&lng=..[&sport=..]` with 3
  * decimals, about 100 m). Without JS the empty fields are still sent (`q=`,
  * `sport=`), so the search page must treat empty values as absent; with JS
@@ -58,6 +121,9 @@ function Divider() {
 export function SearchBar({
   defaultQuery,
   defaultSport,
+  defaultDate,
+  defaultPlayers,
+  today,
   action = '/buscar',
   onNavigate = navigateTo,
   className,
@@ -155,9 +221,9 @@ export function SearchBar({
         action={action}
         role="search"
         onSubmit={onSubmit}
-        className="flex flex-col gap-3 rounded-card border border-line bg-bg p-4 shadow-3 md:flex-row md:items-center md:gap-1 md:rounded-full md:border-0 md:p-2"
+        className="flex flex-col gap-3 rounded-card border border-line bg-bg p-4 shadow-3 md:flex-row md:items-center md:gap-0 md:rounded-full md:border-0 md:p-2"
       >
-        <label className={cn(SEGMENT, 'md:flex-[1.3]')}>
+        <label className={cn(SEGMENT, 'md:flex-[1.3] md:pl-[26px]')}>
           <span className={SEGMENT_LABEL}>Onde</span>
           <input
             type="text"
@@ -169,6 +235,52 @@ export function SearchBar({
             className={SEGMENT_CONTROL}
           />
         </label>
+        {/* Icon only from md up (the text stays as its accessible name). */}
+        <button
+          type="button"
+          onClick={findNearby}
+          title="Perto de mim"
+          aria-busy={locating ? true : undefined}
+          className={cn(
+            'inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-line-control bg-bg px-5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none md:size-11 md:border-0 md:px-0',
+            FOCUS_RING,
+          )}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="12" cy="12" r="8" />
+            <line x1="12" y1="1" x2="12" y2="4" />
+            <line x1="12" y1="20" x2="12" y2="23" />
+            <line x1="1" y1="12" x2="4" y2="12" />
+            <line x1="20" y1="12" x2="23" y2="12" />
+          </svg>
+          <span className="md:sr-only">Perto de mim</span>
+        </button>
+        <Divider />
+        <label className={SEGMENT}>
+          <span className={SEGMENT_LABEL}>Quando</span>
+          <select
+            name="data"
+            defaultValue={defaultDate ?? ''}
+            className={SEGMENT_SELECT}
+          >
+            {dateOptions(today ?? todayInSaoPaulo()).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Divider />
         {/* md:flex-none: as wide as the longest option ("Qualquer esporte"),
             not squeezed by the text field next to it. */}
@@ -177,7 +289,7 @@ export function SearchBar({
           <select
             name="sport"
             defaultValue={defaultSport ?? ''}
-            className={cn(SEGMENT_CONTROL, 'cursor-pointer')}
+            className={SEGMENT_SELECT}
           >
             <option value="">Qualquer esporte</option>
             {SPORTS.map((sport) => (
@@ -188,40 +300,28 @@ export function SearchBar({
           </select>
         </label>
         <Divider />
-        <div className="flex flex-col gap-2 sm:flex-row md:gap-1">
-          <button
-            type="button"
-            onClick={findNearby}
-            aria-busy={locating ? true : undefined}
-            className={cn(
-              'inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-line-control bg-bg px-5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none md:border-0',
-              FOCUS_RING,
-            )}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+        {/* The prototype puts "Buscar" inside the last segment; a button
+            cannot sit inside a <label>, so they are siblings in one row. */}
+        <div className="flex flex-col gap-3 md:flex-[1.45] md:flex-row md:items-center md:gap-2">
+          <label className={cn(SEGMENT, 'md:min-w-[7.5rem]')}>
+            <span className={SEGMENT_LABEL}>Jogadores</span>
+            <select
+              name="jogadores"
+              defaultValue={defaultPlayers ?? ''}
+              className={SEGMENT_SELECT}
             >
-              <circle cx="12" cy="12" r="3" />
-              <circle cx="12" cy="12" r="8" />
-              <line x1="12" y1="1" x2="12" y2="4" />
-              <line x1="12" y1="20" x2="12" y2="23" />
-              <line x1="1" y1="12" x2="4" y2="12" />
-              <line x1="20" y1="12" x2="23" y2="12" />
-            </svg>
-            Perto de mim
-          </button>
+              <option value="">Quantos?</option>
+              {PLAYER_COUNTS.map((count) => (
+                <option key={count} value={count}>
+                  {`${count} pessoas`}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="submit"
             className={cn(
-              'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-6 text-base font-semibold text-white transition-colors duration-150 hover:bg-[color-mix(in_oklab,var(--color-brand)_88%,black)] motion-reduce:transition-none',
+              'inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-[22px] text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_10px_22px_-8px_rgba(11,122,75,0.65)] transition-colors duration-150 hover:bg-[color-mix(in_oklab,var(--color-brand)_88%,black)] motion-reduce:transition-none',
               FOCUS_RING,
             )}
           >

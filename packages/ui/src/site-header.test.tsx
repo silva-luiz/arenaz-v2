@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SiteHeader, initials } from './site-header';
 
@@ -109,5 +109,49 @@ describe('SiteHeader', () => {
       screen.queryByRole('link', { name: 'Anuncie sua quadra' }),
     ).toBeNull();
     expect(screen.getByRole('link', { name: 'Entrar' })).toBeVisible();
+  });
+  it('shows the section tabs with a photo, the current one marked', () => {
+    render(
+      <SiteHeader
+        user={null}
+        nav={[
+          { label: 'Quadras', href: '/', imageUrl: '/q.jpg', current: true },
+          {
+            label: 'Partidas',
+            href: '/#partidas',
+            imageUrl: '/p.jpg',
+            isNew: true,
+          },
+        ]}
+      />,
+    );
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    expect(nav).toHaveClass('max-md:hidden');
+    const quadras = within(nav).getByRole('link', { name: 'Quadras' });
+    expect(quadras).toHaveAttribute('href', '/');
+    expect(quadras).toHaveAttribute('aria-current', 'page');
+    expect(quadras.querySelector('img')).toHaveAttribute('src', '/q.jpg');
+    expect(quadras.querySelector('img')).toHaveAttribute('alt', '');
+    const partidas = within(nav).getByRole('link', { name: 'Partidas Novo' });
+    expect(partidas).not.toHaveAttribute('aria-current');
+  });
+
+  it('has no section tabs without `nav`', () => {
+    render(<SiteHeader user={null} />);
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull();
+  });
+
+  it('draws the account as the menu pill: lines icon and the initials', () => {
+    render(<SiteHeader user={{ name: 'Gabriel Ribeiro' }} />);
+    const account = screen.getByRole('link', { name: 'Minha conta (GR)' });
+    expect(account).toHaveClass('rounded-full', 'border-line-strong');
+    expect(account.querySelectorAll('svg')).toHaveLength(1);
+  });
+
+  it('draws "Entrar" as the same pill, with visible text', () => {
+    render(<SiteHeader user={null} />);
+    const entrar = screen.getByRole('link', { name: 'Entrar' });
+    expect(entrar).toHaveClass('rounded-full', 'border-line-strong');
+    expect(entrar).toHaveTextContent('Entrar');
   });
 });

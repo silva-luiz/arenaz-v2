@@ -113,9 +113,9 @@ describe('(public) layout', () => {
   });
 
   it.each([
-    ['/', 'Início'],
-    ['/buscar', 'Buscar'],
-    ['/espacos/arena-1', 'Buscar'],
+    ['/', 'Explorar'],
+    ['/buscar', 'Explorar'],
+    ['/espacos/arena-1', 'Explorar'],
   ])('marks the right tab on %s', async (pathname, label) => {
     mocks.getSession.mockResolvedValue(null);
     mocks.pathname = pathname;

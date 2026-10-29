@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SearchBar } from './search-bar';
@@ -60,7 +60,7 @@ describe('SearchBar', () => {
   it('lists "Qualquer esporte" and every sport label', () => {
     render(<SearchBar />);
 
-    const options = screen
+    const options = within(screen.getByRole('combobox', { name: 'Esporte' }))
       .getAllByRole('option')
       .map((option) => option.textContent);
     expect(options[0]).toBe('Qualquer esporte');
@@ -119,6 +119,134 @@ describe('SearchBar', () => {
     await user.click(screen.getByRole('button', { name: 'Buscar' }));
 
     expect(submitted).toEqual({ q: 'Pinheiros', sport: 'padel' });
+  });
+
+  it('has the four segments of the prototype: Onde, Quando, Esporte, Jogadores', () => {
+    render(<SearchBar today="2026-10-29" />);
+
+    const labels = ['Onde', 'Quando', 'Esporte', 'Jogadores'];
+    for (const label of labels) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+    expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveAttribute(
+      'name',
+      'data',
+    );
+    expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveAttribute(
+      'name',
+      'jogadores',
+    );
+  });
+
+  it('offers "Qualquer dia", today, tomorrow and the next five days as YYYY-MM-DD', () => {
+    render(<SearchBar today="2026-10-29" />);
+
+    const options = within(
+      screen.getByRole('combobox', { name: 'Quando' }),
+    ).getAllByRole<HTMLOptionElement>('option');
+    expect(options.map((option) => [option.value, option.textContent])).toEqual(
+      [
+        ['', 'Qualquer dia'],
+        ['2026-10-29', 'Hoje'],
+        ['2026-10-30', 'Amanhã'],
+        ['2026-10-31', 'Sáb, 31/10'],
+        ['2026-11-01', 'Dom, 01/11'],
+        ['2026-11-02', 'Seg, 02/11'],
+        ['2026-11-03', 'Ter, 03/11'],
+        ['2026-11-04', 'Qua, 04/11'],
+      ],
+    );
+  });
+
+  it('rolls the dates over the end of the year', () => {
+    render(<SearchBar today="2026-12-30" />);
+
+    const values = within(screen.getByRole('combobox', { name: 'Quando' }))
+      .getAllByRole<HTMLOptionElement>('option')
+      .map((option) => option.value);
+    expect(values.slice(1, 4)).toEqual([
+      '2026-12-30',
+      '2026-12-31',
+      '2027-01-01',
+    ]);
+  });
+
+  it('defaults "Quando" to today in São Paulo when no date is given', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 01:30 UTC on Oct 30 is still Oct 29 in São Paulo (UTC-3).
+    vi.setSystemTime(new Date('2026-10-30T01:30:00Z'));
+    render(<SearchBar />);
+
+    const hoje = within(
+      screen.getByRole('combobox', { name: 'Quando' }),
+    ).getByRole<HTMLOptionElement>('option', { name: 'Hoje' });
+    expect(hoje.value).toBe('2026-10-29');
+  });
+
+  it('lists "Quantos?" and 2 to 30 people', () => {
+    render(<SearchBar />);
+
+    const options = within(
+      screen.getByRole('combobox', { name: 'Jogadores' }),
+    ).getAllByRole<HTMLOptionElement>('option');
+    expect(options[0]).toHaveTextContent('Quantos?');
+    expect(options[0]?.value).toBe('');
+    expect(options[1]).toHaveTextContent('2 pessoas');
+    expect(options.at(-1)).toHaveTextContent('30 pessoas');
+    expect(options).toHaveLength(30);
+  });
+
+  it('honours defaultDate and defaultPlayers', () => {
+    render(
+      <SearchBar
+        today="2026-10-29"
+        defaultDate="2026-10-30"
+        defaultPlayers="14"
+      />,
+    );
+
+    expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveValue(
+      '2026-10-30',
+    );
+    expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
+      '14',
+    );
+  });
+
+  it('submits q, sport, data and jogadores', async () => {
+    const user = userEvent.setup();
+    render(<SearchBar today="2026-10-29" />);
+
+    const form = screen.getByRole<HTMLFormElement>('search');
+    let sent: [string, FormDataEntryValue][] = [];
+    const onSubmit = (event: Event) => {
+      event.preventDefault();
+      sent = [...new FormData(form).entries()];
+    };
+    document.addEventListener('submit', onSubmit);
+
+    await user.type(screen.getByRole('textbox', { name: 'Onde' }), 'Lapa');
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Quando' }),
+      'Hoje',
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Esporte' }),
+      'Society',
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Jogadores' }),
+      '14 pessoas',
+    );
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(sent).toEqual([
+      ['q', 'Lapa'],
+      ['data', '2026-10-29'],
+      ['sport', 'futebol_society'],
+      ['jogadores', '14'],
+    ]);
+    document.removeEventListener('submit', onSubmit);
   });
 
   it('drops empty fields from the URL on submit and restores them after', async () => {

@@ -1,8 +1,8 @@
-import { SiteFooter, SiteHeader } from '@arenaz/ui';
+import { SiteFooter } from '@arenaz/ui';
 import type { ReactNode } from 'react';
+import { PublicHeader } from '@/components/layout/public-header';
 import { PublicTabBar } from '@/components/layout/public-tab-bar';
 import { SkipLink } from '@/components/layout/skip-link';
-import { AppLink } from '@/components/ui/next-link';
 import { currentUser } from '@/lib/current-user';
 import { isDemoMode } from '@/lib/demo';
 
@@ -21,7 +21,7 @@ export default async function PublicLayout({
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
-      <SiteHeader user={user} linkComponent={AppLink} />
+      <PublicHeader user={user ? { name: user.name } : null} />
       {/* tabIndex -1: the skip link moves focus here; no ring for that. */}
       <main
         id="conteudo"

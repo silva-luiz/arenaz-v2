@@ -2,19 +2,56 @@ import type { ReactNode } from 'react';
 import { cn } from './cn';
 import { FOCUS_RING, type LinkComponent } from './link';
 
-export type TabBarItem = 'inicio' | 'buscar' | 'reservas' | 'conta';
+export type TabBarItem = 'explorar' | 'partidas' | 'reservas' | 'perfil';
+
+export interface TabBarLink {
+  id: TabBarItem;
+  href: string;
+}
 
 export interface TabBarProps {
-  active: TabBarItem;
+  /** The item of the current page; `null` marks none. */
+  active: TabBarItem | null;
+  /**
+   * Destinations, in order. Default: Explorar (`/`), Reservas and Perfil
+   * (`/conta`). "Partidas" only exists where the app has somewhere to send it.
+   */
+  items?: readonly TabBarLink[] | undefined;
   linkComponent?: LinkComponent | undefined;
   className?: string | undefined;
 }
 
-function Icon({ children }: { children: ReactNode }) {
+export const DEFAULT_TAB_BAR_ITEMS: readonly TabBarLink[] = [
+  { id: 'explorar', href: '/' },
+  { id: 'reservas', href: '/reservas' },
+  { id: 'perfil', href: '/conta' },
+];
+
+// Icons and labels of the prototype (docs/design/prototipo/MobileHome.dc.html).
+const ITEM_LOOK: Record<TabBarItem, { label: string; icon: string }> = {
+  explorar: {
+    label: 'Explorar',
+    icon: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.5-4.5',
+  },
+  partidas: {
+    label: 'Partidas',
+    icon: 'M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M17 12a2.5 2.5 0 1 0 0-5M16 14.6c2.7.1 4.8 1.8 5.5 4.9',
+  },
+  reservas: {
+    label: 'Reservas',
+    icon: 'M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2zM3 9.5h18M8 2.5v4M16 2.5v4',
+  },
+  perfil: {
+    label: 'Perfil',
+    icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.8-4 4-6 8-6s7.2 2 8 6',
+  },
+};
+
+function Icon({ path }: { path: string }): ReactNode {
   return (
     <svg
-      width="22"
-      height="22"
+      width="24"
+      height="24"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -23,115 +60,68 @@ function Icon({ children }: { children: ReactNode }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {children}
+      <path d={path} />
     </svg>
   );
 }
 
-const ITEMS: {
-  id: TabBarItem;
-  label: string;
-  href: string;
-  icon: ReactNode;
-}[] = [
-  {
-    id: 'inicio',
-    label: 'Início',
-    href: '/',
-    icon: (
-      <Icon>
-        <path d="M3 11.5 12 4l9 7.5" />
-        <path d="M5 10v10h14V10" />
-      </Icon>
-    ),
-  },
-  {
-    id: 'buscar',
-    label: 'Buscar',
-    href: '/buscar',
-    icon: (
-      <Icon>
-        <circle cx="11" cy="11" r="7" />
-        <line x1="16.5" y1="16.5" x2="21" y2="21" />
-      </Icon>
-    ),
-  },
-  {
-    id: 'reservas',
-    label: 'Reservas',
-    href: '/reservas',
-    icon: (
-      <Icon>
-        <rect x="3.5" y="5" width="17" height="15" rx="2" />
-        <line x1="3.5" y1="10" x2="20.5" y2="10" />
-        <line x1="8" y1="3" x2="8" y2="7" />
-        <line x1="16" y1="3" x2="16" y2="7" />
-      </Icon>
-    ),
-  },
-  {
-    id: 'conta',
-    label: 'Conta',
-    href: '/conta',
-    icon: (
-      <Icon>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-      </Icon>
-    ),
-  },
-];
-
 /**
- * Mobile-only bottom navigation (hidden from 768px up). Fixed to the bottom
- * edge and padded by the device safe area. It renders its own `md:hidden`
- * spacer after the `<nav>` (bar height + safe area) so the page's last
- * content is never covered; render it as the last child of the page.
+ * Mobile-only bottom navigation (hidden from 768px up), as in the prototype:
+ * translucent white bar, icon over an 11px label. Fixed to the bottom edge
+ * and padded by the device safe area. It renders its own `md:hidden` spacer
+ * after the `<nav>` (bar height + safe area) so the page's last content is
+ * never covered; render it as the last child of the page.
  *
- * The active item is marked by a 3px top bar and a bolder label as well as
- * colour (WCAG 1.4.1).
+ * The active item is marked by colour AND a heavier label weight (WCAG
+ * 1.4.1), plus `aria-current="page"`.
  *
  * Focus and anchors must not end up under the fixed bar or the sticky
  * header either, so the app needs this global rule (mobile values; the header
  * is 64px + 1px border and the bar 56px + 1px border, from 768px up the
- * header is 80px + 1px and there is no bar):
+ * header is 84px and there is no bar):
  *
  *     html { scroll-padding-top: 65px;
  *            scroll-padding-bottom: calc(57px + env(safe-area-inset-bottom)); }
  *     @media (min-width: 768px) {
- *       html { scroll-padding-top: 81px; scroll-padding-bottom: 0; }
+ *       html { scroll-padding-top: 84px; scroll-padding-bottom: 0; }
  *     }
  */
-export function TabBar({ active, linkComponent, className }: TabBarProps) {
+export function TabBar({
+  active,
+  items = DEFAULT_TAB_BAR_ITEMS,
+  linkComponent,
+  className,
+}: TabBarProps) {
   const Link = linkComponent ?? 'a';
   return (
     <>
       <nav
         aria-label="Navegação principal"
         className={cn(
-          'fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden',
+          'fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/96 pb-[env(safe-area-inset-bottom)] backdrop-blur-[10px] md:hidden',
           className,
         )}
       >
-        <ul className="mx-auto flex max-w-lg">
-          {ITEMS.map((item) => {
+        <ul className="mx-auto flex max-w-lg px-1.5">
+          {items.map((item) => {
             const current = item.id === active;
+            const look = ITEM_LOOK[item.id];
             return (
-              <li key={item.id} className="flex-1">
+              <li key={item.id} className="min-w-0 flex-1">
                 <Link
                   href={item.href}
                   aria-current={current ? 'page' : undefined}
                   className={cn(
-                    'flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-[3px] text-xs transition-colors duration-150 motion-reduce:transition-none',
+                    'flex min-h-14 flex-col items-center justify-center gap-1 rounded-button text-[11px] transition-colors duration-150 motion-reduce:transition-none',
                     FOCUS_RING,
                     'focus-visible:-outline-offset-4',
                     current
-                      ? 'border-brand font-bold text-brand'
-                      : 'border-transparent font-medium text-muted',
+                      ? 'font-semibold text-brand'
+                      : 'font-medium text-muted hover:text-ink',
                   )}
                 >
-                  {item.icon}
-                  {item.label}
+                  <Icon path={look.icon} />
+                  {look.label}
                 </Link>
               </li>
             );

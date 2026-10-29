@@ -34,6 +34,8 @@ export interface VenueCardProps {
   rating?: string | undefined;
   /** Glass pill on the photo ("Preferido da galera"). */
   badge?: string | undefined;
+  /** Square photo (home rails) instead of the 20:19 one (search grid). */
+  square?: boolean | undefined;
   /** The heart; absent means the card has no button at all. */
   favorite?: VenueCardFavorite | undefined;
   linkComponent?: LinkComponent | undefined;
@@ -81,6 +83,7 @@ export function VenueCard({
   nextFreeTime,
   rating,
   badge,
+  square = false,
   favorite,
   linkComponent,
   className,
@@ -112,7 +115,12 @@ export function VenueCard({
         aria-describedby={describedBy}
         className={cn('block rounded-photo', FOCUS_RING)}
       >
-        <div className="relative aspect-[20/19] overflow-hidden rounded-photo bg-surface shadow-1 transition-shadow duration-300 ease-out group-hover:shadow-2 motion-reduce:transition-none">
+        <div
+          className={cn(
+            'relative overflow-hidden rounded-photo bg-surface shadow-1 transition-shadow duration-300 ease-out group-hover:shadow-2 motion-reduce:transition-none',
+            square ? 'aspect-square' : 'aspect-[20/19]',
+          )}
+        >
           {imageUrl ? (
             <img
               src={imageUrl}

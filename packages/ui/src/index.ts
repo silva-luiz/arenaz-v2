@@ -22,9 +22,20 @@ export { PriceTag, formatPrice, type PriceTagProps } from './price-tag';
 export { SearchBar, type SearchBarProps } from './search-bar';
 export { Select, type SelectOption, type SelectProps } from './select';
 export { SiteFooter, type SiteFooterProps } from './site-footer';
-export { SiteHeader, initials, type SiteHeaderProps } from './site-header';
+export {
+  SiteHeader,
+  initials,
+  type SiteHeaderNavItem,
+  type SiteHeaderProps,
+} from './site-header';
 export { Skeleton, type SkeletonProps } from './skeleton';
-export { TabBar, type TabBarItem, type TabBarProps } from './tab-bar';
+export {
+  DEFAULT_TAB_BAR_ITEMS,
+  TabBar,
+  type TabBarItem,
+  type TabBarLink,
+  type TabBarProps,
+} from './tab-bar';
 export { Textarea, type TextareaProps } from './textarea';
 export {
   VenueCard,

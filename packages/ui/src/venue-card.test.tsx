@@ -107,6 +107,13 @@ describe('VenueCard', () => {
     expect(img).not.toHaveAttribute('sizes');
   });
 
+  it('can use the square photo of the home rails', () => {
+    const { container } = render(<VenueCard {...BASE} square />);
+    const frame = container.querySelector('img')?.parentElement;
+    expect(frame).toHaveClass('aspect-square');
+    expect(frame?.className).not.toContain('aspect-[20/19]');
+  });
+
   it('falls back to a neutral tile with the logo glyph without a photo', () => {
     const { container } = render(<VenueCard {...BASE} imageUrl={null} />);
     expect(container.querySelector('img')).toBeNull();
