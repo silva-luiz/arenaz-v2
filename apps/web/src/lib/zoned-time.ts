@@ -170,3 +170,26 @@ export function formatBlockRange(
   }
   return `${head} ${formatMinute(start.minuteOfDay)} até ${end.weekday}, ${end.dayMonth} ${formatMinute(end.minuteOfDay)}${suffix}`;
 }
+
+/** "18:00": the time of an instant on the wall clocks of `timeZone`. */
+export function formatZonedTime(instant: string, timeZone: string): string {
+  return formatMinute(wallClock(instant, timeZone).minuteOfDay);
+}
+
+/**
+ * "18:00–19:30" in the time of `timeZone`. An end at midnight of the next day
+ * reads "24:00", as in `formatBlockRange`.
+ */
+export function formatZonedRange(
+  startsAt: string,
+  endsAt: string,
+  timeZone: string,
+): string {
+  const start = wallClock(startsAt, timeZone);
+  const end = wallClock(endsAt, timeZone);
+  const endText =
+    end.minuteOfDay === 0 && end.dateKey !== start.dateKey
+      ? '24:00'
+      : formatMinute(end.minuteOfDay);
+  return `${formatMinute(start.minuteOfDay)}–${endText}`;
+}

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatBlockRange, todayInZone, toZonedIso } from './zoned-time';
+import {
+  formatBlockRange,
+  formatZonedRange,
+  formatZonedTime,
+  todayInZone,
+  toZonedIso,
+} from './zoned-time';
 
 const SP = 'America/Sao_Paulo';
 const MANAUS = 'America/Manaus';
@@ -163,5 +169,33 @@ describe('other time zones', () => {
         MANAUS,
       ),
     ).toBe('Sáb, 31/10 das 17:00 às 24:00');
+  });
+});
+
+describe('formatZonedTime and formatZonedRange', () => {
+  it('reads the instant in the zone given, not in the browser zone', () => {
+    expect(formatZonedTime('2026-11-06T21:00:00.000Z', SP)).toBe('18:00');
+    expect(formatZonedTime('2026-11-06T21:00:00.000Z', MANAUS)).toBe('17:00');
+    expect(formatZonedTime('2026-11-06T21:30:00-03:00', SP)).toBe('21:30');
+  });
+
+  it('writes a range with an en dash', () => {
+    expect(
+      formatZonedRange(
+        '2026-11-06T18:00:00-03:00',
+        '2026-11-06T19:30:00-03:00',
+        SP,
+      ),
+    ).toBe('18:00–19:30');
+  });
+
+  it('writes an end at midnight as 24:00', () => {
+    expect(
+      formatZonedRange(
+        '2026-11-06T23:00:00-03:00',
+        '2026-11-07T00:00:00-03:00',
+        SP,
+      ),
+    ).toBe('23:00–24:00');
   });
 });

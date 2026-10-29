@@ -118,7 +118,12 @@ test('jogador encontra e abre um espaço publicado', async ({
       `${published.neighborhood}, São Paulo. O endereço exato aparece depois da reserva.`,
     ),
   ).toBeVisible();
-  await expect(page.getByText('Reserva online chega em breve.')).toBeVisible();
+  // The time picker sits in the booking card (desktop viewport).
+  await expect(
+    page.getByRole('complementary', { name: 'Reserva' }).getByRole('group', {
+      name: 'Data',
+    }),
+  ).toBeVisible();
 
   // Nothing private leaks: not in the text, and not anywhere in the markup.
   const html = await page.content();
@@ -136,6 +141,32 @@ test('jogador encontra e abre um espaço publicado', async ({
     expect(text, `texto com "${secret}"`).not.toContain(secret);
     expect(html, `HTML com "${secret}"`).not.toContain(secret);
   }
+
+  // Picking a time as an anonymous visitor leads to sign in, which brings the
+  // choice back. The seed opens Monday to Friday, so walk the date chips until
+  // one has a free time.
+  const times = page.getByRole('group', { name: 'Horários' });
+  const chips = page.getByRole('group', { name: 'Data' }).getByRole('button');
+  const chipCount = await chips.count();
+  let freeTime = times.locator('button:enabled').first();
+  for (let index = 0; index < chipCount; index += 1) {
+    await chips.nth(index).click();
+    await expect(times.getByText('Carregando horários')).toHaveCount(0);
+    freeTime = times.locator('button:enabled').first();
+    if ((await times.locator('button:enabled').count()) > 0) break;
+  }
+  await freeTime.click();
+  await expect(
+    page.getByRole('status', { name: 'Resumo da reserva' }),
+  ).toContainText(/\d{2}:\d{2}–\d{2}:\d{2}/);
+  await page.getByRole('button', { name: 'Reservar' }).click();
+
+  await expect(page).toHaveURL(/\/entrar\?next=/);
+  const next = new URL(page.url()).searchParams.get('next') ?? '';
+  const nextUrl = new URL(next, 'http://localhost');
+  expect(nextUrl.pathname).toBe(`/espacos/${published.slug}`);
+  expect(nextUrl.searchParams.get('duracao')).toBe('60');
+  expect(nextUrl.searchParams.get('data')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
 test('rascunho dá 404', async ({ page, draft }) => {
@@ -200,5 +231,29 @@ for (const viewport of VIEWPORTS) {
     ).toBeVisible();
     await page.locator('.leaflet-container').first().waitFor();
     await scan(`/espacos/${published.slug}`);
+
+    // The time picker: in the card from lg up, in the sheet below it. Colour
+    // transitions off, so axe never reads a contrast halfway through one.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    if (viewport.width < 1024) {
+      await page.getByRole('button', { name: 'Escolher horário' }).click();
+      await expect(
+        page.getByRole('dialog', { name: 'Escolha o horário' }),
+      ).toBeVisible();
+    }
+    const times = page.getByRole('group', { name: 'Horários' });
+    await expect(times.getByText('Carregando horários')).toHaveCount(0);
+    await scan(`seletor de horário (${viewport.label})`);
+    const chips = page.getByRole('group', { name: 'Data' }).getByRole('button');
+    for (let index = 0; index < (await chips.count()); index += 1) {
+      await chips.nth(index).click();
+      await expect(times.getByText('Carregando horários')).toHaveCount(0);
+      if ((await times.locator('button:enabled').count()) > 0) break;
+    }
+    await times.locator('button:enabled').first().click();
+    await expect(
+      page.getByRole('status', { name: 'Resumo da reserva' }),
+    ).toContainText('R$');
+    await scan(`seletor com horário escolhido (${viewport.label})`);
   });
 }

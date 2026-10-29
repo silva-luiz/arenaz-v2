@@ -1,9 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeField, makeVenue } from '@/test/venue-fixture';
 
 const mocks = vi.hoisted(() => ({
   publicGet: vi.fn(),
+  getSession: vi.fn(),
+  slotPicker: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND');
   }),
@@ -17,6 +19,14 @@ vi.mock('next/dynamic', () => ({
     },
 }));
 vi.mock('next/navigation', () => ({ notFound: mocks.notFound }));
+vi.mock('@/lib/session', () => ({ getSession: mocks.getSession }));
+// The picker has its own tests; here only what the page hands it matters.
+vi.mock('@/components/booking/slot-picker', () => ({
+  SlotPicker: (props: unknown) => {
+    mocks.slotPicker(props);
+    return <div data-testid="picker" />;
+  },
+}));
 vi.mock('@/lib/public-api', async (importActual) => ({
   ...(await importActual<typeof import('@/lib/public-api')>()),
   publicGet: mocks.publicGet,
@@ -25,12 +35,21 @@ vi.mock('@/lib/public-api', async (importActual) => ({
 import VenuePage, * as pageModule from './page';
 import { generateMetadata } from './page';
 
-function props(slug = 'arena-vila-madalena') {
-  return { params: Promise.resolve({ slug }) };
+function props(
+  slug = 'arena-vila-madalena',
+  searchParams: Record<string, string | string[] | undefined> = {},
+) {
+  return {
+    params: Promise.resolve({ slug }),
+    searchParams: Promise.resolve(searchParams),
+  };
 }
 
-async function renderPage(slug?: string) {
-  render(await VenuePage(props(slug)));
+async function renderPage(
+  slug?: string,
+  searchParams?: Record<string, string | string[] | undefined>,
+) {
+  render(await VenuePage(props(slug, searchParams)));
 }
 
 function jsonLd(): Record<string, unknown> {
@@ -42,6 +61,7 @@ describe('venue page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.publicGet.mockResolvedValue(makeVenue());
+    mocks.getSession.mockResolvedValue(null);
   });
 
   it('does not export a route-segment revalidate (the route is dynamic)', () => {
@@ -149,7 +169,7 @@ describe('venue page', () => {
     expect(card).toHaveTextContent('R$ 90 / hora');
     expect(
       within(card).getByRole('button', { name: 'Escolher horário' }),
-    ).toHaveAttribute('aria-disabled', 'true');
+    ).toBeEnabled();
   });
 
   it('does not let a dearer rule raise the booking card price', async () => {
@@ -193,6 +213,124 @@ describe('venue page', () => {
     ]) {
       expect(screen.getByRole('region', { name })).toBeInTheDocument();
     }
+  });
+
+  describe('booking picker', () => {
+    const FIELD_ID = '11111111-1111-4111-8111-111111111111';
+
+    // From lg up the picker sits in the card, so the stub shows what the page
+    // hands it (on a phone it would be inside a closed dialog).
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('min-width: 1024px'),
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      );
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function pickerProps() {
+      return mocks.slotPicker.mock.lastCall?.[0] as Record<string, unknown>;
+    }
+
+    async function renderOpen(
+      searchParams?: Record<string, string | string[] | undefined>,
+    ) {
+      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      await renderPage(undefined, searchParams);
+    }
+
+    it('hands the card the slug, the venue time zone and the courts', async () => {
+      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      mocks.publicGet.mockResolvedValue(
+        makeVenue({ timezone: 'America/Manaus' }),
+      );
+      await renderPage(undefined, {
+        data: '2026-11-06',
+        quadra: FIELD_ID,
+        inicio: '2026-11-06T18:00:00.000-03:00',
+        duracao: '60',
+      });
+
+      expect(pickerProps()).toMatchObject({
+        slug: 'arena-vila-madalena',
+        timezone: 'America/Manaus',
+        fields: [{ id: FIELD_ID, name: 'Quadra 1', minSlotMinutes: 60 }],
+        signedIn: true,
+      });
+    });
+
+    it('knows an anonymous visitor', async () => {
+      mocks.getSession.mockResolvedValue(null);
+      await renderPage(undefined, {
+        data: '2026-11-06',
+        quadra: FIELD_ID,
+        inicio: '2026-11-06T18:00:00.000-03:00',
+        duracao: '60',
+      });
+
+      expect(pickerProps()).toMatchObject({ signedIn: false });
+    });
+
+    it('still shows the venue when the session check fails', async () => {
+      mocks.getSession.mockRejectedValue(new Error('api down'));
+      await renderPage(undefined, {
+        data: '2026-11-06',
+        quadra: FIELD_ID,
+        inicio: '2026-11-06T18:00:00.000-03:00',
+        duracao: '60',
+      });
+
+      expect(pickerProps()).toMatchObject({ signedIn: false });
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Arena Vila Madalena' }),
+      ).toBeInTheDocument();
+    });
+
+    it('passes a choice made before signing in', async () => {
+      await renderOpen({
+        data: '2026-11-06',
+        quadra: FIELD_ID,
+        inicio: '2026-11-06T18:00:00.000-03:00',
+        duracao: '90',
+      });
+
+      expect(pickerProps()).toMatchObject({
+        initial: {
+          date: '2026-11-06',
+          fieldId: FIELD_ID,
+          startsAt: '2026-11-06T18:00:00.000-03:00',
+          durationMinutes: 90,
+        },
+      });
+    });
+
+    it.each([
+      ['a malformed date', { data: '06/11/2026' }],
+      ['an unknown court', { quadra: '99999999-9999-4999-8999-999999999999' }],
+      ['a start that is not a time', { inicio: 'amanha' }],
+      ['a duration that is not a number', { duracao: 'muito' }],
+      ['a duration off the half hour', { duracao: '45' }],
+      ['repeated parameters', { data: ['2026-11-06', '2026-11-07'] }],
+    ])('ignores %s', async (_name, override) => {
+      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      await renderPage(undefined, {
+        data: '2026-11-06',
+        quadra: FIELD_ID,
+        inicio: '2026-11-06T18:00:00.000-03:00',
+        duracao: '60',
+        ...override,
+      });
+
+      expect(pickerProps().initial).toBeUndefined();
+    });
   });
 
   describe('JSON-LD', () => {

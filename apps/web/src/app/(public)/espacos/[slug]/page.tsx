@@ -9,7 +9,9 @@ import { notFound } from 'next/navigation';
 import { BookingCard } from '@/components/public/booking-card';
 import { ShareButton } from '@/components/public/share-button';
 import { VenueDetails } from '@/components/public/venue-details';
+import type { BookingIntent } from '@/lib/booking-client';
 import { publicGet } from '@/lib/public-api';
+import { getSession } from '@/lib/session';
 import { lowestPriceCents } from '@/lib/price-rule-summary';
 import { absoluteUrl } from '@/lib/site';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
@@ -21,8 +23,62 @@ const REVALIDATE_SECONDS = 60;
 
 const DESCRIPTION_MAX_LENGTH = 160;
 
+const ISO_WITH_OFFSET =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
 interface Props {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<SearchParams>;
+}
+
+/**
+ * The choice carried through sign in (`?data=&quadra=&inicio=&duracao=`),
+ * or `undefined` when any part is missing or does not make sense. Whether the
+ * time is still free is decided by the picker, with fresh availability.
+ */
+function parseIntent(
+  params: SearchParams,
+  venue: PublicVenue,
+): BookingIntent | undefined {
+  const one = (key: string): string | undefined => {
+    const value = params[key];
+    return typeof value === 'string' ? value : undefined;
+  };
+  const date = one('data');
+  const fieldId = one('quadra');
+  const startsAt = one('inicio');
+  const duration = one('duracao');
+  if (!date || !fieldId || !startsAt || !duration) return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
+  if (!venue.fields.some((field) => field.id === fieldId)) return undefined;
+  if (!ISO_WITH_OFFSET.test(startsAt) || Number.isNaN(Date.parse(startsAt))) {
+    return undefined;
+  }
+  const durationMinutes = /^\d{2,3}$/.test(duration) ? Number(duration) : NaN;
+  if (
+    !Number.isInteger(durationMinutes) ||
+    durationMinutes < 30 ||
+    durationMinutes > 360 ||
+    durationMinutes % 30 !== 0
+  ) {
+    return undefined;
+  }
+  return { date, fieldId, startsAt, durationMinutes };
+}
+
+/**
+ * Whether a session exists. The page is public: if the check fails the visitor
+ * is treated as signed out, and a booking attempt that finds the session
+ * missing is sent to sign in by the API client.
+ */
+async function isSignedIn(): Promise<boolean> {
+  try {
+    return (await getSession()) !== null;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -92,10 +148,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function VenuePage({ params }: Props) {
+export default async function VenuePage({ params, searchParams }: Props) {
   const { slug } = await params;
   const venue = await loadVenue(slug);
   if (!venue) notFound();
+  const [signedIn, query] = await Promise.all([
+    isSignedIn(),
+    searchParams ?? Promise.resolve<SearchParams>({}),
+  ]);
+  const initial = parseIntent(query, venue);
 
   const photos = sortedPhotos(venue.photos).map((photo, index) => ({
     url: photo.url,
@@ -137,7 +198,18 @@ export default async function VenuePage({ params }: Props) {
           a direct child here, because `sticky` only moves inside its parent. */}
       <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-x-16 xl:mt-10">
         <VenueDetails venue={venue} />
-        <BookingCard minPriceCentsPerHour={minPrice} />
+        <BookingCard
+          slug={venue.slug}
+          timezone={venue.timezone}
+          fields={venue.fields.map((field) => ({
+            id: field.id,
+            name: field.name,
+            minSlotMinutes: field.minSlotMinutes,
+          }))}
+          minPriceCentsPerHour={minPrice}
+          signedIn={signedIn}
+          initial={initial}
+        />
       </div>
     </div>
   );

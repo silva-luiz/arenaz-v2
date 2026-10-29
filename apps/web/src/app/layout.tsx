@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, Geist } from 'next/font/google';
+import { Bricolage_Grotesque, Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { SITE_URL } from '@/lib/site';
 import './globals.css';
@@ -7,6 +7,13 @@ import './globals.css';
 const geist = Geist({
   subsets: ['latin'],
   variable: '--font-geist',
+  display: 'swap',
+});
+
+// Times and codes (prototipo-v2.md): the slot grid, booking ranges.
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -27,7 +34,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${geist.variable} ${bricolage.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${geist.variable} ${geistMono.variable} ${bricolage.variable}`}
+    >
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
