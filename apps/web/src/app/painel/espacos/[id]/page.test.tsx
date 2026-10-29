@@ -157,4 +157,13 @@ describe('/painel/espacos/[id] public page link', () => {
     expect(link).toHaveAttribute('href', '/espacos/arena-central');
     expect(link).not.toHaveAttribute('target');
   });
+
+  it('links to the owner agenda, draft or not', async () => {
+    render(await VenuePage({ params: Promise.resolve({ id: ID }) }));
+
+    expect(screen.getByRole('link', { name: 'Agenda' })).toHaveAttribute(
+      'href',
+      `/painel/espacos/${ID}/agenda`,
+    );
+  });
 });

@@ -37,6 +37,12 @@ export default async function EspacoPage({
           <Badge tone={venue.status === 'published' ? 'free' : 'neutral'}>
             {venue.status === 'published' ? 'Publicado' : 'Rascunho'}
           </Badge>
+          <Link
+            href={`/painel/espacos/${venue.id}/agenda`}
+            className={buttonClasses({ variant: 'secondary', size: 'sm' })}
+          >
+            Agenda
+          </Link>
           {venue.status === 'published' ? (
             <Link
               href={`/espacos/${venue.slug}`}
