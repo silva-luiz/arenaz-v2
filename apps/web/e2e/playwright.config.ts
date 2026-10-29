@@ -28,10 +28,11 @@ const sharedEnv: Record<string, string> = {
     : { DATABASE_URL: process.env.DATABASE_URL }),
 };
 
-// Each command builds what it needs and starts it. `pnpm --filter "<pkg>..."`
-// builds the package's workspace dependencies first (topological order), and
-// the web build runs outside the turbo cache because the `/api/*` rewrite
-// destination (`API_URL`) is baked into the build.
+// Shared packages (contracts, db) and the API are built once, before
+// Playwright starts, by the turbo `e2e` task (`dependsOn` in turbo.json). Each
+// command below then only builds or starts its own app, so no two `tsc` runs
+// ever write the same `dist`. The web build runs outside the turbo cache
+// because the `/api/*` rewrite destination (`API_URL`) is baked into it.
 const SERVER_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default defineConfig({
@@ -54,7 +55,7 @@ export default defineConfig({
   webServer: [
     {
       command:
-        'pnpm --filter "@arenaz/api..." build && pnpm --filter @arenaz/db migrate && pnpm --filter @arenaz/api start',
+        'pnpm --filter @arenaz/db migrate && pnpm --filter @arenaz/api start',
       url: `${apiOrigin}/api/health`,
       env: sharedEnv,
       reuseExistingServer: false,
@@ -64,7 +65,7 @@ export default defineConfig({
     },
     {
       command:
-        'pnpm --filter "@arenaz/web..." build && pnpm --filter @arenaz/web start',
+        'pnpm --filter @arenaz/web build && pnpm --filter @arenaz/web start',
       url: `${webOrigin}/entrar`,
       env: { ...sharedEnv, WEB_PORT: String(webPort) },
       reuseExistingServer: false,

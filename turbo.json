@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -17,6 +18,7 @@
       "env": ["DATABASE_URL"]
     },
     "e2e": {
+      "dependsOn": ["^build", "@arenaz/api#build"],
       "cache": false,
       "passThroughEnv": [
         "DATABASE_URL",

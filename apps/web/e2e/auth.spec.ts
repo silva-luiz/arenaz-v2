@@ -12,6 +12,7 @@ test('criar conta, sair e entrar de novo', async ({ page }) => {
     page.getByRole('heading', { name: 'Olá, Jogador E2E' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page).toHaveURL('/');
   await page.goto('/entrar?next=/conta');
   await page.getByLabel('E-mail').fill(email.toUpperCase());
   await page.getByLabel('Senha').fill('Senha@123');

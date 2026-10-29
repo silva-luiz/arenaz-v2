@@ -10,7 +10,7 @@ const DEFAULT_API_URL = 'http://localhost:4000';
  * failure throws so an outage is never mistaken for a logout.
  */
 export async function getSession(): Promise<MeResponse | null> {
-  const apiUrl = process.env.API_URL ?? DEFAULT_API_URL;
+  const apiUrl = process.env.API_URL || DEFAULT_API_URL;
   const response = await fetch(`${apiUrl}/api/me`, {
     headers: { cookie: (await cookies()).toString() },
     cache: 'no-store',
