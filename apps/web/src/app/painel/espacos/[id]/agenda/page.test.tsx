@@ -98,7 +98,17 @@ describe('/painel/espacos/[id]/agenda', () => {
     expect(current[0]).toHaveTextContent('Seg 2');
   });
 
-  it.each(['2026-11-30', '2026-10-28', 'ontem', '2026-02-31'])(
+  it.each([
+    ['today minus 30 days', '2026-09-29'],
+    ['today plus 60 days', '2026-12-28'],
+    ['a day beyond the week chips', '2026-11-30'],
+    ['yesterday', '2026-10-28'],
+  ])('opens %s from the query string', async (_name, data) => {
+    await renderPage({ data });
+    expect(requested()).toContain(`/owner/venues/${ID}/agenda?date=${data}`);
+  });
+
+  it.each(['2026-09-28', '2026-12-29', 'ontem', '2026-02-31', '2026-11-5'])(
     'falls back to today for %s',
     async (data) => {
       await renderPage({ data });
@@ -107,6 +117,47 @@ describe('/painel/espacos/[id]/agenda', () => {
       );
     },
   );
+
+  it('counts the range in the venue time zone, not the server one', async () => {
+    // 2026-10-30 01:00 UTC is still the 29th in São Paulo, so -30 is 09-29.
+    vi.setSystemTime(new Date('2026-10-30T01:00:00Z'));
+    await renderPage({ data: '2026-09-29' });
+    expect(requested()).toContain(`/owner/venues/${ID}/agenda?date=2026-09-29`);
+  });
+
+  it('has a labelled date field limited to the allowed range, filled with the shown day', async () => {
+    await renderPage({ data: '2026-11-30' });
+
+    const input = screen.getByLabelText('Ir para a data');
+    expect(input).toHaveAttribute('type', 'date');
+    expect(input).toHaveAttribute('name', 'data');
+    expect(input).toHaveAttribute('min', '2026-09-29');
+    expect(input).toHaveAttribute('max', '2026-12-28');
+    expect(input).toHaveValue('2026-11-30');
+    const form = input.closest('form');
+    expect(form).toHaveAttribute('method', 'get');
+    expect(form).toHaveAttribute('action', `/painel/espacos/${ID}/agenda`);
+    expect(
+      within(form as HTMLElement).getByRole('button', { name: 'Ver dia' }),
+    ).toBeVisible();
+  });
+
+  it('has a Hoje link that goes back to today', async () => {
+    await renderPage({ data: '2026-11-30' });
+
+    const link = screen.getByRole('link', { name: 'Hoje' });
+    expect(link).toHaveAttribute(
+      'href',
+      `/painel/espacos/${ID}/agenda?data=2026-10-29`,
+    );
+    // Outside the week chips, so none of them is the current one.
+    const nav = screen.getByRole('navigation', { name: 'Dia da agenda' });
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .filter((item) => item.getAttribute('aria-current') === 'page'),
+    ).toHaveLength(0);
+  });
 
   it('has the page heading and a way back to the venue', async () => {
     await renderPage();

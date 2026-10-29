@@ -557,6 +557,231 @@ describe('SlotPicker', () => {
     });
   });
 
+  describe('past midnight', () => {
+    const TODAY = '2026-11-05';
+    const TOMORROW = '2026-11-06';
+    const AFTER = '2026-11-07';
+
+    type Start = [string, number];
+
+    /** Hourly slots; the hour may be 24 (00:00 of the next day). */
+    function hourly(starts: Start[], busy: string[] = []) {
+      const at = (date: string, hour: number) =>
+        hour === 24
+          ? `${date === TODAY ? TOMORROW : AFTER}T00:00:00.000-03:00`
+          : `${date}T${String(hour).padStart(2, '0')}:00:00.000-03:00`;
+      return starts.map(([date, hour]) => ({
+        startsAt: at(date, hour),
+        endsAt: at(date, hour + 1),
+        available: !busy.includes(at(date, hour)),
+        priceCents: 6000,
+      }));
+    }
+
+    function availabilityOf(date: string, slots: ReturnType<typeof hourly>) {
+      return {
+        ok: true,
+        data: {
+          date,
+          timezone: 'America/Sao_Paulo',
+          fields: [
+            { id: FIELD_1, name: 'Quadra 1', minSlotMinutes: 60, slots },
+            { id: FIELD_2, name: 'Quadra 2', minSlotMinutes: 30, slots: [] },
+          ],
+        },
+      };
+    }
+
+    function serveNight(
+      options: { today?: Start[]; tomorrow?: Start[]; busy?: string[] } = {},
+    ) {
+      const today = options.today ?? [
+        [TODAY, 21],
+        [TODAY, 22],
+        [TODAY, 23],
+      ];
+      const tomorrow = options.tomorrow ?? [
+        [TOMORROW, 0],
+        [TOMORROW, 1],
+        [TOMORROW, 2],
+      ];
+      mocks.fetchAvailability.mockImplementation(
+        (_slug: string, date: string) =>
+          Promise.resolve(
+            availabilityOf(
+              date,
+              hourly(date === TODAY ? today : tomorrow, options.busy),
+            ),
+          ),
+      );
+    }
+
+    it('loads the next day and offers its first hours under a heading with the date', async () => {
+      serveNight();
+      renderPicker();
+
+      const group = await screen.findByRole('group', {
+        name: 'Madrugada de sexta-feira, 6 de novembro',
+      });
+      expect(mocks.fetchAvailability).toHaveBeenCalledWith(
+        'arena-x',
+        TOMORROW,
+        expect.anything(),
+      );
+      expect(
+        within(group)
+          .getAllByRole('button')
+          .map((button) => button.textContent),
+      ).toEqual(['00:00', '01:00', '02:00']);
+      // Names carry the date, so "00:00" is not mistaken for tonight.
+      expect(
+        within(group).getByRole('button', {
+          name: '00:00, sexta-feira, 6 de novembro',
+        }),
+      ).toBeEnabled();
+    });
+
+    it('marks taken early hours as unavailable with the date in the name', async () => {
+      serveNight({ busy: [`${TOMORROW}T01:00:00.000-03:00`] });
+      renderPicker();
+
+      expect(
+        await screen.findByRole('button', {
+          name: '01:00, sexta-feira, 6 de novembro, indisponível',
+        }),
+      ).toBeDisabled();
+    });
+
+    it('does not load or show the next day when the venue closes before midnight', async () => {
+      serveNight({
+        today: [
+          [TODAY, 20],
+          [TODAY, 21],
+        ],
+      });
+      renderPicker();
+      await screen.findByRole('button', { name: '20:00' });
+
+      expect(mocks.fetchAvailability).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
+    });
+
+    it('does not show the next day when it does not open at 00:00', async () => {
+      serveNight({
+        tomorrow: [
+          [TOMORROW, 8],
+          [TOMORROW, 9],
+        ],
+      });
+      renderPicker();
+      await screen.findByRole('button', { name: '21:00' });
+
+      expect(mocks.fetchAvailability).toHaveBeenCalledTimes(2);
+      expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
+    });
+
+    it('still shows the day when the next day fails to load', async () => {
+      mocks.fetchAvailability.mockImplementation(
+        (_slug: string, date: string) =>
+          Promise.resolve(
+            date === TODAY
+              ? availabilityOf(date, hourly([[TODAY, 23]]))
+              : {
+                  ok: false,
+                  status: 500,
+                  fieldErrors: {},
+                  message: 'Não foi possível concluir. Tente novamente.',
+                },
+          ),
+      );
+      renderPicker();
+
+      expect(
+        await screen.findByRole('button', { name: '23:00' }),
+      ).toBeEnabled();
+      expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
+      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+    });
+
+    it('extends a selection across midnight and books it as one stretch', async () => {
+      serveNight();
+      mocks.createBooking.mockResolvedValue({
+        ok: true,
+        data: { id: BOOKING_ID },
+      });
+      const user = userEvent.setup();
+      renderPicker({ signedIn: true });
+
+      await user.click(await screen.findByRole('button', { name: '23:00' }));
+      await user.click(
+        screen.getByRole('button', {
+          name: '00:00, sexta-feira, 6 de novembro',
+        }),
+      );
+      await user.click(
+        screen.getByRole('button', {
+          name: '01:00, sexta-feira, 6 de novembro',
+        }),
+      );
+
+      const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
+      expect(summary).toHaveTextContent('23:00–02:00');
+      expect(summary).toHaveTextContent('Sex, 06/11');
+      // Three hours at R$ 60.
+      expect(summary).toHaveTextContent('R$ 180');
+
+      await user.click(screen.getByRole('button', { name: 'Reservar' }));
+
+      expect(mocks.createBooking).toHaveBeenCalledWith({
+        fieldId: FIELD_1,
+        startsAt: '2026-11-05T23:00:00.000-03:00',
+        durationMinutes: 180,
+      });
+    });
+
+    it('can start in the early hours', async () => {
+      serveNight();
+      mocks.createBooking.mockResolvedValue({
+        ok: true,
+        data: { id: BOOKING_ID },
+      });
+      const user = userEvent.setup();
+      renderPicker({ signedIn: true });
+
+      await user.click(
+        await screen.findByRole('button', {
+          name: '01:00, sexta-feira, 6 de novembro',
+        }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Reservar' }));
+
+      expect(mocks.createBooking).toHaveBeenCalledWith({
+        fieldId: FIELD_1,
+        startsAt: '2026-11-06T01:00:00.000-03:00',
+        durationMinutes: 60,
+      });
+    });
+
+    it('restores a saved choice that crosses midnight', async () => {
+      serveNight();
+      renderPicker({
+        signedIn: true,
+        initial: {
+          date: TODAY,
+          fieldId: FIELD_1,
+          startsAt: '2026-11-05T23:00:00.000-03:00',
+          durationMinutes: 120,
+        },
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('status', { name: 'Resumo da reserva' }),
+        ).toHaveTextContent('23:00–01:00');
+      });
+    });
+  });
+
   describe('coming back from sign in', () => {
     it('restores the choice when it is still free', async () => {
       renderPicker({

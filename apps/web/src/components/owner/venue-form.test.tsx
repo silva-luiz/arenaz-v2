@@ -536,24 +536,67 @@ describe('VenueForm time zone', () => {
     expect(screen.getByLabelText('Fuso horário')).toHaveValue('America/Manaus');
   });
 
-  it('edit: shows the saved zone and follows the UF only if it was the default', async () => {
+  it('edit: never changes the saved zone when the UF changes', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<VenueForm venue={VENUE} />);
     expect(screen.getByLabelText('Fuso horário')).toHaveValue(
       'America/Sao_Paulo',
     );
     await user.selectOptions(screen.getByLabelText('UF'), 'AM');
-    expect(screen.getByLabelText('Fuso horário')).toHaveValue('America/Manaus');
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
+      'America/Sao_Paulo',
+    );
     unmount();
 
     render(<VenueForm venue={{ ...VENUE, timezone: 'America/Noronha' }} />);
-    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
-      'America/Noronha',
-    );
     await user.selectOptions(screen.getByLabelText('UF'), 'AM');
     expect(screen.getByLabelText('Fuso horário')).toHaveValue(
       'America/Noronha',
     );
+  });
+
+  it('edit: a CEP lookup in another state leaves the zone alone', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: true,
+      data: { ...CEP_OK.data, cep: '69000000', city: 'Manaus', state: 'AM' },
+    });
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    const cepInput = screen.getByLabelText('CEP');
+    await user.clear(cepInput);
+    await user.type(cepInput, '69000-000');
+    await user.tab();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('UF')).toHaveValue('AM');
+    });
+    expect(screen.getByLabelText('Fuso horário')).toHaveValue(
+      'America/Sao_Paulo',
+    );
+  });
+
+  it('edit: shows the server refusal when the zone change hits future bookings', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: false,
+      status: 409,
+      fieldErrors: {},
+      message:
+        'Há reservas futuras neste espaço. Cancele-as antes de mudar o fuso horário.',
+    });
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    await user.selectOptions(
+      screen.getByLabelText('Fuso horário'),
+      'America/Manaus',
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Há reservas futuras neste espaço. Cancele-as antes de mudar o fuso horário.',
+    );
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
   it('edit: saves the chosen zone', async () => {

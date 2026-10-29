@@ -109,3 +109,36 @@ export function selectionTotalCents(
   }
   return total;
 }
+
+/**
+ * The hours after midnight that continue a day's last window: when the
+ * court's last slot of the day ends exactly at `midnightMs` (24:00), the
+ * leading run of the next day's slots that starts at `midnightMs` and has no
+ * break is the rest of the same opening (the API joins a window ending at
+ * 24:00 with one starting at 00:00 of the next day). Empty when the day
+ * closes earlier or the next day does not open at 00:00. Capped at the
+ * longest booking: nothing past it could be part of one starting tonight.
+ */
+export function overnightTail<T extends PickerSlot>(
+  daySlots: readonly T[],
+  nextDaySlots: readonly T[],
+  midnightMs: number,
+): T[] {
+  const reachesMidnight = daySlots.some((slot) => slot.endMs >= midnightMs);
+  if (!reachesMidnight) return [];
+
+  const sorted = [...nextDaySlots].sort((a, b) => a.startMs - b.startMs);
+  const limitMs = midnightMs + MAX_BOOKING_MINUTES * MINUTE_MS;
+  const tail: T[] = [];
+  // Starts may come closer than a block (every 30 minutes on a 60 minute
+  // court): the run goes on while the next start is inside or touching the
+  // end of the last one, and breaks at a gap (the window closed).
+  let coveredUntil = midnightMs;
+  for (const slot of sorted) {
+    if (slot.startMs >= limitMs || slot.startMs > coveredUntil) break;
+    if (tail.length === 0 && slot.startMs !== midnightMs) break;
+    tail.push(slot);
+    coveredUntil = Math.max(coveredUntil, slot.endMs);
+  }
+  return tail;
+}

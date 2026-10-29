@@ -148,6 +148,34 @@ describe('PixPayment', () => {
     expect(mocks.refresh).toHaveBeenCalled();
   });
 
+  it('says the session expired when the simulation is refused for lack of sign in', async () => {
+    // apiSend already sent the browser to sign in; the page only says why.
+    mocks.apiSend.mockImplementation((_method: string, path: string) =>
+      Promise.resolve(
+        path.endsWith('/payment')
+          ? { ok: true, data: charge() }
+          : {
+              ok: false,
+              status: 401,
+              fieldErrors: {},
+              message: 'Sua sessão expirou. Entre novamente.',
+            },
+      ),
+    );
+    const user = userEvent.setup();
+    renderPix();
+    await user.click(
+      await screen.findByRole('button', { name: 'Simular pagamento' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sua sessão expirou. Entre novamente.',
+    );
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Simular pagamento' }),
+    ).toBeEnabled();
+  });
+
   it('keeps the page when the simulation fails for another reason', async () => {
     mocks.apiSend.mockImplementation((_method: string, path: string) =>
       Promise.resolve(

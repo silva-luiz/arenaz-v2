@@ -167,6 +167,25 @@ describe('apiSend', () => {
     });
   });
 
+  it('sends the cookie and goes to sign in when the fake payment answers 401', async () => {
+    window.history.pushState({}, '', '/reservas/abc');
+    fetchMock.mockResolvedValue(
+      jsonResponse(401, { title: 'Não autenticado', status: 401 }),
+    );
+
+    const result = await apiSend('POST', '/payments/fake/fake_abc/pay');
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      '/api/payments/fake/fake_abc/pay',
+    );
+    expect(lastInit()).toMatchObject({
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+    expect(nav.navigate).toHaveBeenCalledWith('/entrar?next=/reservas/abc');
+    expect(result).toMatchObject({ ok: false, status: 401 });
+  });
+
   it('does not navigate on other failures', async () => {
     fetchMock.mockResolvedValue(jsonResponse(422, { status: 422 }));
 

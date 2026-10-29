@@ -95,6 +95,20 @@ describe('AgendaView (wide)', () => {
     vi.clearAllMocks();
   });
 
+  it('names the courts with level 2 headings, right under the page h1', () => {
+    renderView();
+
+    // The page has the only h1; a court heading is a h2, never a h3 that
+    // would skip a level.
+    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+    expect(
+      screen.getAllByRole('heading', { level: 2, name: 'Quadra 1' }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('heading', { level: 2, name: 'Quadra 2' }).length,
+    ).toBeGreaterThan(0);
+  });
+
   it('is a table with court columns and time rows', () => {
     renderView();
     const table = screen.getByRole('table', { name: /agenda/i });
@@ -185,6 +199,73 @@ describe('AgendaView (wide)', () => {
     expect(mocks.refresh).toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('status')).toHaveTextContent('Reserva cancelada');
+  });
+
+  it('warns that a paid app booking is refunded by support, not by the owner', async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(
+      inGrid().getByRole('button', {
+        name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
+      }),
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    expect(
+      within(dialog).queryByText(/O jogador já pagou/),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+    );
+
+    expect(
+      within(dialog).getByText(
+        'O jogador já pagou. O reembolso será tratado pelo suporte.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('does not talk about payment for a manual booking or a hold', async () => {
+    const user = userEvent.setup();
+    const hold: AgendaItem = {
+      ...APP_BOOKING,
+      id: '6c3f4e50-9d7b-4a9e-8d85-4e9b3f0a2c43',
+      status: 'held',
+      startsAt: '2026-11-02T23:00:00.000Z',
+      endsAt: '2026-11-03T00:00:00.000Z',
+      customerName: 'Beto P.',
+    };
+    renderView({
+      ...agenda(),
+      fields: [
+        { ...agenda().fields[0], items: [hold] },
+        agenda().fields[1],
+      ] as OwnerAgenda['fields'],
+    });
+
+    await user.click(
+      inGrid().getByRole('button', {
+        name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
+      }),
+    );
+    let dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+    );
+    expect(dialog).not.toHaveTextContent('já pagou');
+    await user.keyboard('{Escape}');
+
+    await user.click(
+      inGrid().getByRole('button', {
+        name: /^Quadra 1, 20:00–21:00, reserva de Beto P\./,
+      }),
+    );
+    dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+    );
+    expect(dialog).not.toHaveTextContent('já pagou');
   });
 
   it('shows the phone of a manual booking and the API refusal to cancel', async () => {

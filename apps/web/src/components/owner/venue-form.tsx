@@ -134,12 +134,10 @@ export function VenueForm({ venue }: VenueFormProps) {
   // CEP (digits) being looked up right now, if any.
   const pendingLookup = useRef('');
   const lookupTicket = useRef(0);
-  // Once the owner picks a zone by hand the UF stops changing it. A saved zone
-  // that differs from the UF's usual one was picked by hand before.
-  const timezoneChosen = useRef(
-    venue !== undefined &&
-      venue.timezone !== defaultTimezoneForUf(venue.address.state),
-  );
+  // The zone follows the UF only while creating, until the owner picks one by
+  // hand. An existing venue keeps its zone: its bookings and hours are in it,
+  // and the API refuses a change while there are future bookings.
+  const timezoneChosen = useRef(venue !== undefined);
 
   const {
     register,

@@ -66,4 +66,69 @@ describe('CancelBooking', () => {
     );
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
+
+  describe('a held booking', () => {
+    it('asks before giving up, with its own wording, and can be dismissed', async () => {
+      const user = userEvent.setup();
+      render(<CancelBooking bookingId={ID} status="held" />);
+
+      expect(
+        screen.queryByRole('button', { name: 'Cancelar reserva' }),
+      ).toBeNull();
+      await user.click(
+        screen.getByRole('button', { name: 'Desistir desta reserva' }),
+      );
+      expect(screen.getByText(/O horário volta a ficar livre/)).toBeVisible();
+      // The 24 hour rule and the refund do not apply before paying.
+      expect(screen.queryByText(/24 horas/)).toBeNull();
+      expect(screen.queryByText(/reembolso/)).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Voltar' }));
+      expect(
+        screen.queryByRole('button', { name: 'Sim, desistir' }),
+      ).toBeNull();
+      expect(mocks.apiSend).not.toHaveBeenCalled();
+    });
+
+    it('gives up through the same endpoint and reloads the page', async () => {
+      mocks.apiSend.mockResolvedValue({ ok: true, data: {} });
+      const user = userEvent.setup();
+      render(<CancelBooking bookingId={ID} status="held" />);
+
+      await user.click(
+        screen.getByRole('button', { name: 'Desistir desta reserva' }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Sim, desistir' }));
+
+      await waitFor(() => {
+        expect(mocks.refresh).toHaveBeenCalled();
+      });
+      expect(mocks.apiSend).toHaveBeenCalledWith(
+        'POST',
+        `/bookings/${ID}/cancel`,
+        undefined,
+        expect.anything(),
+      );
+    });
+
+    it('shows the refusal of the API', async () => {
+      mocks.apiSend.mockResolvedValue({
+        ok: false,
+        status: 409,
+        fieldErrors: {},
+        message: 'Essa reserva não pode mais ser cancelada',
+      });
+      const user = userEvent.setup();
+      render(<CancelBooking bookingId={ID} status="held" />);
+
+      await user.click(
+        screen.getByRole('button', { name: 'Desistir desta reserva' }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Sim, desistir' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Essa reserva não pode mais ser cancelada',
+      );
+      expect(mocks.refresh).not.toHaveBeenCalled();
+    });
+  });
 });

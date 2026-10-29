@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_BOOKING_MINUTES,
+  overnightTail,
   selectionTotalCents,
   selectSlot,
   type PickerSlot,
@@ -133,5 +134,107 @@ describe('selectionTotalCents', () => {
 
   it('is null when a block of the selection is unknown', () => {
     expect(selectionTotalCents(slotsFor(60, [], 1), sel(0, 120))).toBeNull();
+  });
+});
+
+describe('overnightTail', () => {
+  const MIDNIGHT = Date.parse('2026-11-07T00:00:00-03:00');
+  const slot = (startMs: number, available = true): PickerSlot => ({
+    startMs,
+    endMs: startMs + 60 * MIN,
+    available,
+    priceCents: 6000,
+  });
+  /** Hourly starts of the day, 21:00-23:00 (the last one ends at 24:00). */
+  const evening = [21, 22, 23].map((hour) =>
+    slot(MIDNIGHT + (hour - 24) * 60 * MIN),
+  );
+  const early = (hours: number[]) =>
+    hours.map((hour) => slot(MIDNIGHT + hour * 60 * MIN));
+
+  it('continues the window with the next day slots that start at 00:00', () => {
+    const tail = overnightTail(evening, early([0, 1, 2]), MIDNIGHT);
+
+    expect(tail.map((item) => item.startMs)).toEqual([
+      MIDNIGHT,
+      MIDNIGHT + 60 * MIN,
+      MIDNIGHT + 120 * MIN,
+    ]);
+  });
+
+  it('keeps taken slots of the continuation (they show as unavailable)', () => {
+    const tail = overnightTail(
+      evening,
+      [slot(MIDNIGHT, false), ...early([1])],
+      MIDNIGHT,
+    );
+
+    expect(tail.map((item) => item.available)).toEqual([false, true]);
+  });
+
+  it('is empty when the day does not reach 24:00', () => {
+    expect(overnightTail(evening.slice(0, 2), early([0, 1]), MIDNIGHT)).toEqual(
+      [],
+    );
+  });
+
+  it('is empty when the next day does not open at 00:00', () => {
+    expect(overnightTail(evening, early([1, 2]), MIDNIGHT)).toEqual([]);
+  });
+
+  it('stops where the next day window breaks', () => {
+    const tail = overnightTail(evening, early([0, 1, 4, 5]), MIDNIGHT);
+
+    expect(tail).toHaveLength(2);
+  });
+
+  it('never goes past the longest booking', () => {
+    const tail = overnightTail(
+      evening,
+      early(Array.from({ length: 12 }, (_, index) => index)),
+      MIDNIGHT,
+    );
+
+    expect(tail).toHaveLength(MAX_BOOKING_MINUTES / 60);
+  });
+
+  it('is empty without slots', () => {
+    expect(overnightTail([], early([0]), MIDNIGHT)).toEqual([]);
+    expect(overnightTail(evening, [], MIDNIGHT)).toEqual([]);
+  });
+});
+
+describe('selectSlot across midnight', () => {
+  const MIDNIGHT = Date.parse('2026-11-07T00:00:00-03:00');
+  const grid: PickerSlot[] = [22, 23, 24, 25].map((hour) => {
+    const startMs = MIDNIGHT + (hour - 24) * 60 * MIN;
+    return {
+      startMs,
+      endMs: startMs + 60 * MIN,
+      available: true,
+      priceCents: 6000,
+    };
+  });
+
+  it('extends a selection from before midnight into the next day', () => {
+    const [, eleven, midnight, one] = grid as [
+      PickerSlot,
+      PickerSlot,
+      PickerSlot,
+      PickerSlot,
+    ];
+    const result = selectSlot(
+      grid,
+      { startMs: eleven.startMs, endMs: midnight.startMs },
+      one.startMs,
+    );
+
+    expect(result.selection).toEqual({
+      startMs: eleven.startMs,
+      endMs: one.endMs,
+    });
+    expect(selectionTotalCents(grid, result.selection as Selection)).toBe(
+      18000,
+    );
   });
 });

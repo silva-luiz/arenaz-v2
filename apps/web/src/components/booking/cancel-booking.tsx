@@ -6,11 +6,25 @@ import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
 
+export interface CancelBookingProps {
+  bookingId: string;
+  /**
+   * `confirmed` (the default) is a paid booking: the 24 hour rule applies and
+   * the refund goes through support. `held` is a time still waiting for
+   * payment: giving it up frees it at once and nothing was charged.
+   */
+  status?: 'held' | 'confirmed';
+}
+
 /**
- * Two-step cancellation of a confirmed booking. The 24 hour rule lives in the
- * API; when it says no (409) its message is shown as it is.
+ * Two-step cancellation of a booking. The 24 hour rule lives in the API; when
+ * it says no (409) its message is shown as it is.
  */
-export function CancelBooking({ bookingId }: { bookingId: string }) {
+export function CancelBooking({
+  bookingId,
+  status = 'confirmed',
+}: CancelBookingProps) {
+  const held = status === 'held';
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,14 +64,14 @@ export function CancelBooking({ bookingId }: { bookingId: string }) {
           setError(undefined);
         }}
       >
-        Cancelar reserva
+        {held ? 'Desistir desta reserva' : 'Cancelar reserva'}
       </Button>
       {confirming ? (
         <div id={panelId} className="flex flex-col gap-3">
           <p className="text-sm">
-            O cancelamento só é possível com pelo menos 24 horas de
-            antecedência. O horário volta a ficar livre para outras pessoas e o
-            reembolso é tratado pelo suporte.
+            {held
+              ? 'O horário volta a ficar livre para outras pessoas.'
+              : 'O cancelamento só é possível com pelo menos 24 horas de antecedência. O horário volta a ficar livre para outras pessoas e o reembolso é tratado pelo suporte.'}
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -67,7 +81,7 @@ export function CancelBooking({ bookingId }: { bookingId: string }) {
                 void cancel();
               }}
             >
-              Sim, cancelar
+              {held ? 'Sim, desistir' : 'Sim, cancelar'}
             </Button>
             <Button
               variant="secondary"

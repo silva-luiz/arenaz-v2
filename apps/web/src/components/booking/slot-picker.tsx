@@ -18,24 +18,29 @@ import {
 } from '@arenaz/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  addDaysToDateKey,
   createBooking,
   dateChips,
   fetchAvailability,
+  longDateLabel,
   signInPathFor,
   type BookingIntent,
 } from '@/lib/booking-client';
 import { navigate } from '@/lib/navigate';
 import { GENERIC_ERROR } from '@/lib/problem';
 import {
+  overnightTail,
   selectionTotalCents,
   selectSlot,
   type PickerSlot,
   type Selection,
 } from '@/lib/slot-selection';
 import {
+  formatZonedDay,
   formatZonedRange,
   formatZonedTime,
   todayInZone,
+  toZonedIso,
 } from '@/lib/zoned-time';
 import { BookingSummary } from './booking-summary';
 
@@ -61,7 +66,13 @@ interface GridSlot extends PickerSlot {
 }
 
 type Loaded =
-  | { key: string; ok: true; data: Availability }
+  | {
+      key: string;
+      ok: true;
+      data: Availability;
+      /** The day after, loaded when the day's opening runs to 24:00. */
+      nextData?: Availability;
+    }
   | { key: string; ok: false; message: string };
 
 const SLOT_TAKEN = 'Esse horário acabou de ser reservado. Escolha outro.';
@@ -89,6 +100,33 @@ function toGridSlots(
     available: slot.available,
     priceCents: slot.priceCents,
   }));
+}
+
+/** 00:00 of the day after `date`, in the venue's zone. */
+function midnightAfter(date: string, timezone: string): number {
+  return Date.parse(toZonedIso(date, 24 * 60, timezone));
+}
+
+interface Grid {
+  /** The day's own times. */
+  day: GridSlot[];
+  /** The early hours of the next day that continue the day's last opening. */
+  tail: GridSlot[];
+}
+
+function toGrid(
+  loaded: Extract<Loaded, { ok: true }> | null,
+  fieldId: string,
+  midnightMs: number,
+): Grid {
+  if (!loaded) return { day: [], tail: [] };
+  const day = toGridSlots(loaded.data, fieldId);
+  const tail = overnightTail(
+    day,
+    toGridSlots(loaded.nextData, fieldId),
+    midnightMs,
+  );
+  return { day, tail };
 }
 
 /** The chosen stretch when every block of it is still free; else `null`. */
@@ -160,47 +198,94 @@ export function SlotPicker({
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchAvailability(slug, date, controller.signal).then((result) => {
-      if (controller.signal.aborted) return;
-      setLoaded(
-        result.ok
-          ? { key: requestKey, ok: true, data: result.data }
-          : { key: requestKey, ok: false, message: result.message },
+    // A function: TypeScript would keep the first check's narrowing across the
+    // second await.
+    const aborted = () => controller.signal.aborted;
+    void (async () => {
+      const result = await fetchAvailability(slug, date, controller.signal);
+      if (aborted()) return;
+      if (!result.ok) {
+        setLoaded({ key: requestKey, ok: false, message: result.message });
+        return;
+      }
+
+      // An opening that runs to 24:00 goes on after midnight when the next
+      // day opens at 00:00: that day is read too, to offer the early hours.
+      let nextData: Availability | undefined;
+      const midnight = midnightAfter(date, timezone);
+      const runsToMidnight = result.data.fields.some((candidate) =>
+        candidate.slots.some((slot) => Date.parse(slot.endsAt) >= midnight),
       );
+      if (runsToMidnight) {
+        const next = await fetchAvailability(
+          slug,
+          addDaysToDateKey(date, 1),
+          controller.signal,
+        );
+        if (aborted()) return;
+        // Without it the day still works; it just ends at 24:00.
+        if (next.ok) nextData = next.data;
+      }
+
+      const ready: Extract<Loaded, { ok: true }> = {
+        key: requestKey,
+        ok: true,
+        data: result.data,
+        ...(nextData ? { nextData } : {}),
+      };
+      setLoaded(ready);
       const intent = pendingInitial.current;
-      if (intent && result.ok && intent.date === date) {
+      if (intent && intent.date === date) {
         pendingInitial.current = undefined;
+        const initialGrid = toGrid(ready, intent.fieldId, midnight);
         setSelection(
-          restoreSelection(toGridSlots(result.data, intent.fieldId), intent),
+          restoreSelection([...initialGrid.day, ...initialGrid.tail], intent),
         );
       }
-    });
+    })();
     return () => {
       controller.abort();
     };
-  }, [slug, date, requestKey]);
+  }, [slug, date, requestKey, timezone]);
 
   const current = loaded?.key === requestKey ? loaded : null;
   const field = fields.find((candidate) => candidate.id === fieldId);
-  const slots = useMemo(
-    () => toGridSlots(current?.ok ? current.data : undefined, fieldId),
-    [current, fieldId],
+  const midnightMs = useMemo(
+    () => midnightAfter(date, timezone),
+    [date, timezone],
   );
+  const grid = useMemo(
+    () => toGrid(current?.ok ? current : null, fieldId, midnightMs),
+    [current, fieldId, midnightMs],
+  );
+  const slots = useMemo(() => [...grid.day, ...grid.tail], [grid]);
+  const tailLabel = longDateLabel(addDaysToDateKey(date, 1));
 
   const total = selection ? selectionTotalCents(slots, selection) : null;
   const summary =
     selection && total !== null && field
-      ? {
-          fieldName: field.name,
-          dayLabel: chips.find((chip) => chip.date === date)?.label ?? date,
-          timeRange: formatZonedRange(
-            new Date(selection.startMs).toISOString(),
-            new Date(selection.endMs).toISOString(),
-            timezone,
-          ),
-          totalCents: total,
-        }
+      ? summaryOf(selection, field.name, total)
       : null;
+
+  /** Day and range of a selection; past midnight the end day is named. */
+  function summaryOf(chosen: Selection, fieldName: string, totalCents: number) {
+    const startsAt = new Date(chosen.startMs).toISOString();
+    const endsAt = new Date(chosen.endMs).toISOString();
+    const startsAfterMidnight = chosen.startMs >= midnightMs;
+    const endsAfterMidnight = chosen.endMs > midnightMs;
+    const range = formatZonedRange(startsAt, endsAt, timezone);
+    return {
+      fieldName,
+      dayLabel: startsAfterMidnight
+        ? formatZonedDay(startsAt, timezone)
+        : (chips.find((chip) => chip.date === date)?.label ?? date),
+      timeRange:
+        endsAfterMidnight && !startsAfterMidnight
+          ? `${range} (termina ${formatZonedDay(endsAt, timezone)})`
+          : range,
+      totalCents,
+    };
+  }
 
   function chooseDate(next: string) {
     pendingInitial.current = undefined;
@@ -276,8 +361,46 @@ export function SlotPicker({
   }
 
   const showZone = timezone !== DEFAULT_TIMEZONE;
-  const hasSlots = slots.length > 0;
-  const hasFreeSlot = slots.some((slot) => slot.available);
+  const hasSlots = grid.day.length > 0;
+  const hasFreeSlot = grid.day.some((slot) => slot.available);
+
+  function timeButton(slot: GridSlot, overnight: boolean) {
+    const time = formatZonedTime(slot.startsAt, timezone);
+    const inSelection =
+      selection !== null &&
+      slot.startMs >= selection.startMs &&
+      slot.startMs < selection.endMs;
+    // Past midnight the name carries the date: "00:00" alone would read as
+    // tonight's midnight. It starts with the visible text.
+    const base = overnight ? `${time}, ${tailLabel}` : time;
+    return (
+      <button
+        key={slot.startsAt}
+        type="button"
+        disabled={!slot.available}
+        aria-pressed={slot.available ? inSelection : undefined}
+        aria-label={
+          slot.available
+            ? overnight
+              ? base
+              : undefined
+            : `${base}, indisponível`
+        }
+        onClick={() => {
+          tap(slot.startMs);
+        }}
+        className={cn(
+          TIME_BUTTON,
+          inSelection
+            ? 'border-ink bg-ink text-white'
+            : 'border-line-control bg-bg text-ink enabled:hover:bg-surface',
+          'disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted disabled:line-through',
+        )}
+      >
+        {time}
+      </button>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -349,37 +472,25 @@ export function SlotPicker({
               </p>
             )}
             <div className="grid grid-cols-4 gap-2">
-              {slots.map((slot) => {
-                const time = formatZonedTime(slot.startsAt, timezone);
-                const inSelection =
-                  selection !== null &&
-                  slot.startMs >= selection.startMs &&
-                  slot.startMs < selection.endMs;
-                return (
-                  <button
-                    key={slot.startsAt}
-                    type="button"
-                    disabled={!slot.available}
-                    aria-pressed={slot.available ? inSelection : undefined}
-                    aria-label={
-                      slot.available ? undefined : `${time}, indisponível`
-                    }
-                    onClick={() => {
-                      tap(slot.startMs);
-                    }}
-                    className={cn(
-                      TIME_BUTTON,
-                      inSelection
-                        ? 'border-ink bg-ink text-white'
-                        : 'border-line-control bg-bg text-ink enabled:hover:bg-surface',
-                      'disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted disabled:line-through',
-                    )}
-                  >
-                    {time}
-                  </button>
-                );
-              })}
+              {grid.day.map((slot) => timeButton(slot, false))}
             </div>
+            {grid.tail.length > 0 ? (
+              <div
+                role="group"
+                aria-labelledby="madrugada-heading"
+                className="mt-4"
+              >
+                <p
+                  id="madrugada-heading"
+                  className="mb-2 text-sm font-medium text-ink"
+                >
+                  {`Madrugada de ${tailLabel}`}
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {grid.tail.map((slot) => timeButton(slot, true))}
+                </div>
+              </div>
+            ) : null}
             <p className="mt-3 text-sm text-muted">
               Toque em horários seguidos para jogar mais tempo.
             </p>

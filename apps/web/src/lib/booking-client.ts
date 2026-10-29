@@ -140,6 +140,11 @@ const LONG_DATE = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'UTC',
 });
 
+/** "sexta-feira, 6 de novembro" for a date key. */
+export function longDateLabel(dateKey: string): string {
+  return LONG_DATE.format(parseKey(dateKey));
+}
+
 /** Today (in the venue's zone, passed in) and the days after it. */
 export function dateChips(today: string): DateChip[] {
   return Array.from({ length: DATE_CHIP_COUNT }, (_, index) => {

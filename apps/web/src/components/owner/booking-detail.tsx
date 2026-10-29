@@ -52,6 +52,12 @@ export function BookingDetail({
 
   const isBooking = item.kind === 'booking';
   const noun = isBooking ? 'reserva' : 'bloqueio';
+  // A confirmed app booking was paid through the app: cancelling it does not
+  // refund the player by itself (refunds go through support for now).
+  const paidInApp =
+    item.kind === 'booking' &&
+    item.origin === 'app' &&
+    item.status === 'confirmed';
 
   async function confirm() {
     setError(undefined);
@@ -126,6 +132,11 @@ export function BookingDetail({
                 ? 'O horário volta a ficar livre. Só dá para cancelar reservas que ainda não começaram.'
                 : 'O horário volta a ficar livre para reservas.'}
             </p>
+            {paidInApp ? (
+              <p className="text-sm font-medium">
+                O jogador já pagou. O reembolso será tratado pelo suporte.
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="danger"

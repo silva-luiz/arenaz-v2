@@ -1,27 +1,42 @@
-import { ownerAgendaSchema, venueSchema } from '@arenaz/contracts';
-import { cn } from '@arenaz/ui';
+import {
+  AVAILABILITY_HORIZON_DAYS,
+  ownerAgendaSchema,
+  venueSchema,
+} from '@arenaz/contracts';
+import { Button, cn, Field, Input } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AgendaView } from '@/components/owner/agenda-view';
 import { apiGet } from '@/lib/api';
-import { addDaysToDateKey, dateChips } from '@/lib/booking-client';
+import {
+  addDaysToDateKey,
+  dateChips,
+  longDateLabel,
+} from '@/lib/booking-client';
 import { todayInZone } from '@/lib/zoned-time';
 
 export const metadata: Metadata = { title: 'Agenda' };
 
 const DAYS = 7;
+/** The owner can look back a month and ahead as far as bookings go. */
+const DAYS_BACK = 30;
+const DAYS_AHEAD = AVAILABILITY_HORIZON_DAYS;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
 const LINK =
   'text-sm font-semibold text-brand underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
 
-/** `?data=` when it is one of the seven days offered, otherwise today. */
+/**
+ * `?data=` when it is a real date from 30 days ago to 60 days ahead (in the
+ * venue's zone), otherwise today. Date keys compare as text.
+ */
 function pickDate(requested: string | string[] | undefined, today: string) {
   if (typeof requested !== 'string' || !DATE_KEY.test(requested)) return today;
-  const offered = Array.from({ length: DAYS }, (_, index) =>
-    addDaysToDateKey(today, index),
-  );
-  return offered.includes(requested) ? requested : today;
+  const first = addDaysToDateKey(today, -DAYS_BACK);
+  const last = addDaysToDateKey(today, DAYS_AHEAD);
+  // A date that does not exist (02-31) rolls over when normalized.
+  const exists = addDaysToDateKey(requested, 0) === requested;
+  return exists && requested >= first && requested <= last ? requested : today;
 }
 
 export default async function AgendaPage({
@@ -79,6 +94,36 @@ export default async function AgendaPage({
           })}
         </ul>
       </nav>
+
+      <div className="flex flex-wrap items-end gap-3">
+        <form
+          method="get"
+          action={`/painel/espacos/${venue.id}/agenda`}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <Field label="Ir para a data" className="w-48">
+            <Input
+              type="date"
+              name="data"
+              defaultValue={date}
+              min={addDaysToDateKey(today, -DAYS_BACK)}
+              max={addDaysToDateKey(today, DAYS_AHEAD)}
+              required
+            />
+          </Field>
+          <Button type="submit" variant="secondary">
+            Ver dia
+          </Button>
+        </form>
+        <Link
+          href={`/painel/espacos/${venue.id}/agenda?data=${today}`}
+          className={cn(LINK, 'inline-flex h-11 items-center')}
+        >
+          Hoje
+        </Link>
+      </div>
+
+      <p className="text-sm font-medium text-ink">{longDateLabel(date)}</p>
 
       {/* Remounts per day: dialogs and notices never leak across days. */}
       <AgendaView

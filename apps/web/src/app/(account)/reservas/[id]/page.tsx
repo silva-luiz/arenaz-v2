@@ -145,6 +145,7 @@ export default async function BookingPage({
               serverNow={now.toISOString()}
             />
           ) : null}
+          <CancelBooking bookingId={booking.id} status="held" />
         </>
       ) : null}
 
@@ -152,7 +153,9 @@ export default async function BookingPage({
         <>
           <Address booking={booking} />
           <p className="text-sm text-muted">{CANCEL_POLICY}</p>
-          {started ? null : <CancelBooking bookingId={booking.id} />}
+          {started ? null : (
+            <CancelBooking bookingId={booking.id} status="confirmed" />
+          )}
         </>
       ) : null}
 

@@ -215,12 +215,12 @@ export function AgendaGrid({
             aria-labelledby={`agenda-outros-${field.id}`}
             className="rounded-card border border-line p-4"
           >
-            <h3
+            <h2
               id={`agenda-outros-${field.id}`}
               className="mb-1 text-base font-bold"
             >
               {`Outros horários nesta quadra: ${field.name}`}
-            </h3>
+            </h2>
             <p className="mb-3 text-sm text-muted">
               Estes horários se sobrepõem a outros ou não começam em hora cheia
               ou meia hora, por isso não cabem na grade.
@@ -267,7 +267,7 @@ export function AgendaList({ timezone, fields, onOpen }: AgendaListProps) {
             aria-labelledby={`agenda-quadra-${field.id}`}
             className="rounded-card border border-line p-4"
           >
-            <h3
+            <h2
               id={`agenda-quadra-${field.id}`}
               className="mb-3 text-base font-bold"
             >
@@ -277,7 +277,7 @@ export function AgendaList({ timezone, fields, onOpen }: AgendaListProps) {
                   Inativa
                 </span>
               )}
-            </h3>
+            </h2>
             {items.length === 0 ? (
               <p className="text-sm text-muted">
                 Nenhuma reserva ou bloqueio neste dia.

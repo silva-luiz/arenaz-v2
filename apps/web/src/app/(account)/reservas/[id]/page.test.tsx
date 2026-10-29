@@ -27,7 +27,11 @@ vi.mock('@/components/booking/pix-payment', () => ({
   ),
 }));
 vi.mock('@/components/booking/cancel-booking', () => ({
-  CancelBooking: () => <button type="button">Cancelar reserva</button>,
+  CancelBooking: (props: { status?: string }) => (
+    <button type="button" data-status={props.status}>
+      Cancelar reserva
+    </button>
+  ),
 }));
 
 import BookingPage from './page';
@@ -108,6 +112,14 @@ describe('/reservas/[id]', () => {
     expect(screen.getByText('Vila Madalena, São Paulo')).toBeVisible();
   });
 
+  it('held: the player can give the booking up', async () => {
+    await renderPage(make());
+
+    expect(
+      screen.getByRole('button', { name: 'Cancelar reserva' }),
+    ).toHaveAttribute('data-status', 'held');
+  });
+
   it('confirmed: quadra garantida with the full address, phone and cancel', async () => {
     await renderPage(
       make({
@@ -132,7 +144,7 @@ describe('/reservas/[id]', () => {
     ).toHaveAttribute('href', 'tel:+5511987654321');
     expect(
       screen.getByRole('button', { name: 'Cancelar reserva' }),
-    ).toBeVisible();
+    ).toHaveAttribute('data-status', 'confirmed');
     expect(screen.queryByTestId('pix')).toBeNull();
   });
 
