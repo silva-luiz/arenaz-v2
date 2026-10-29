@@ -7,6 +7,7 @@ import { FieldsModule } from './fields/fields.module.js';
 import { GeoModule } from './geo/geo.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PhotosModule } from './photos/photos.module.js';
+import { PublicVenuesModule } from './public/public-venues.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { VenuesModule } from './venues/venues.module.js';
 
@@ -28,6 +29,7 @@ export class AppModule {
         VenuesModule,
         FieldsModule,
         PhotosModule,
+        PublicVenuesModule,
       ],
     };
   }

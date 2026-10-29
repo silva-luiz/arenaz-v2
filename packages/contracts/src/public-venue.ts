@@ -1,0 +1,148 @@
+import { z } from 'zod';
+import { AMENITIES, CANCELLATION_POLICIES, SPORTS } from './catalog.js';
+import { fieldSchema, priceRuleSchema } from './field.js';
+import { locationSchema } from './geo.js';
+import { photoSchema } from './photo.js';
+import { venueHoursSchema } from './venue.js';
+
+export const PUBLIC_PAGE_SIZE = 20;
+export const PUBLIC_MAX_PAGE = 50;
+export const PUBLIC_MAX_RADIUS_KM = 50;
+export const PUBLIC_DEFAULT_RADIUS_KM = 10;
+
+const LAT_LNG_TOGETHER_MESSAGE = 'Informe a latitude e a longitude juntas';
+
+/**
+ * A query-string number: arrives as text, so blank is refused (`Number('')` is
+ * 0) and the value is coerced before `rules` run.
+ */
+function queryNumber(invalid: string, rules: z.ZodType<number, number>) {
+  return z
+    .string({ error: invalid })
+    .trim()
+    .min(1, invalid)
+    .pipe(z.coerce.number({ error: invalid }))
+    .pipe(rules);
+}
+
+/** Free text: trimmed, inner whitespace collapsed to a single space. */
+const queryTextSchema = z
+  .string({ error: 'Busca inválida' })
+  .transform((raw) => raw.trim().replace(/\s+/g, ' '))
+  .pipe(
+    z
+      .string()
+      .min(2, 'A busca precisa ter pelo menos 2 caracteres')
+      .max(80, 'A busca pode ter no máximo 80 caracteres'),
+  );
+
+/**
+ * `GET /venues` query string (every value arrives as a string). `lat` and
+ * `lng` go together; unknown parameters are ignored.
+ */
+export const publicSearchQuerySchema = z
+  .object({
+    q: queryTextSchema.optional(),
+    sport: z.enum(SPORTS, { error: 'Esporte inválido' }).optional(),
+    lat: queryNumber('Latitude inválida', locationSchema.shape.lat).optional(),
+    lng: queryNumber('Longitude inválida', locationSchema.shape.lng).optional(),
+    radiusKm: queryNumber(
+      'Raio inválido',
+      z
+        .number()
+        .min(1, 'O raio mínimo é 1 km')
+        .max(
+          PUBLIC_MAX_RADIUS_KM,
+          `O raio máximo é ${String(PUBLIC_MAX_RADIUS_KM)} km`,
+        ),
+    ).default(PUBLIC_DEFAULT_RADIUS_KM),
+    page: queryNumber(
+      'Página inválida',
+      z
+        .number()
+        .int('Página inválida')
+        .min(1, 'Página inválida')
+        .max(PUBLIC_MAX_PAGE, `A página máxima é ${String(PUBLIC_MAX_PAGE)}`),
+    ).default(1),
+  })
+  .superRefine((query, ctx) => {
+    if (query.lat !== undefined && query.lng === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: LAT_LNG_TOGETHER_MESSAGE,
+        path: ['lng'],
+      });
+    }
+    if (query.lng !== undefined && query.lat === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: LAT_LNG_TOGETHER_MESSAGE,
+        path: ['lat'],
+      });
+    }
+  });
+
+/** Venue as a search result card. */
+export const publicVenueCardSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  neighborhood: z.string(),
+  city: z.string(),
+  state: z.string(),
+  coverUrl: z.string().nullable(),
+  sports: z.array(z.enum(SPORTS)),
+  /** Lowest base price among the ACTIVE fields (price rules do not count). */
+  minPriceCentsPerHour: z.number().int().positive(),
+  /** Latitude and longitude rounded to 2 decimals (about 1 km). */
+  approxLocation: locationSchema,
+  /** Km from the searched point, 1 decimal; `null` without `lat`/`lng`. */
+  distanceKm: z.number().nonnegative().nullable(),
+});
+
+export const publicSearchResponseSchema = z.object({
+  items: z.array(publicVenueCardSchema),
+  page: z.number().int().positive(),
+  pageSize: z.literal(PUBLIC_PAGE_SIZE),
+  hasMore: z.boolean(),
+});
+
+/** An active field as the public sees it (no `isActive`, no blocks). */
+export const publicFieldSchema = fieldSchema
+  .pick({
+    id: true,
+    name: true,
+    sports: true,
+    surface: true,
+    format: true,
+    lengthM: true,
+    widthM: true,
+    minSlotMinutes: true,
+    basePriceCentsPerHour: true,
+  })
+  .extend({ priceRules: z.array(priceRuleSchema.omit({ id: true })) });
+
+/**
+ * Published venue for anyone: no phone, street, number, complement, CEP,
+ * exact coordinates or owner ids.
+ */
+export const publicVenueSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  neighborhood: z.string(),
+  city: z.string(),
+  state: z.string(),
+  approxLocation: locationSchema,
+  amenities: z.array(z.enum(AMENITIES)),
+  cancellationPolicy: z.enum(CANCELLATION_POLICIES),
+  hours: venueHoursSchema,
+  photos: z.array(photoSchema),
+  host: z.object({ firstName: z.string() }),
+  fields: z.array(publicFieldSchema),
+});
+
+export type PublicSearchQuery = z.infer<typeof publicSearchQuerySchema>;
+export type PublicVenueCard = z.infer<typeof publicVenueCardSchema>;
+export type PublicSearchResponse = z.infer<typeof publicSearchResponseSchema>;
+export type PublicField = z.infer<typeof publicFieldSchema>;
+export type PublicVenue = z.infer<typeof publicVenueSchema>;

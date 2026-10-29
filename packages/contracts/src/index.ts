@@ -6,5 +6,6 @@ export * from './geo.js';
 export * from './health.js';
 export * from './money.js';
 export * from './photo.js';
+export * from './public-venue.js';
 export type * from './problem.js';
 export * from './venue.js';
