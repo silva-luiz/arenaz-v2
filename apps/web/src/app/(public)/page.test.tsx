@@ -97,9 +97,7 @@ describe('home page', () => {
       'href',
       '/espacos/arena-2',
     );
-    expect(within(list).getAllByText(/Vila Madalena, São Paulo/)).toHaveLength(
-      3,
-    );
+    expect(within(list).getAllByText(/^Vila Madalena · /)).toHaveLength(3);
   });
 
   it('shows at most 8 venues', async () => {

@@ -40,3 +40,43 @@
   --radius-section: 32px;
   --radius-button: 14px;
 }
+
+/*
+ * Visual utilities of the prototype (docs/design/prototipo/*.dc.html).
+ *
+ * .az-glass       frosted white chip over a photo (seals, badges).
+ * .az-glass-dark  frosted dark chip over the night hero and the dark band.
+ * .az-lift        card that rises on hover; the motion is dropped under
+ *                 prefers-reduced-motion (the shadow still changes, which is
+ *                 not movement).
+ */
+@utility az-glass {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+}
+
+@utility az-glass-dark {
+  background: rgba(14, 26, 20, 0.55);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+@utility az-lift {
+  transition:
+    transform 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: box-shadow 0.4s var(--ease-out);
+
+    &:hover {
+      transform: none;
+    }
+  }
+}

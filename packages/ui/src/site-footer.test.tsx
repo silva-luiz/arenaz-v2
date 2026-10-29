@@ -18,6 +18,16 @@ describe('SiteFooter', () => {
     expect(screen.getByText('Ajuda')).toBeVisible();
   });
 
+  it('credits the photos only when asked to', () => {
+    const { rerender } = render(<SiteFooter />);
+    expect(screen.getByRole('contentinfo')).not.toHaveTextContent('Unsplash');
+
+    rerender(<SiteFooter showPhotoCredit />);
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(
+      'Fotos: Unsplash',
+    );
+  });
+
   it('has no links yet (the pages do not exist)', () => {
     render(<SiteFooter />);
     expect(screen.queryAllByRole('link')).toHaveLength(0);

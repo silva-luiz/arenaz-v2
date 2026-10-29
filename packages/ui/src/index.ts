@@ -26,4 +26,10 @@ export { SiteHeader, initials, type SiteHeaderProps } from './site-header';
 export { Skeleton, type SkeletonProps } from './skeleton';
 export { TabBar, type TabBarItem, type TabBarProps } from './tab-bar';
 export { Textarea, type TextareaProps } from './textarea';
-export { VenueCard, formatDistanceKm, type VenueCardProps } from './venue-card';
+export {
+  VenueCard,
+  formatDistanceKm,
+  formatFreeTime,
+  type VenueCardFavorite,
+  type VenueCardProps,
+} from './venue-card';

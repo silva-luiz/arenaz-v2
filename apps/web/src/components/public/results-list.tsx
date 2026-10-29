@@ -5,6 +5,7 @@ import { FOCUS_RING, VenueCard, cn } from '@arenaz/ui';
 import dynamic from 'next/dynamic';
 import { useState, type ReactNode } from 'react';
 import { AppLink } from '@/components/ui/next-link';
+import { venueCardMeta } from '@/lib/venue-card-meta';
 
 // Leaflet touches `window` on import, so the map is client-only.
 const ResultsMap = dynamic(() => import('./results-map'), {
@@ -123,12 +124,11 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
                 <VenueCard
                   href={`/espacos/${venue.slug}`}
                   name={venue.name}
-                  neighborhood={venue.neighborhood}
-                  city={venue.city}
-                  coverUrl={venue.coverUrl}
-                  sports={venue.sports}
-                  minPriceCentsPerHour={venue.minPriceCentsPerHour}
-                  distanceKm={venue.distanceKm}
+                  imageUrl={venue.coverUrl}
+                  imageAlt=""
+                  meta={venueCardMeta(venue)}
+                  priceCents={venue.minPriceCentsPerHour}
+                  priceFrom
                   linkComponent={AppLink}
                 />
               </li>

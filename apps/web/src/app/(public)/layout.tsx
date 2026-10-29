@@ -4,6 +4,7 @@ import { PublicTabBar } from '@/components/layout/public-tab-bar';
 import { SkipLink } from '@/components/layout/skip-link';
 import { AppLink } from '@/components/ui/next-link';
 import { currentUser } from '@/lib/current-user';
+import { isDemoMode } from '@/lib/demo';
 
 /**
  * Shell of the public pages (`/`, `/buscar`, `/espacos/[slug]`). Sign-in,
@@ -29,7 +30,7 @@ export default async function PublicLayout({
       >
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter showPhotoCredit={isDemoMode} />
       <PublicTabBar />
     </div>
   );

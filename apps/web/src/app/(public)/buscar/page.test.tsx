@@ -212,7 +212,7 @@ describe('search page', () => {
       });
       await renderPage({ lat: '-23.550', lng: '-46.690' });
 
-      expect(screen.getByText('1,2 km')).toBeInTheDocument();
+      expect(screen.getByText(/ · 1,2 km$/)).toBeInTheDocument();
     });
 
     it('mounts the map when there are results', async () => {

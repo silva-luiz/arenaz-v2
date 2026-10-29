@@ -17,6 +17,7 @@ import { unstable_rethrow } from 'next/navigation';
 import { connection } from 'next/server';
 import { AppLink } from '@/components/ui/next-link';
 import { publicGet } from '@/lib/public-api';
+import { venueCardMeta } from '@/lib/venue-card-meta';
 
 const TITLE = 'ArenaZ — reserve quadras perto de você';
 const DESCRIPTION =
@@ -153,11 +154,11 @@ export default async function HomePage() {
                   <VenueCard
                     href={`/espacos/${venue.slug}`}
                     name={venue.name}
-                    neighborhood={venue.neighborhood}
-                    city={venue.city}
-                    coverUrl={venue.coverUrl}
-                    sports={venue.sports}
-                    minPriceCentsPerHour={venue.minPriceCentsPerHour}
+                    imageUrl={venue.coverUrl}
+                    imageAlt=""
+                    meta={venueCardMeta(venue)}
+                    priceCents={venue.minPriceCentsPerHour}
+                    priceFrom
                     linkComponent={AppLink}
                   />
                 </li>

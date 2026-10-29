@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { SkipLink } from '@/components/layout/skip-link';
 import { AppLink } from '@/components/ui/next-link';
 import { currentUser } from '@/lib/current-user';
+import { isDemoMode } from '@/lib/demo';
 
 // Nothing here is for search engines (robots.txt blocks it as well).
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -31,7 +32,7 @@ export default async function AccountLayout({
       >
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter showPhotoCredit={isDemoMode} />
     </div>
   );
 }

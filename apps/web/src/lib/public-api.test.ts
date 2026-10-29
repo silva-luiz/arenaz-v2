@@ -148,4 +148,21 @@ describe('toSearchParams', () => {
   it('keeps a zero', () => {
     expect(toSearchParams({ lat: 0 }).get('lat')).toBe('0');
   });
+
+  it('passes the amenity filters and the price cap through', () => {
+    const params = toSearchParams({
+      amenities: ['coberta', ' vestiario ', ''],
+      maxPrice: 200,
+    });
+
+    expect(params.get('amenities')).toBe('coberta,vestiario');
+    expect(params.get('maxPrice')).toBe('200');
+  });
+
+  it('drops a list with nothing in it', () => {
+    expect(toSearchParams({ amenities: [], q: 'vila' }).toString()).toBe(
+      'q=vila',
+    );
+    expect(toSearchParams({ amenities: [' '] }).toString()).toBe('');
+  });
 });
