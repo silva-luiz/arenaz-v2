@@ -41,9 +41,11 @@ export default async function PublicLayout({
         Pular para o conteúdo
       </a>
       <SiteHeader user={user} linkComponent={AppLink} />
+      {/* tabIndex -1: the skip link moves focus here; no ring for that. */}
       <main
         id="conteudo"
-        className="mx-auto w-full max-w-[1360px] flex-1 px-4 pt-4 pb-16 md:px-10 md:pt-6"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-[1360px] flex-1 px-4 pt-4 outline-none md:px-10 md:pt-6"
       >
         {children}
       </main>

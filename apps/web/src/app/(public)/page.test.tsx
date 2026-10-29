@@ -70,6 +70,13 @@ describe('home page', () => {
     ).toHaveAttribute('href', '/buscar?sport=futsal');
   });
 
+  it('marks the sports list as a list (list-style none drops it in Safari)', async () => {
+    render(await HomePage());
+
+    const section = screen.getByRole('region', { name: 'Esportes' });
+    expect(section.querySelector('ul')).toHaveAttribute('role', 'list');
+  });
+
   it('asks the API for the newest venues (no filters)', async () => {
     render(await HomePage());
 
@@ -150,6 +157,17 @@ describe('home page', () => {
     expect(
       screen.getByRole('link', { name: 'Anunciar minha quadra' }),
     ).toHaveAttribute('href', '/painel');
+  });
+
+  it('keeps the decorative lines of the owner banner away from the text', async () => {
+    render(await HomePage());
+
+    // Only where the banner is wide enough for them to sit beside the text
+    // column; below that they would run under it and cost contrast.
+    const banner = screen.getByText('Para donos de quadra').closest('section');
+    const lines = banner?.querySelector('svg');
+    expect(lines).toHaveClass('hidden', 'xl:block');
+    expect(lines).not.toHaveClass('md:block');
   });
 
   it('exports the page metadata', () => {

@@ -81,7 +81,7 @@ export default async function HomePage() {
   const featured = await loadFeatured();
 
   return (
-    <div className="flex flex-col gap-12 md:gap-16">
+    <div className="flex flex-col gap-12 pb-12 md:gap-16">
       <div>
         <div className="relative overflow-hidden rounded-section bg-night px-6 pt-12 pb-10 text-white md:px-14 md:pt-20 md:pb-32">
           <FieldLines className="absolute -right-10 bottom-0 hidden w-[520px] translate-y-1/4 -rotate-6 text-white opacity-10 md:block" />
@@ -106,7 +106,7 @@ export default async function HomePage() {
         >
           Esportes
         </h2>
-        <ul className="mt-5 flex flex-wrap gap-3">
+        <ul role="list" className="mt-5 flex flex-wrap gap-3">
           {SPORTS.map((sport) => (
             <li key={sport}>
               <Chip
@@ -171,7 +171,8 @@ export default async function HomePage() {
         aria-labelledby="dono"
         className="relative overflow-hidden rounded-section bg-brand px-6 py-12 text-white md:px-14 md:py-16"
       >
-        <FieldLines className="absolute -right-16 -bottom-10 hidden w-[460px] rotate-6 text-white opacity-15 md:block" />
+        {/* xl only: narrower, the lines would run under the text and cost contrast. */}
+        <FieldLines className="absolute -right-16 -bottom-10 hidden w-[460px] rotate-6 text-white opacity-15 xl:block" />
         <div className="relative max-w-xl">
           <p className="text-base font-semibold">Para donos de quadra</p>
           <h2

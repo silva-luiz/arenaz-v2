@@ -45,6 +45,29 @@ describe('(public) layout', () => {
     ).toBeInTheDocument();
   });
 
+  it('makes <main> the focusable target of the skip link, without a focus ring', async () => {
+    mocks.getSession.mockResolvedValue(null);
+
+    render(await PublicLayout({ children: null }));
+
+    const main = screen.getByRole('main');
+    expect(main).toHaveAttribute('id', 'conteudo');
+    expect(main).toHaveAttribute('tabindex', '-1');
+    expect(main).toHaveClass('outline-none');
+    expect(
+      screen.getByRole('link', { name: 'Pular para o conteúdo' }),
+    ).toHaveAttribute('href', '#conteudo');
+  });
+
+  it('leaves the bottom spacing to the tab bar spacer, not to <main>', async () => {
+    mocks.getSession.mockResolvedValue(null);
+
+    render(await PublicLayout({ children: null }));
+
+    expect(screen.getByRole('main').className).not.toMatch(/(^|\s)pb-/);
+    expect(screen.getByTestId('tab-bar-spacer')).toBeInTheDocument();
+  });
+
   it('shows "Entrar" and the owner link when signed out', async () => {
     mocks.getSession.mockResolvedValue(null);
 
