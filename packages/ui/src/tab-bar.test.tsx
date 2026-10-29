@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { TabBar } from './tab-bar';
 
 describe('TabBar', () => {
-  it('is a labelled navigation with the three destinations', () => {
+  it('is a labelled navigation with the four destinations', () => {
     render(<TabBar active="inicio" />);
     const nav = screen.getByRole('navigation', {
       name: 'Navegação principal',
     });
-    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+    expect(within(nav).getAllByRole('link')).toHaveLength(4);
     expect(within(nav).getByRole('link', { name: 'Início' })).toHaveAttribute(
       'href',
       '/',
@@ -16,6 +16,10 @@ describe('TabBar', () => {
     expect(within(nav).getByRole('link', { name: 'Buscar' })).toHaveAttribute(
       'href',
       '/buscar',
+    );
+    expect(within(nav).getByRole('link', { name: 'Reservas' })).toHaveAttribute(
+      'href',
+      '/reservas',
     );
     expect(within(nav).getByRole('link', { name: 'Conta' })).toHaveAttribute(
       'href',
@@ -34,6 +38,18 @@ describe('TabBar', () => {
     );
     expect(screen.getByRole('link', { name: 'Conta' })).not.toHaveAttribute(
       'aria-current',
+    );
+  });
+
+  it('puts Reservas between Buscar and Conta and can mark it active', () => {
+    render(<TabBar active="reservas" />);
+    const labels = within(screen.getByRole('navigation'))
+      .getAllByRole('link')
+      .map((link) => link.textContent);
+    expect(labels).toEqual(['Início', 'Buscar', 'Reservas', 'Conta']);
+    expect(screen.getByRole('link', { name: 'Reservas' })).toHaveAttribute(
+      'aria-current',
+      'page',
     );
   });
 
@@ -67,7 +83,7 @@ describe('TabBar', () => {
   it('hides the decorative icons from assistive tech', () => {
     const { container } = render(<TabBar active="inicio" />);
     const svgs = container.querySelectorAll('svg');
-    expect(svgs).toHaveLength(3);
+    expect(svgs).toHaveLength(4);
     svgs.forEach((svg) => {
       expect(svg).toHaveAttribute('aria-hidden', 'true');
     });

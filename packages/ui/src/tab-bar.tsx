@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from './cn';
 import { FOCUS_RING, type LinkComponent } from './link';
 
-export type TabBarItem = 'inicio' | 'buscar' | 'conta';
+export type TabBarItem = 'inicio' | 'buscar' | 'reservas' | 'conta';
 
 export interface TabBarProps {
   active: TabBarItem;
@@ -53,6 +53,19 @@ const ITEMS: {
       <Icon>
         <circle cx="11" cy="11" r="7" />
         <line x1="16.5" y1="16.5" x2="21" y2="21" />
+      </Icon>
+    ),
+  },
+  {
+    id: 'reservas',
+    label: 'Reservas',
+    href: '/reservas',
+    icon: (
+      <Icon>
+        <rect x="3.5" y="5" width="17" height="15" rx="2" />
+        <line x1="3.5" y1="10" x2="20.5" y2="10" />
+        <line x1="8" y1="3" x2="8" y2="7" />
+        <line x1="16" y1="3" x2="16" y2="7" />
       </Icon>
     ),
   },

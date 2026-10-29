@@ -193,3 +193,9 @@ export function formatZonedRange(
       : formatMinute(end.minuteOfDay);
   return `${formatMinute(start.minuteOfDay)}–${endText}`;
 }
+
+/** "Seg, 02/11": the weekday and date of an instant in `timeZone`. */
+export function formatZonedDay(instant: string, timeZone: string): string {
+  const clock = wallClock(instant, timeZone);
+  return `${clock.weekday}, ${clock.dayMonth}`;
+}

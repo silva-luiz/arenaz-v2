@@ -6,6 +6,10 @@ import { AppLink } from '@/components/ui/next-link';
 
 function activeTab(pathname: string): TabBarItem {
   if (pathname === '/') return 'inicio';
+  if (pathname === '/reservas' || pathname.startsWith('/reservas/')) {
+    return 'reservas';
+  }
+  if (pathname === '/conta') return 'conta';
   // A venue page is part of the search flow.
   return 'buscar';
 }

@@ -23,6 +23,15 @@ describe('SiteHeader', () => {
     expect(screen.queryByRole('link', { name: 'Entrar' })).toBeNull();
   });
 
+  it('links "Minhas reservas" only when signed in', () => {
+    const { rerender } = render(<SiteHeader user={{ name: 'Gabriel' }} />);
+    expect(
+      screen.getByRole('link', { name: 'Minhas reservas' }),
+    ).toHaveAttribute('href', '/reservas');
+    rerender(<SiteHeader user={null} />);
+    expect(screen.queryByRole('link', { name: 'Minhas reservas' })).toBeNull();
+  });
+
   it('offers "Entrar" without a user', () => {
     render(<SiteHeader user={null} />);
     expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute(

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   formatBlockRange,
+  formatZonedDay,
   formatZonedRange,
   formatZonedTime,
   todayInZone,
@@ -197,5 +198,20 @@ describe('formatZonedTime and formatZonedRange', () => {
         SP,
       ),
     ).toBe('23:00–24:00');
+  });
+});
+
+describe('formatZonedDay', () => {
+  it('names the weekday and the date on the wall clock of the zone', () => {
+    // 01:00Z is still the evening before in São Paulo.
+    expect(
+      formatZonedDay('2026-11-03T01:00:00.000Z', 'America/Sao_Paulo'),
+    ).toBe('Seg, 02/11');
+    expect(formatZonedDay('2026-11-03T01:00:00.000Z', 'America/Manaus')).toBe(
+      'Seg, 02/11',
+    );
+    expect(
+      formatZonedDay('2026-11-03T05:00:00.000Z', 'America/Sao_Paulo'),
+    ).toBe('Ter, 03/11');
   });
 });

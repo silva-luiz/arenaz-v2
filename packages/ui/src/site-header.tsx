@@ -89,6 +89,11 @@ export function SiteHeader({
             </Link>
           ) : null}
           {user ? (
+            <Link href="/reservas" className={cn(PILL_LINK, 'max-md:hidden')}>
+              Minhas reservas
+            </Link>
+          ) : null}
+          {user ? (
             <Link
               href="/conta"
               aria-label={letters ? `Minha conta (${letters})` : 'Minha conta'}
