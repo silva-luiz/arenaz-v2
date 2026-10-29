@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Dependency lifecycle scripts are denied by default. These are optional native
+# speed-ups (esbuild/protobufjs/ssh2 fall back to JS or prebuilt binaries).
+allowBuilds:
+  '@swc/core': false
+  cpu-features: false
+  esbuild: false
+  protobufjs: false
+  ssh2: false

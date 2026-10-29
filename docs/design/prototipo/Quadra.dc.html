@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ArenaZ — Arena Vila Madalena</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Geist:wght@400..700&amp;family=Geist+Mono:wght@500..600&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#161616;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#161616}a:hover{color:#000000}
+button:focus-visible,a:focus-visible{outline:2px solid #161616;outline-offset:3px}
+:root{--sh-1:0 1px 2px rgba(8,36,24,.08),0 10px 22px -12px rgba(8,36,24,.32);--sh-2:0 2px 6px rgba(8,36,24,.10),0 26px 48px -20px rgba(8,36,24,.48);--sh-3:0 2px 4px rgba(0,0,0,.08),0 18px 40px -14px rgba(0,0,0,.38),0 48px 90px -30px rgba(0,0,0,.45);--ease:cubic-bezier(.2,.7,.2,1)}
+.az-glass{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6)}
+.az-lift{transition:transform .4s var(--ease),box-shadow .4s var(--ease)}.az-lift:hover{transform:translateY(-3px);box-shadow:var(--sh-2) !important}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+.az-g img{transition:filter .3s ease,transform .6s var(--ease)}
+.az-g:hover img{filter:brightness(.9);transform:scale(1.04)}
+.az-slot:not(:disabled):hover{border-color:#161616 !important}
+@media (max-width:760px){
+.az-wrap{padding-left:16px !important;padding-right:16px !important}
+.az-hide-sm{display:none !important}
+.az-gallery{grid-template-columns:repeat(2,minmax(0,1fr)) !important;grid-template-rows:auto !important;border-radius:18px !important}
+.az-gallery-main{grid-column:span 2 !important;grid-row:auto !important;aspect-ratio:4/3}
+.az-gallery > div:not(.az-gallery-main){aspect-ratio:1/1}
+}
+</style>
+</helmet>
+<div style="background: #FFFFFF; min-height: 100vh;">
+
+<header style="border-bottom: 1px solid #EBEBEB;">
+<div class="az-wrap" style="max-width: 1160px; margin: 0 auto; padding: 0 32px; height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+<a href="Main.dc.html" aria-label="ArenaZ, início" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: {{brand}};">
+<svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect width="34" height="34" rx="10" fill="{{brand}}"></rect><rect x="7" y="10" width="20" height="14" rx="2" stroke="#FFFFFF" stroke-width="1.8"></rect><line x1="17" y1="10" x2="17" y2="24" stroke="#FFFFFF" stroke-width="1.8"></line><circle cx="17" cy="17" r="3.2" stroke="#FFFFFF" stroke-width="1.8"></circle></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.045em;">arenaz</span>
+</a>
+<a class="az-hide-sm" href="Busca.dc.html" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 8px 0 22px; border-radius: 999px; border: 1px solid #DDDDDD; box-shadow: var(--sh-1); text-decoration: none; font-size: 14px; font-weight: 600;">Vila Madalena<span style="width: 1px; height: 22px; background: #DDDDDD;"></span>Hoje<span style="width: 1px; height: 22px; background: #DDDDDD;"></span><span style="color: #6A6A6A; font-weight: 400;">Society</span><span style="width: 34px; height: 34px; border-radius: 999px; background: {{brand}}; display: grid; place-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span></a>
+<span style="width: 40px; height: 40px; border-radius: 999px; background: #161616; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600;" aria-label="Conta de GR">GR</span>
+</div>
+</header>
+
+<main class="az-wrap" style="max-width: 1160px; margin: 0 auto; padding: 28px 32px 80px;">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+<h1 style="margin: 0; font-size: 30px; font-weight: 650; letter-spacing: -0.025em;">Arena Vila Madalena — society coberto</h1>
+<div style="display: flex; gap: 4px;">
+<button style="height: 40px; padding: 0 12px; border-radius: 10px; border: none; background: transparent; font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: #161616;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>Compartilhar</button>
+<button onClick="{{toggleFav}}" aria-pressed="{{favPressed}}" style="height: 40px; padding: 0 12px; border-radius: 10px; border: none; background: transparent; font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: #161616;"><svg width="16" height="16" viewBox="0 0 24 24" fill="{{heartFill}}" stroke="{{heartStroke}}" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2.1 0 3.6 1.1 5 2.9 1.4-1.8 2.9-2.9 5-2.9 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"></path></svg>{{favLabel}}</button>
+</div>
+</div>
+
+<div class="az-gallery" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: 210px 210px; gap: 8px; border-radius: 26px; overflow: hidden; position: relative; box-shadow: var(--sh-2);">
+<div class="az-g az-gallery-main" style="grid-column: span 2; grid-row: span 2; position: relative;"><img src="/_blob/cd41929848ab8e46f5639b54a8c84853" alt="Campo society iluminado à noite, visto de cima, com jogadores" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></div>
+<div class="az-g" style="position: relative;"><img src="/_blob/ff8e500f09710668bd6b993c2adb1090" alt="Bola no gramado sintético perto da linha" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></div>
+<div class="az-g" style="position: relative;"><img src="/_blob/19c7b1941420120db2f5244eb8a285dc" alt="Campo visto de cima com refletores acesos" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></div>
+<div class="az-g" style="position: relative;"><img src="/_blob/9ca3a13f019920086eca8f2741fa6b51" alt="Time se aquecendo no gramado" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></div>
+<div class="az-g" style="position: relative;"><img src="/_blob/9575c7806c21cd6ff15e6a539fd6925d" alt="Refletor iluminando o campo à noite" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></div>
+<button style="position: absolute; right: 16px; bottom: 16px; height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid #161616; background: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #161616;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><rect x="3" y="3" width="5" height="5" rx="1"></rect><rect x="10" y="3" width="5" height="5" rx="1"></rect><rect x="17" y="3" width="4" height="5" rx="1"></rect><rect x="3" y="10" width="5" height="5" rx="1"></rect><rect x="10" y="10" width="5" height="5" rx="1"></rect><rect x="17" y="10" width="4" height="5" rx="1"></rect></svg>Mostrar todas as fotos</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 72px; margin-top: 36px; align-items: flex-start;">
+<div style="flex: 999 1 540px; min-width: 0;">
+
+<div style="padding-bottom: 26px; border-bottom: 1px solid #EBEBEB;">
+<h2 style="margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.02em;">Society 7x7 em Vila Madalena, São Paulo</h2>
+<p style="margin: 6px 0 0; font-size: 16px; color: #161616;">Até 16 jogadores · grama sintética 50 mm · coberta · 40 × 20 m</p>
+<p style="margin: 6px 0 0; font-size: 15px; display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6"></polygon></svg><strong style="font-weight: 650;">4,92</strong> · <a href="#avaliacoes" style="font-weight: 600;">318 avaliações</a></p>
+</div>
+
+<div class="az-lift" style="margin: 26px 0; padding: 20px 24px; border: 1px solid #EBEBEB; border-radius: 20px; box-shadow: var(--sh-1); display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+<span style="display: flex; align-items: center; gap: 10px; flex: 1 1 200px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4 7.2 16.9l.9-5.4-3.9-3.8 5.4-.8z"></path><path d="M8 17.5L6 22l6-2 6 2-2-4.5"></path></svg><span style="font-size: 16px; font-weight: 650; line-height: 1.25;">Uma das mais bem avaliadas da cidade</span></span>
+<span style="font-size: 14px; color: #6A6A6A; flex: 1 1 220px;">Jogadores elogiam o gramado e a iluminação.</span>
+<span style="text-align: center; padding: 0 8px;"><strong style="display: block; font-size: 20px; font-weight: 700;">4,92</strong><span style="font-size: 12px; color: #6A6A6A;">nota</span></span>
+<span style="width: 1px; height: 36px; background: #DDDDDD;"></span>
+<span style="text-align: center; padding: 0 8px;"><strong style="display: block; font-size: 20px; font-weight: 700;">318</strong><span style="font-size: 12px; color: #6A6A6A;">avaliações</span></span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 16px; padding-bottom: 26px; border-bottom: 1px solid #EBEBEB;">
+<span style="width: 48px; height: 48px; border-radius: 999px; background: #2D6A4F; color: #FFFFFF; display: grid; place-items: center; font-weight: 650; flex-shrink: 0;">MS</span>
+<span><strong style="display: block; font-size: 16px; font-weight: 650;">Dono: Marcos Silva</strong><span style="font-size: 14px; color: #6A6A6A;">Dono destaque · responde em cerca de 10 min</span></span>
+</div>
+
+<ul style="list-style: none; margin: 0; padding: 26px 0; display: flex; flex-direction: column; gap: 22px; border-bottom: 1px solid #EBEBEB;">
+<li style="display: flex; gap: 18px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><polygon points="13 2 4 14 11 14 10 22 20 9 13 9 13 2"></polygon></svg><span><strong style="display: block; font-size: 16px; font-weight: 650;">Reserva instantânea</strong><span style="font-size: 14px; color: #6A6A6A;">O horário é seu assim que o Pix cai. Sem esperar resposta do dono.</span></span></li>
+<li style="display: flex; gap: 18px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="9.5" r="2.5"></circle><path d="M2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"></path><path d="M16 14.6c2.7.1 4.8 1.8 5.5 4.9"></path></svg><span><strong style="display: block; font-size: 16px; font-weight: 650;">Racha no Pix</strong><span style="font-size: 14px; color: #6A6A6A;">Você paga, o app cobra a parte de cada um e devolve pra você.</span></span></li>
+<li style="display: flex; gap: 18px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><rect x="3" y="4.5" width="18" height="16" rx="3"></rect><line x1="3" y1="9.5" x2="21" y2="9.5"></line><path d="M9 15l2 2 4-4"></path></svg><span><strong style="display: block; font-size: 16px; font-weight: 650;">Aceita mensalista</strong><span style="font-size: 14px; color: #6A6A6A;">Terças e quintas às 21h ainda têm vaga fixa.</span></span></li>
+</ul>
+
+<section id="horarios" style="padding: 30px 0; border-bottom: 1px solid #EBEBEB;">
+<h2 style="margin: 0; font-size: 22px; font-weight: 650; letter-spacing: -0.02em;">Escolha o horário</h2>
+<p style="margin: 6px 0 20px; font-size: 14px; color: #6A6A6A;">Toque em horários seguidos para jogar mais tempo.</p>
+<div role="group" aria-label="Dia" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px;">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+<button onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="{{d.style}}"><span style="font-size: 12px; font-weight: 600;">{{d.wd}}</span><span style="font-size: 20px; font-weight: 650;">{{d.num}}</span></button>
+</sc-for>
+</div>
+<div role="group" aria-label="Horários" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px;">
+<sc-for list="{{slots}}" as="s" hint-placeholder-count="8">
+<button class="az-slot" onClick="{{s.pick}}" disabled="{{s.disabled}}" aria-pressed="{{s.pressed}}" aria-label="{{s.aria}}" style="{{s.style}}">
+<span style="font-family: 'Geist Mono', monospace; font-size: 15px; font-weight: 600;">{{s.time}}</span>
+<span style="{{s.subStyle}}">{{s.sub}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section id="avaliacoes" style="padding: 30px 0; border-bottom: 1px solid #EBEBEB;">
+<h2 style="margin: 0 0 22px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6"></polygon></svg>4,92 · 318 avaliações</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0; border-bottom: 1px solid #EBEBEB; padding-bottom: 24px; margin-bottom: 26px;">
+<span style="padding-right: 18px; border-right: 1px solid #EBEBEB;"><span style="display: block; font-size: 14px; font-weight: 600;">Gramado</span><span style="display: block; font-size: 18px; font-weight: 650; margin-top: 4px;">4,9</span></span>
+<span style="padding: 0 18px; border-right: 1px solid #EBEBEB;"><span style="display: block; font-size: 14px; font-weight: 600;">Iluminação</span><span style="display: block; font-size: 18px; font-weight: 650; margin-top: 4px;">5,0</span></span>
+<span style="padding: 0 18px; border-right: 1px solid #EBEBEB;"><span style="display: block; font-size: 14px; font-weight: 600;">Vestiário</span><span style="display: block; font-size: 18px; font-weight: 650; margin-top: 4px;">4,7</span></span>
+<span style="padding: 0 18px;"><span style="display: block; font-size: 14px; font-weight: 600;">Pontualidade</span><span style="display: block; font-size: 18px; font-weight: 650; margin-top: 4px;">5,0</span></span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 28px 40px;">
+<figure style="margin: 0;"><figcaption style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;"><span style="width: 44px; height: 44px; border-radius: 999px; background: #3D5A98; color: #FFFFFF; display: grid; place-items: center; font-weight: 650; font-size: 14px;">RL</span><span><strong style="display: block; font-size: 15px; font-weight: 650;">Rafael</strong><span style="font-size: 13px; color: #6A6A6A;">Mensalista há 6 meses</span></span></figcaption><blockquote style="margin: 0; font-size: 15px; line-height: 1.6;">O gramado é o melhor da região e a cobrança no Pix acabou com o drama de quem não pagou.</blockquote></figure>
+<figure style="margin: 0;"><figcaption style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;"><span style="width: 44px; height: 44px; border-radius: 999px; background: #B5651D; color: #FFFFFF; display: grid; place-items: center; font-weight: 650; font-size: 14px;">CA</span><span><strong style="display: block; font-size: 15px; font-weight: 650;">Camila</strong><span style="font-size: 13px; color: #6A6A6A;">Jogou em outubro</span></span></figcaption><blockquote style="margin: 0; font-size: 15px; line-height: 1.6;">Reservei às 18h pra jogar às 20h e estava tudo pronto. Vestiário limpo; só faltou ventilação.</blockquote></figure>
+</div>
+</section>
+
+<section style="padding: 30px 0;">
+<h2 style="margin: 0 0 16px; font-size: 22px; font-weight: 650; letter-spacing: -0.02em;">Onde fica</h2>
+<div style="position: relative; height: 300px; border-radius: 18px; overflow: hidden; background: #EEF0EA;">
+<svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" style="display: block;"><rect width="800" height="300" fill="#EEF0EA"></rect><rect x="540" y="40" width="170" height="120" rx="30" fill="#D5E6CB"></rect><g stroke="#FFFFFF" stroke-linecap="round"><line x1="-10" y1="90" x2="810" y2="140" stroke-width="14"></line><line x1="300" y1="-10" x2="260" y2="310" stroke-width="14"></line><line x1="-10" y1="230" x2="810" y2="210" stroke-width="8"></line><line x1="560" y1="-10" x2="600" y2="310" stroke-width="8"></line><line x1="120" y1="-10" x2="100" y2="310" stroke-width="6"></line></g></svg>
+<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 56px; height: 56px; border-radius: 999px; background: {{brand}}; display: grid; place-items: center; box-shadow: 0 0 0 12px rgba(11,122,75,0.15);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg></span>
+</div>
+<p style="margin: 14px 0 0; font-size: 15px; color: #6A6A6A;">Vila Madalena, São Paulo. O endereço exato aparece depois da reserva.</p>
+</section>
+</div>
+
+<aside aria-label="Reserva" style="flex: 1 1 340px; min-width: 0; position: sticky; top: 24px;">
+<div style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 26px; padding: 26px; box-shadow: var(--sh-3); display: flex; flex-direction: column; gap: 16px;">
+<p style="margin: 0; display: flex; align-items: baseline; gap: 6px;"><span style="font-size: 24px; font-weight: 650;">R$ 180</span><span style="color: #6A6A6A; font-size: 15px;">/ hora fora de pico</span></p>
+<div style="border: 1px solid #B0B0B0; border-radius: 12px; overflow: hidden;">
+<a href="#horarios" style="display: block; padding: 10px 14px; border-bottom: 1px solid #B0B0B0; text-decoration: none;"><span style="display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">Quando</span><span style="display: block; margin-top: 2px; font-size: 14px;">{{whenLabel}}</span></a>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px 6px 14px;">
+<span><span style="display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">Jogadores</span><span style="display: block; margin-top: 2px; font-size: 14px;">{{players}} pessoas</span></span>
+<span style="display: flex; align-items: center; gap: 6px;">
+<button onClick="{{dec}}" aria-label="Menos um jogador" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid #B0B0B0; background: #FFFFFF; font-size: 18px; cursor: pointer; color: #161616;">−</button>
+<button onClick="{{inc}}" aria-label="Mais um jogador" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid #B0B0B0; background: #FFFFFF; font-size: 18px; cursor: pointer; color: #161616;">+</button>
+</span>
+</div>
+</div>
+<button onClick="{{toggleSplit}}" aria-pressed="{{splitPressed}}" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid #DDDDDD; background: #FFFFFF; font: inherit; text-align: left; cursor: pointer; color: #161616;">
+<span style="flex: 1;"><strong style="display: block; font-size: 14px; font-weight: 650;">Dividir com o time</strong><span style="font-size: 13px; color: #6A6A6A;">Cada um paga a sua parte no Pix</span></span>
+<span style="{{switchTrack}}"><span style="{{switchKnob}}"></span></span>
+</button>
+<a href="{{ctaHref}}" style="{{ctaStyle}}">{{ctaLabel}}</a>
+<sc-if value="{{hasSelection}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 15px;">
+<p style="margin: 0; text-align: center; font-size: 13px; color: #6A6A6A;">Confirmação na hora do pagamento</p>
+<span style="display: flex; justify-content: space-between;"><span style="text-decoration: underline; text-underline-offset: 3px;">{{hoursLabel}}</span><span>{{subtotal}}</span></span>
+<span style="display: flex; justify-content: space-between;"><span style="text-decoration: underline; text-underline-offset: 3px;">Taxa de serviço</span><span>{{fee}}</span></span>
+<span style="display: flex; justify-content: space-between; padding-top: 14px; border-top: 1px solid #DDDDDD; font-weight: 650;"><span>Total</span><span>{{total}}</span></span>
+<sc-if value="{{split}}" hint-placeholder-val="{{ true }}">
+<span style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; background: #EEF7F1; color: #0B5A38; font-weight: 650;"><span>Por pessoa ({{players}})</span><span style="font-size: 18px;">{{perPerson}}</span></span>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0B7A4B","options":["#0B7A4B","#161616","#1F4FD8","#E2502B"]},"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { day: 0, sel: [20, 21], players: 14, split: true, fav: false };
+  }
+  pickSlot(h) {
+    const sel = this.state.sel;
+    if (!sel.length) return this.setState({ sel: [h] });
+    const lo = sel[0], hi = sel[sel.length - 1];
+    if (h === lo - 1) return this.setState({ sel: [h, ...sel] });
+    if (h === hi + 1) return this.setState({ sel: [...sel, h] });
+    if (sel.length > 1 && h === hi) return this.setState({ sel: sel.slice(0, -1) });
+    if (sel.length > 1 && h === lo) return this.setState({ sel: sel.slice(1) });
+    if (sel.length === 1 && h === lo) return this.setState({ sel: [] });
+    return this.setState({ sel: [h] });
+  }
+  renderVals() {
+    const brand = this.props.brand ?? '#0B7A4B';
+    const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const wds = ['Hoje', 'Qui', 'Sex', 'Sáb', 'Dom', 'Seg', 'Ter'];
+    const longWd = ['Qua', 'Qui', 'Sex', 'Sáb', 'Dom', 'Seg', 'Ter'];
+    const nums = [28, 29, 30, 31, 1, 2, 3];
+    const months = ['out', 'out', 'out', 'out', 'nov', 'nov', 'nov'];
+    const days = wds.map((wd, i) => {
+      const on = this.state.day === i;
+      return {
+        wd, num: nums[i], pressed: on ? 'true' : 'false',
+        style: 'flex-shrink: 0; width: 64px; height: 68px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; cursor: pointer; ' + (on ? 'background: #161616; color: #FFFFFF; border: 1px solid #161616;' : 'background: #FFFFFF; color: #161616; border: 1px solid #DDDDDD;'),
+        pick: () => this.setState({ day: i, sel: [] })
+      };
+    });
+    const weekend = this.state.day === 3 || this.state.day === 4;
+    const hours = [16, 17, 18, 19, 20, 21, 22, 23];
+    const priceOf = (h) => (weekend || (h >= 19 && h <= 22)) ? 220 : 180;
+    const taken = (h) => ((h * 7 + this.state.day * 5) % 6 === 0) || (this.state.day === 0 && h === 19);
+    const sel = this.state.sel;
+    const slots = hours.map((h) => {
+      const isTaken = taken(h);
+      const on = sel.includes(h);
+      const peak = priceOf(h) > 180;
+      const time = String(h).padStart(2, '0') + ':00';
+      let style = 'min-height: 60px; padding: 10px 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font: inherit; text-align: left; ';
+      let subStyle = 'font-size: 12px; ';
+      if (isTaken) { style += 'background: #F4F4F4; color: #9A9A9A; border: 1px solid #F4F4F4; cursor: not-allowed; text-decoration: line-through;'; subStyle += 'color: #757575;'; }
+      else if (on) { style += 'background: #161616; color: #FFFFFF; border: 1px solid #161616; cursor: pointer;'; subStyle += 'color: #D9D9D9;'; }
+      else { style += 'background: #FFFFFF; color: #161616; border: 1px solid #DDDDDD; cursor: pointer;'; subStyle += peak ? 'color: #9A4A00; font-weight: 600;' : 'color: #6A6A6A;'; }
+      return {
+        time, style, subStyle,
+        sub: isTaken ? 'Ocupado' : 'R$ ' + priceOf(h) + (peak ? ' · nobre' : ''),
+        disabled: isTaken,
+        pressed: on ? 'true' : 'false',
+        aria: time + (isTaken ? ', ocupado' : ', R$ ' + priceOf(h)),
+        pick: () => this.pickSlot(h)
+      };
+    });
+    const hasSelection = sel.length > 0;
+    const sub = sel.reduce((a, h) => a + priceOf(h), 0);
+    const fee = Math.round(sub * 0.05);
+    const total = sub + fee;
+    const players = this.state.players;
+    const split = this.state.split;
+    const range = hasSelection ? String(sel[0]).padStart(2, '0') + ':00–' + String(sel[sel.length - 1] + 1).padStart(2, '0') + ':00' : 'escolha um horário';
+    const fav = this.state.fav;
+    return {
+      brand, days, slots, players, split, hasSelection,
+      whenLabel: longWd[this.state.day] + ', ' + nums[this.state.day] + ' ' + months[this.state.day] + ' · ' + range,
+      hoursLabel: sel.length + (sel.length === 1 ? ' hora' : ' horas'),
+      subtotal: brl(sub), fee: brl(fee), total: brl(total),
+      perPerson: brl(Math.ceil((total / players) * 100) / 100),
+      dec: () => this.setState({ players: Math.max(2, players - 1) }),
+      inc: () => this.setState({ players: Math.min(30, players + 1) }),
+      toggleSplit: () => this.setState({ split: !split }),
+      splitPressed: split ? 'true' : 'false',
+      switchTrack: 'width: 44px; height: 26px; border-radius: 999px; padding: 3px; box-sizing: border-box; display: flex; flex-shrink: 0; ' + (split ? 'background: ' + brand + '; justify-content: flex-end;' : 'background: #B0B0B0; justify-content: flex-start;'),
+      switchKnob: 'width: 20px; height: 20px; border-radius: 999px; background: #FFFFFF;',
+      ctaHref: hasSelection ? 'Checkout.dc.html' : '#horarios',
+      ctaLabel: hasSelection ? 'Reservar' : 'Escolher horário',
+      ctaStyle: 'height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 16px; font-weight: 650; ' + (hasSelection ? 'background: ' + brand + '; color: #FFFFFF;' : 'background: #161616; color: #FFFFFF;'),
+      toggleFav: () => this.setState({ fav: !fav }),
+      favPressed: fav ? 'true' : 'false',
+      favLabel: fav ? 'Salvo' : 'Salvar',
+      heartFill: fav ? '#FF385C' : 'none',
+      heartStroke: fav ? '#FF385C' : '#161616'
+    };
+  }
+}
+</script>
+</body>
+</html>

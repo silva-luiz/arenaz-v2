@@ -1,34 +1,58 @@
 # ArenaZ
 
-O ArenaZ é um sistema de gerenciamento de reservas de horários para proprietários de espaços esportivos. Ele facilita o controle e a organização das arenas, permitindo que os proprietários ofereçam horários disponíveis para locação de maneira simples e eficiente.
+Marketplace para alugar quadras esportivas por hora.
 
-## Funcionalidades Principais
+## Pré-requisitos
 
-- **Gerenciamento de Reservas**: Os proprietários podem cadastrar seus espaços esportivos e disponibilizar horários para reserva. 
-- **Controle de Disponibilidade**: O ArenaZ oferece um calendário interativo onde os proprietários podem visualizar os horários já reservados e os disponíveis, permitindo uma gestão mais eficiente.
-- **Relatórios e Estatísticas**: Os proprietários podem acessar informações detalhadas de utilização do espaço, histórico de reservas, faturamento e outras métricas para auxiliar na gestão do negócio.
+- Node 24 LTS (`.nvmrc`)
+- pnpm
+- Docker
 
-## Benefícios
+## Setup
 
-- **Otimização de Tempo**: Automatiza o processo de reservas, reduzindo a necessidade de gerenciamento manual.
-- **Melhor Visibilidade**: Permite que os espaços esportivos sejam facilmente encontrados por interessados, aumentando a taxa de ocupação.
-- **Facilidade de Uso**: Interface intuitiva que facilita a utilização tanto para os proprietários quanto para os usuários.
-- **Flexibilidade**: Suporte para diferentes tipos de esportes e formatos de locação, adaptando-se às necessidades de qualquer tipo de arena.
+```bash
+pnpm i
+cp .env.example .env   # preencha BETTER_AUTH_SECRET (veja abaixo)
+pnpm db:up             # sobe Postgres e Redis e espera ficarem saudáveis
+pnpm db:migrate
+pnpm dev
+```
 
-## Tecnologias Utilizadas
+Web em http://localhost:3000 e API em http://localhost:4000.
 
-O ArenaZ foi desenvolvido utilizando as seguintes tecnologias:
+`BETTER_AUTH_SECRET` precisa de ao menos 32 caracteres. Gere com
+`openssl rand -base64 32` ou, no Windows (sem openssl):
 
-- **Prototipação**: Figma
-- **Backend**: Laravel
-- **Frontend**: Next.js
-- **Banco de Dados**: PostgreSQL
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
-## Executando o projeto
-Para executar o projeto, digite os seguintes comandos pelo terminal, na pasta do raiz do projeto:
+### Portas
 
-- Para a instalação dos pacotes necessários
-`yarn`
+Se 3000, 4000, 5432 ou 6379 já estiverem ocupadas, troque as portas assim:
 
-- Para rodar a aplicação
-`yarn dev`
+- `API_PORT` e `WEB_PORT` vão no `.env` da raiz (ajuste também `API_URL`,
+  `WEB_ORIGIN` e `BETTER_AUTH_URL`).
+- `POSTGRES_PORT` e `REDIS_PORT` são lidas pelo Docker Compose, que lê
+  `infra/.env` e não o `.env` da raiz: exporte-as no shell antes de
+  `pnpm db:up` (`export POSTGRES_PORT=5433 REDIS_PORT=6380` no bash;
+  `$env:POSTGRES_PORT='5433'` no PowerShell).
+- Acompanhe a mudança em `DATABASE_URL` e `REDIS_URL` no `.env`
+  (ex.: `postgres://arenaz:arenaz@localhost:5433/arenaz`).
+
+## Testes
+
+```bash
+pnpm test    # unitários e integração; precisa do Docker rodando (Testcontainers)
+```
+
+E2E (Playwright, sobe API e web em 3100/4100):
+
+```bash
+pnpm --filter @arenaz/web exec playwright install chromium   # só na primeira vez
+pnpm e2e
+```
+
+## Legado
+
+O v1 está na tag `legacy-v1`.

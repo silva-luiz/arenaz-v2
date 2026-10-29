@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ArenaZ — Busca com mapa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Geist:wght@400..700&amp;family=Geist+Mono:wght@500..600&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#161616;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#161616}a:hover{color:#000000}
+button:focus-visible,a:focus-visible{outline:2px solid #161616;outline-offset:3px}
+:root{--sh-1:0 1px 2px rgba(8,36,24,.08),0 10px 22px -12px rgba(8,36,24,.32);--sh-2:0 2px 6px rgba(8,36,24,.10),0 26px 48px -20px rgba(8,36,24,.48);--sh-3:0 2px 4px rgba(0,0,0,.08),0 18px 40px -14px rgba(0,0,0,.38),0 48px 90px -30px rgba(0,0,0,.45);--ease:cubic-bezier(.2,.7,.2,1)}
+.az-glass{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6)}
+.az-lift{transition:transform .4s var(--ease),box-shadow .4s var(--ease)}.az-lift:hover{transform:translateY(-3px);box-shadow:var(--sh-2) !important}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+.az-photo{transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.az-photo::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(to top,rgba(0,0,0,.3),rgba(0,0,0,0) 36%)}
+.az-photo img{transition:transform .6s var(--ease)}
+.az-card:hover .az-photo{transform:translateY(-5px)}
+.az-card:hover .az-photo img{transform:scale(1.05)}
+.az-pin{transition:transform .15s ease}
+.az-chip:hover{border-color:#161616 !important}
+@media (max-width:760px){
+.az-wrap{padding-left:16px !important;padding-right:16px !important}
+.az-hide-sm{display:none !important}
+}
+</style>
+</helmet>
+<div style="background: #FFFFFF; min-height: 100vh;">
+
+<header style="border-bottom: 1px solid #EBEBEB;">
+<div class="az-wrap" style="padding: 0 40px; height: 80px; display: flex; align-items: center; gap: 24px;">
+<a href="Main.dc.html" aria-label="ArenaZ, início" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: {{brand}}; flex: 1 1 0;">
+<svg width="32" height="32" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect width="34" height="34" rx="10" fill="{{brand}}"></rect><rect x="7" y="10" width="20" height="14" rx="2" stroke="#FFFFFF" stroke-width="1.8"></rect><line x1="17" y1="10" x2="17" y2="24" stroke="#FFFFFF" stroke-width="1.8"></line><circle cx="17" cy="17" r="3.2" stroke="#FFFFFF" stroke-width="1.8"></circle></svg>
+<span class="az-hide-sm" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.045em;">arenaz</span>
+</a>
+<a href="Main.dc.html" style="height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 8px 0 22px; border-radius: 999px; border: 1px solid #DDDDDD; box-shadow: var(--sh-1); text-decoration: none; font-size: 14px; font-weight: 600; flex-shrink: 0;">Vila Madalena<span style="width: 1px; height: 22px; background: #DDDDDD;"></span>Hoje, 19h–23h<span style="width: 1px; height: 22px; background: #DDDDDD;"></span><span style="color: #6A6A6A; font-weight: 400;">Society · 14</span><span style="width: 34px; height: 34px; border-radius: 999px; background: {{brand}}; display: grid; place-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span></a>
+<div style="flex: 1 1 0; display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+<a class="az-hide-sm" href="Painel.dc.html" style="font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 14px;">Anuncie sua quadra</a>
+<span style="width: 40px; height: 40px; border-radius: 999px; background: #161616; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600;" aria-label="Conta de GR">GR</span>
+</div>
+</div>
+<div class="az-wrap" style="padding: 0 40px 14px; display: flex; gap: 8px; overflow-x: auto;">
+<button class="az-chip" style="flex-shrink: 0; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid #DDDDDD; background: #FFFFFF; display: flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#161616" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="10" y1="17" x2="14" y2="17"></line></svg>Filtros</button>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="6">
+<button class="az-chip" onClick="{{f.toggle}}" aria-pressed="{{f.pressed}}" style="{{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+</header>
+
+<main style="display: flex; flex-wrap: wrap;">
+<section class="az-wrap" style="flex: 999 1 620px; min-width: 0; padding: 24px 24px 48px 40px;">
+<p style="margin: 0 0 20px; font-size: 14px; font-weight: 600;">{{countLabel}}</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 36px 20px;">
+<sc-for list="{{venues}}" as="v" hint-placeholder-count="6">
+<article class="az-card" style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+<div class="az-photo" style="{{v.photoStyle}}">
+<a href="Quadra.dc.html" style="display: block; width: 100%; height: 100%;"><img src="{{v.img}}" alt="{{v.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></a>
+<span class="az-glass" style="position: absolute; z-index: 1; top: 12px; left: 12px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 650; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px -4px rgba(0,0,0,0.3);"><span style="width: 7px; height: 7px; border-radius: 999px; background: #12A150; box-shadow: 0 0 0 3px rgba(18,161,80,0.2);"></span>Livre às {{v.next}}</span>
+<button onClick="{{v.pick}}" aria-label="{{v.mapLabel}}" aria-pressed="{{v.pressed}}" style="position: absolute; top: 6px; right: 6px; width: 44px; height: 44px; border: none; background: transparent; cursor: pointer; display: grid; place-items: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="{{v.pinFill}}" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5" fill="#FFFFFF"></circle></svg></button>
+</div>
+<a href="Quadra.dc.html" style="text-decoration: none; display: flex; flex-direction: column; gap: 2px; font-size: 14px;">
+<span style="display: flex; justify-content: space-between; gap: 8px;"><strong style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.name}}</strong><span style="display: flex; align-items: center; gap: 3px; flex-shrink: 0;"><svg width="11" height="11" viewBox="0 0 24 24" fill="#161616" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6"></polygon></svg>{{v.rating}} ({{v.reviews}})</span></span>
+<span style="color: #6A6A6A;">{{v.meta}}</span>
+</a>
+<div style="display: flex; gap: 6px; flex-wrap: wrap;">
+<sc-for list="{{v.slots}}" as="s" hint-placeholder-count="3">
+<a class="az-chip" href="Quadra.dc.html" style="font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; padding: 6px 9px; border-radius: 8px; border: 1px solid #DDDDDD; text-decoration: none;">{{s}}</a>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 14px;"><strong style="font-weight: 650;">R$ {{v.price}}</strong> <span style="color: #6A6A6A;">/ hora</span></p>
+</article>
+</sc-for>
+</div>
+</section>
+
+<aside aria-label="Mapa" style="flex: 1 1 480px; min-width: 0;">
+<div style="position: sticky; top: 0; height: 960px; overflow: hidden; background: #EEF0EA; box-shadow: inset 14px 0 28px -20px rgba(8,36,24,0.45);">
+<svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 600 960" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; display: block;">
+<rect width="600" height="960" fill="#EEF0EA"></rect>
+<path d="M-20 700 C 120 660 180 760 300 720 S 520 620 640 660" fill="none" stroke="#C6DDEB" stroke-width="32" stroke-linecap="round"></path>
+<rect x="360" y="130" width="170" height="150" rx="36" fill="#D5E6CB"></rect>
+<rect x="60" y="400" width="120" height="110" rx="30" fill="#D5E6CB"></rect>
+<rect x="420" y="760" width="150" height="120" rx="30" fill="#D5E6CB"></rect>
+<g stroke="#FFFFFF" stroke-linecap="round" fill="none">
+<line x1="-10" y1="220" x2="610" y2="310" stroke-width="13"></line>
+<line x1="-10" y1="560" x2="610" y2="500" stroke-width="13"></line>
+<line x1="220" y1="-10" x2="160" y2="970" stroke-width="13"></line>
+<line x1="420" y1="-10" x2="470" y2="970" stroke-width="10"></line>
+<line x1="-10" y1="80" x2="610" y2="40" stroke-width="7"></line>
+<line x1="-10" y1="840" x2="610" y2="880" stroke-width="7"></line>
+<line x1="80" y1="-10" x2="40" y2="970" stroke-width="6"></line>
+<line x1="320" y1="-10" x2="300" y2="970" stroke-width="6"></line>
+<line x1="540" y1="-10" x2="560" y2="970" stroke-width="6"></line>
+<line x1="-10" y1="380" x2="610" y2="400" stroke-width="6"></line>
+</g>
+<g fill="#8A928C" font-family="Geist, sans-serif" font-size="13" font-weight="500">
+<text x="384" y="212">Praça do Pôr do Sol</text>
+<text x="70" y="462">Parque Lapa</text>
+<text x="30" y="664" fill="#6E93AD">Rio Pinheiros</text>
+</g>
+</svg>
+<div style="position: absolute; top: 18px; right: 18px; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; background: #FFFFFF; box-shadow: var(--sh-2);">
+<button aria-label="Aproximar" style="width: 44px; height: 44px; border: none; border-bottom: 1px solid #EBEBEB; background: #FFFFFF; font-size: 20px; cursor: pointer; color: #161616;">+</button>
+<button aria-label="Afastar" style="width: 44px; height: 44px; border: none; background: #FFFFFF; font-size: 20px; cursor: pointer; color: #161616;">−</button>
+</div>
+<sc-for list="{{venues}}" as="v" hint-placeholder-count="6">
+<button class="az-pin" onClick="{{v.pick}}" aria-label="{{v.pinLabel}}" aria-pressed="{{v.pressed}}" style="{{v.pinStyle}}">R$ {{v.price}}</button>
+</sc-for>
+<sc-if value="{{selected}}" hint-placeholder-val="{{ true }}">
+<a href="Quadra.dc.html" style="position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); width: 340px; max-width: calc(100% - 32px); border-radius: 22px; overflow: hidden; background: #FFFFFF; box-shadow: var(--sh-3); text-decoration: none; display: flex; flex-direction: column;">
+<span style="display: block; height: 180px;"><img src="{{selected.img}}" alt="{{selected.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></span>
+<span style="padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 2px; font-size: 14px;">
+<strong style="font-weight: 650;">{{selected.name}}</strong>
+<span style="color: #6A6A6A;">{{selected.meta}}</span>
+<span style="margin-top: 4px;"><strong style="font-weight: 650;">R$ {{selected.price}}</strong> <span style="color: #6A6A6A;">/ hora · próximo às {{selected.next}}</span></span>
+</span>
+</a>
+</sc-if>
+</div>
+</aside>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0B7A4B","options":["#0B7A4B","#161616","#1F4FD8","#E2502B"]},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'vm', on: { instant: true, coberta: true, vest: false, estac: false, preco: false, mensal: false } };
+  }
+  renderVals() {
+    const brand = this.props.brand ?? '#0B7A4B';
+    const fdefs = [['instant', 'Reserva instantânea'], ['coberta', 'Coberta'], ['vest', 'Vestiário'], ['estac', 'Estacionamento'], ['preco', 'Até R$ 200/h'], ['mensal', 'Aceita mensalista']];
+    const filters = fdefs.map(([id, label]) => {
+      const on = !!this.state.on[id];
+      return {
+        label, pressed: on ? 'true' : 'false',
+        toggle: () => this.setState({ on: { ...this.state.on, [id]: !on } }),
+        style: 'flex-shrink: 0; height: 40px; padding: 0 16px; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (on ? 'border: 1px solid #161616; background: #F2F2F2; color: #161616; box-shadow: inset 0 0 0 1px #161616;' : 'border: 1px solid #DDDDDD; background: #FFFFFF; color: #161616;')
+      };
+    });
+    const list = [
+      { id: 'vm', name: 'Arena Vila Madalena', img: '/_blob/cd41929848ab8e46f5639b54a8c84853', alt: 'Campo society iluminado à noite visto de cima', meta: 'Society 7x7 · coberta · 1,2 km', rating: '4,92', reviews: '318', price: '180', slots: ['20:00', '21:00', '22:00'], x: 44, y: 40 },
+      { id: 'pi', name: 'Society Pinheiros', img: '/_blob/19c7b1941420120db2f5244eb8a285dc', alt: 'Campo society com refletores visto de cima', meta: 'Society 7x7 · bar · 1,9 km', rating: '4,87', reviews: '152', price: '190', slots: ['19:30', '23:00'], x: 62, y: 58 },
+      { id: 'lp', name: 'Arena Lapa 7', img: '/_blob/540d772bf2ae42ec3641b92a31c5cf08', alt: 'Campo sintético visto de cima', meta: 'Society 7x7 · arquibancada · 2,9 km', rating: '4,81', reviews: '204', price: '200', slots: ['21:00', '22:00'], x: 22, y: 28 },
+      { id: 'pe', name: 'Quadra Coberta Perdizes', img: '/_blob/d0425e440acdbbddd8cb3d7f8ce3bcc5', alt: 'Quadra poliesportiva vista de cima', meta: 'Poliesportiva · 2,1 km', rating: '4,79', reviews: '61', price: '120', slots: ['22:00'], x: 74, y: 22 },
+      { id: 'sm', name: 'Sumaré Society', img: '/_blob/9ca3a13f019920086eca8f2741fa6b51', alt: 'Time se aquecendo em gramado sintético', meta: 'Society 6x6 · estacionamento · 1,6 km', rating: '4,76', reviews: '88', price: '150', slots: ['20:00'], x: 58, y: 34 },
+      { id: 'pc', name: 'Pacaembu Futsal Club', img: '/_blob/eef9d4700072422f7e86d7f7b7f4eb48', alt: 'Jogo de futsal em quadra de madeira', meta: 'Futsal · vestiário · 2,4 km', rating: '4,88', reviews: '96', price: '140', slots: ['21:30'], x: 82, y: 46 }
+    ];
+    const venues = list.map((v) => {
+      const on = this.state.sel === v.id;
+      return {
+        ...v, next: v.slots[0], pressed: on ? 'true' : 'false',
+        mapLabel: 'Mostrar ' + v.name + ' no mapa',
+        pinLabel: v.name + ', R$ ' + v.price + ' por hora',
+        pinFill: on ? brand : 'rgba(0,0,0,0.45)',
+        pick: () => this.setState({ sel: v.id }),
+        photoStyle: 'position: relative; aspect-ratio: 20 / 19; border-radius: 18px; overflow: hidden; background: #EEEEEE; ' + (on ? 'box-shadow: 0 0 0 3px #FFFFFF, 0 0 0 5px #161616, var(--sh-2);' : 'box-shadow: var(--sh-1);'),
+        pinStyle: 'position: absolute; left: ' + v.x + '%; top: ' + v.y + '%; transform: translate(-50%,-50%)' + (on ? ' scale(1.08)' : '') + '; min-height: 32px; padding: 0 12px; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 10px 20px -8px rgba(0,0,0,0.5); ' + (on ? 'background: #161616; color: #FFFFFF; border: 1px solid #161616; z-index: 2;' : 'background: #FFFFFF; color: #161616; border: 1px solid #DDDDDD;')
+      };
+    });
+    const selected = venues.find((v) => v.id === this.state.sel) || null;
+    return { brand, filters, venues, selected, countLabel: venues.length + ' quadras com horário livre hoje à noite' };
+  }
+}
+</script>
+</body>
+</html>

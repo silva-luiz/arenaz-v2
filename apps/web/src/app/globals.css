@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+/* Tokens from docs/design/prototipo-v2.md (approved prototype). */
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f5;
+  --color-ink: #161616;
+  --color-muted: #6a6a6a;
+  --color-line: #ebebeb;
+  --color-line-strong: #dddddd;
+  --color-brand: #0b7a4b;
+  --color-night: #0e2018;
+  --color-live: #3ddc84;
+  --color-free: #12a150;
+  --color-fav: #ff385c;
+
+  --shadow-1:
+    0 1px 2px rgba(8, 36, 24, 0.08), 0 10px 22px -12px rgba(8, 36, 24, 0.32);
+  --shadow-2:
+    0 2px 6px rgba(8, 36, 24, 0.1), 0 26px 48px -20px rgba(8, 36, 24, 0.48);
+  --shadow-3:
+    0 2px 4px rgba(0, 0, 0, 0.08), 0 18px 40px -14px rgba(0, 0, 0, 0.38),
+    0 48px 90px -30px rgba(0, 0, 0, 0.45);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Font families come from next/font (CSS variables set on <html>). */
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-wordmark: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+}
