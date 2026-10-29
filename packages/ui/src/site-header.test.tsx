@@ -50,6 +50,8 @@ describe('SiteHeader', () => {
     expect(link).toHaveTextContent('Anuncie');
     const tail = screen.getByText('sua quadra');
     expect(tail).toHaveClass('max-md:hidden');
+    // A plain leading space is dropped inside the flex link ("Anunciesua").
+    expect(link.textContent).toBe('Anuncie sua quadra');
   });
 
   it('names the account link without initials when the name is empty', () => {

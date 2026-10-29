@@ -21,3 +21,19 @@
     font-family: var(--font-sans);
   }
 }
+
+/*
+ * Focus and anchors must not land under the sticky header or the fixed mobile
+ * tab bar (header 64px + 1px border, bar 56px + 1px border; from 768px up the
+ * header is 80px + 1px and there is no bar).
+ */
+html {
+  scroll-padding-top: 65px;
+  scroll-padding-bottom: calc(57px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 81px;
+    scroll-padding-bottom: 0;
+  }
+}

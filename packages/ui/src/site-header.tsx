@@ -62,13 +62,15 @@ export function SiteHeader({
 
         <div className="flex shrink-0 items-center gap-1.5">
           {/* Short on mobile, full from md up. The aria-label always holds the
-              whole phrase, which contains the visible text (WCAG 2.5.3). */}
+              whole phrase, which contains the visible text (WCAG 2.5.3). The space is
+              a no-break one: a plain leading space is dropped inside the flex
+              link. */}
           <Link
             href="/painel"
             aria-label="Anuncie sua quadra"
             className={PILL_LINK}
           >
-            Anuncie<span className="max-md:hidden">{' sua quadra'}</span>
+            Anuncie<span className="max-md:hidden">{'\u00a0sua quadra'}</span>
           </Link>
           {user ? (
             <Link
