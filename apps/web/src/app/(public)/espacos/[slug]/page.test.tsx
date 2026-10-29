@@ -22,7 +22,8 @@ vi.mock('@/lib/public-api', async (importActual) => ({
   publicGet: mocks.publicGet,
 }));
 
-import VenuePage, { generateMetadata, revalidate } from './page';
+import VenuePage, * as pageModule from './page';
+import { generateMetadata } from './page';
 
 function props(slug = 'arena-vila-madalena') {
   return { params: Promise.resolve({ slug }) };
@@ -43,8 +44,8 @@ describe('venue page', () => {
     mocks.publicGet.mockResolvedValue(makeVenue());
   });
 
-  it('is revalidated every 60 seconds', () => {
-    expect(revalidate).toBe(60);
+  it('does not export a route-segment revalidate (the route is dynamic)', () => {
+    expect(pageModule).not.toHaveProperty('revalidate');
   });
 
   it('asks the API for the venue by slug', async () => {

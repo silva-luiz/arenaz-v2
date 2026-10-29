@@ -23,6 +23,11 @@ async function publishedSlugs(): Promise<string[]> {
       if (!result) break;
       for (const venue of result.items) slugs.add(venue.slug);
       if (!result.hasMore) break;
+      if (page === MAX_PAGES) {
+        console.warn(
+          `Sitemap limitado a ${String(MAX_PAGES)} páginas: há mais espaços publicados do que cabem nele`,
+        );
+      }
     }
   } catch (error) {
     // A broken API must not break the sitemap: keep what was read so far.

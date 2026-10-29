@@ -8,13 +8,11 @@ const MINUTES_PER_HOUR = 60;
 const MIN_RUN_TO_COLLAPSE = 3;
 const DAYS_IN_WEEK = 7;
 
-/** Minutes since midnight as "18h" or "18h30"; 1440 is "24h". */
+/** Minutes since midnight as "18:00" (like the opening hours); 1440 is "24:00". */
 export function formatClock(minute: number): string {
   const hours = Math.floor(minute / MINUTES_PER_HOUR);
   const minutes = minute % MINUTES_PER_HOUR;
-  return minutes === 0
-    ? `${String(hours)}h`
-    : `${String(hours)}h${String(minutes).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 /** "Seg", "Sáb": the first three letters of the weekday name (0 = Sunday). */
@@ -75,7 +73,7 @@ function describeDays(weekdays: number[]): string {
   return joinList(parts);
 }
 
-/** "Sex e Sáb, 18h–23h: R$ 250 / hora" */
+/** "Sex e Sáb, 18:00–23:00: R$ 250 / hora" */
 export function summarizePriceRule(rule: PriceRule): string {
   return `${describeDays(rule.weekdays)}, ${formatClock(rule.startMinute)}–${formatClock(rule.endMinute)}: ${formatPrice(rule.priceCentsPerHour)} / hora`;
 }

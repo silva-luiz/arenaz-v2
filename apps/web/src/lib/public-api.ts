@@ -1,4 +1,5 @@
 import 'server-only';
+import { INTERNAL_TOKEN_HEADER } from '@arenaz/contracts';
 import type { Parser } from './api';
 
 // Same fallback as api.ts, session.ts and next.config.ts.
@@ -33,7 +34,7 @@ export async function publicGet<T>(
   const response = await fetch(`${apiUrl}/api${path}`, {
     headers: {
       accept: 'application/json',
-      ...(token ? { 'x-internal-token': token } : {}),
+      ...(token ? { [INTERNAL_TOKEN_HEADER]: token } : {}),
     },
     next: { revalidate },
   });

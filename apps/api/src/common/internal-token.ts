@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { INTERNAL_TOKEN_HEADER } from '@arenaz/contracts';
 
-/** Header the web's server sends on its own (server-side) API calls. */
-export const INTERNAL_TOKEN_HEADER = 'x-internal-token';
+export { INTERNAL_TOKEN_HEADER };
 
 const digest = (value: string): Buffer =>
   createHash('sha256').update(value).digest();

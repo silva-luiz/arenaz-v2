@@ -119,8 +119,8 @@ describe('CourtList', () => {
       .map((heading) => heading.closest('li'));
     expect(court).toHaveTextContent('a partir de R$ 150 / hora');
     // The rules are still listed.
-    expect(court).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 250 / hora');
-    expect(court).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 150 / hora');
+    expect(court).toHaveTextContent('Sex e Sáb, 18:00–23:00: R$ 250 / hora');
+    expect(court).toHaveTextContent('Sex e Sáb, 18:00–23:00: R$ 150 / hora');
   });
 
   it('shows the plain base price when every rule is at or above it', () => {
@@ -142,7 +142,9 @@ describe('CourtList', () => {
     if (!withRules || !plain) throw new Error('two courts expected');
     expect(withRules).not.toHaveTextContent('a partir de');
     expect(withRules).toHaveTextContent('R$ 180 / hora');
-    expect(withRules).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 250 / hora');
+    expect(withRules).toHaveTextContent(
+      'Sex e Sáb, 18:00–23:00: R$ 250 / hora',
+    );
     expect(plain).not.toHaveTextContent('a partir de');
   });
 

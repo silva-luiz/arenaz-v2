@@ -52,3 +52,6 @@ export const phoneBrSchema = z
 
 /** Money is always integer cents. */
 export const centsSchema = z.number().int().nonnegative();
+
+/** Header the web's server sends on its own (server-side) API calls. */
+export const INTERNAL_TOKEN_HEADER = 'x-internal-token';

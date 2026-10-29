@@ -19,6 +19,7 @@ describe('sitemap', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   it('is rendered per request, so the build never calls the API', () => {
@@ -98,6 +99,20 @@ describe('sitemap', () => {
 
     expect(mocks.publicGet).toHaveBeenCalledTimes(50);
     expect(entries).toHaveLength(2 + 50);
+    expect(console.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not warn when the last page ends the list', async () => {
+    mocks.publicGet.mockResolvedValue({
+      items: [card('a')],
+      page: 1,
+      pageSize: 24,
+      hasMore: false,
+    });
+
+    await sitemap();
+
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it('lists a slug once even if two pages return it', async () => {

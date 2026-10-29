@@ -131,7 +131,7 @@ function HidePinsFromAssistiveTech() {
 function CloseOnEscape({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape' && !event.defaultPrevented) onClose();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => {

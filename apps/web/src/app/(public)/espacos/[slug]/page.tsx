@@ -14,8 +14,10 @@ import { lowestPriceCents } from '@/lib/price-rule-summary';
 import { absoluteUrl } from '@/lib/site';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
 
-// The public API data is cached for this long (see `publicGet`).
-export const revalidate = 60;
+// How long the Next data cache may serve the public API data (see
+// `publicGet`). Not exported: the route is dynamic, so a segment-level
+// `revalidate` export would do nothing.
+const REVALIDATE_SECONDS = 60;
 
 const DESCRIPTION_MAX_LENGTH = 160;
 
@@ -32,7 +34,7 @@ interface Props {
 async function loadVenue(slug: string): Promise<PublicVenue | null> {
   if (!PUBLIC_SLUG_PATTERN.test(slug)) return null;
   return publicGet(`/venues/${encodeURIComponent(slug)}`, publicVenueSchema, {
-    revalidate,
+    revalidate: REVALIDATE_SECONDS,
   });
 }
 

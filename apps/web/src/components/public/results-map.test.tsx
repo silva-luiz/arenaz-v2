@@ -522,6 +522,27 @@ describe('ResultsMap', () => {
       expect(onPreview).toHaveBeenCalledWith(null);
     });
 
+    it('ignores an Esc that something else already handled', () => {
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-a"
+          onPreview={onPreview}
+        />,
+      );
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      event.preventDefault();
+      document.dispatchEvent(event);
+
+      expect(onPreview).not.toHaveBeenCalled();
+    });
+
     it('does not listen for Esc while no preview is open', async () => {
       render(
         <ResultsMap
