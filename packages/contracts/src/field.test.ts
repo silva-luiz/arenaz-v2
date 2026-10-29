@@ -124,6 +124,18 @@ describe('priceRuleInputSchema', () => {
     expect(bad({ priceCentsPerHour: 0 })).toBe(false);
     expect(bad({ label: 'x'.repeat(41) })).toBe(false);
   });
+
+  it('limita o preço da faixa ao mesmo máximo do preço base', () => {
+    const at = (cents: number) =>
+      priceRuleInputSchema.safeParse({ ...base, priceCentsPerHour: cents });
+    expect(at(1_000_000).success).toBe(true);
+    const over = at(1_000_001);
+    expect(over.success).toBe(false);
+    expect(over.error?.issues[0]?.message).toBe(
+      'O preço por hora pode ser no máximo R$ 10.000,00',
+    );
+    expect(at(3_000_000_000).success).toBe(false);
+  });
 });
 
 describe('fieldInputSchema', () => {

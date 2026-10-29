@@ -16,9 +16,18 @@ const weekdaySchema = z
   .min(0, { error: 'Dia da semana inválido' })
   .max(6, { error: 'Dia da semana inválido' });
 
-const priceCentsSchema = centsSchema.refine((cents) => cents > 0, {
-  error: 'O preço precisa ser maior que zero',
-});
+export const MAX_PRICE_MESSAGE =
+  'O preço por hora pode ser no máximo R$ 10.000,00';
+
+// Both the base price and every rule price share the cap, which also keeps the
+// value far from the `integer` (int4) column limit.
+const priceCentsSchema = centsSchema
+  .refine((cents) => cents > 0, {
+    error: 'O preço precisa ser maior que zero',
+  })
+  .refine((cents) => cents <= MAX_BASE_PRICE_CENTS, {
+    error: MAX_PRICE_MESSAGE,
+  });
 
 const MEASURE_MESSAGE = 'Use metros com até 1 casa decimal (mínimo 0,1)';
 
@@ -56,9 +65,7 @@ const fieldBaseShape = {
   minSlotMinutes: z.union([z.literal(30), z.literal(60), z.literal(90)], {
     error: 'Use 30, 60 ou 90 minutos',
   }),
-  basePriceCentsPerHour: priceCentsSchema.max(MAX_BASE_PRICE_CENTS, {
-    error: 'O preço por hora pode ser no máximo R$ 10.000,00',
-  }),
+  basePriceCentsPerHour: priceCentsSchema,
 };
 
 export const fieldInputSchema = z.object({

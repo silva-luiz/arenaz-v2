@@ -424,6 +424,24 @@ describe('price rules e2e', () => {
     expect(read.priceRules).toHaveLength(1);
   });
 
+  it('preço da faixa acima do limite (estouraria o int4) → 422, sem gravar', async () => {
+    const { api, field } = await setup();
+    const url = `/api/owner/fields/${field.id}/price-rules`;
+    await api.put(url, [RULE]);
+    const res = await api.put(url, [
+      { ...RULE, priceCentsPerHour: 3_000_000_000 },
+    ]);
+    expect(res.statusCode).toBe(422);
+    expect(JSON.stringify(problemOf(res).errors)).toContain(
+      'O preço por hora pode ser no máximo R$ 10.000,00',
+    );
+    const read = fieldSchema.parse(
+      (await api.get(`/api/owner/fields/${field.id}`)).json(),
+    );
+    expect(read.priceRules).toHaveLength(1);
+    expect(read.priceRules[0]?.priceCentsPerHour).toBe(12000);
+  });
+
   it('horário fora de múltiplos de 30 min → 422', async () => {
     const { api, field } = await setup();
     const res = await api.put(`/api/owner/fields/${field.id}/price-rules`, [
