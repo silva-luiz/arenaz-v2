@@ -72,13 +72,10 @@ function agenda(timezone: OwnerAgenda['timezone'] = 'America/Sao_Paulo') {
   } satisfies OwnerAgenda;
 }
 
-function setViewport(wide: boolean) {
-  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: wide,
-    media: query,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  }));
+function inGrid() {
+  return within(
+    document.querySelector<HTMLElement>('[data-agenda="grid"]') as HTMLElement,
+  );
 }
 
 function renderView(data: OwnerAgenda = agenda()) {
@@ -96,7 +93,6 @@ function renderView(data: OwnerAgenda = agenda()) {
 describe('AgendaView (wide)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setViewport(true);
   });
 
   it('is a table with court columns and time rows', () => {
@@ -118,7 +114,7 @@ describe('AgendaView (wide)', () => {
       .getByRole('rowheader', { name: '18:00' })
       .closest('tr') as HTMLElement;
     const booking = within(row18).getByRole('button', {
-      name: 'Reserva de Ana S., 18:00–20:00, confirmada',
+      name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
     });
     const cell = booking.closest('td');
     expect(cell).toHaveAttribute('rowspan', '4');
@@ -130,7 +126,7 @@ describe('AgendaView (wide)', () => {
       .closest('tr') as HTMLElement;
     expect(
       within(row21).getByRole('button', {
-        name: 'Reserva de Escolinha, 21:00–22:00, confirmada',
+        name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
       }),
     ).toBeVisible();
   });
@@ -139,8 +135,8 @@ describe('AgendaView (wide)', () => {
     renderView(agenda('America/Manaus'));
     // 21:00Z is 17:00 in Manaus.
     expect(
-      screen.getByRole('button', {
-        name: 'Reserva de Ana S., 17:00–19:00, confirmada',
+      inGrid().getByRole('button', {
+        name: 'Quadra 1, 17:00–19:00, reserva de Ana S., pelo app, confirmada',
       }),
     ).toBeVisible();
   });
@@ -148,8 +144,8 @@ describe('AgendaView (wide)', () => {
   it('marks blocks with text and a legend explains the origins', () => {
     renderView();
     expect(
-      screen.getByRole('button', {
-        name: 'Bloqueio, 17:00–18:00, Manutenção',
+      inGrid().getByRole('button', {
+        name: 'Quadra 1, 17:00–18:00, bloqueio, Manutenção',
       }),
     ).toBeVisible();
     const legend = screen.getByRole('list', { name: 'Legenda' });
@@ -164,8 +160,8 @@ describe('AgendaView (wide)', () => {
     renderView();
 
     await user.click(
-      screen.getByRole('button', {
-        name: 'Reserva de Ana S., 18:00–20:00, confirmada',
+      inGrid().getByRole('button', {
+        name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
       }),
     );
     const dialog = screen.getByRole('dialog', { name: 'Reserva' });
@@ -202,8 +198,8 @@ describe('AgendaView (wide)', () => {
     renderView();
 
     await user.click(
-      screen.getByRole('button', {
-        name: 'Reserva de Escolinha, 21:00–22:00, confirmada',
+      inGrid().getByRole('button', {
+        name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
       }),
     );
     const dialog = screen.getByRole('dialog', { name: 'Reserva' });
@@ -228,7 +224,9 @@ describe('AgendaView (wide)', () => {
     renderView();
 
     await user.click(
-      screen.getByRole('button', { name: 'Bloqueio, 17:00–18:00, Manutenção' }),
+      inGrid().getByRole('button', {
+        name: 'Quadra 1, 17:00–18:00, bloqueio, Manutenção',
+      }),
     );
     const dialog = screen.getByRole('dialog', { name: 'Bloqueio' });
     await user.click(
@@ -247,8 +245,8 @@ describe('AgendaView (wide)', () => {
   it('returns the focus to the button that opened the detail', async () => {
     const user = userEvent.setup();
     renderView();
-    const opener = screen.getByRole('button', {
-      name: 'Reserva de Ana S., 18:00–20:00, confirmada',
+    const opener = inGrid().getByRole('button', {
+      name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
     });
     await user.click(opener);
     await user.click(screen.getByRole('button', { name: 'Fechar' }));
@@ -381,6 +379,112 @@ describe('AgendaView (wide)', () => {
     );
   });
 
+  it('lists items that cannot sit in the grid instead of moving them', async () => {
+    const user = userEvent.setup();
+    const partial: AgendaItem = {
+      ...APP_BOOKING,
+      id: '6c3f4e50-9d7b-4a9e-8d85-4e9b3f0a2c43',
+      customerName: 'Beto P.',
+      // 19:00-21:00 overlaps the 18:00-20:00 booking.
+      startsAt: '2026-11-02T22:00:00.000Z',
+      endsAt: '2026-11-03T00:00:00.000Z',
+    };
+    const data = agenda();
+    data.fields[0]?.items.push(partial);
+    renderView(data);
+
+    // Nothing drawn at 19:00 or 20:00 for Beto: the grid keeps the true rows.
+    expect(
+      within(screen.getByRole('table')).queryByRole('button', {
+        name: /reserva de Beto P\./,
+      }),
+    ).toBeNull();
+    const extra = screen.getByRole('region', {
+      name: 'Outros horários nesta quadra: Quadra 1',
+    });
+    const button = within(extra).getByRole('button', {
+      name: 'Quadra 1, 19:00–21:00, reserva de Beto P., pelo app, confirmada',
+    });
+    await user.click(button);
+    expect(screen.getByRole('dialog', { name: 'Reserva' })).toBeVisible();
+    expect(
+      within(screen.getByRole('dialog', { name: 'Reserva' })).getByText(
+        'Beto P.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('has no overflow list when every item fits', () => {
+    renderView();
+    expect(screen.queryByText(/Outros horários nesta quadra/)).toBeNull();
+  });
+
+  it('does not close while a request is pending', async () => {
+    mocks.apiSend.mockReturnValue(new Promise(() => undefined));
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole('button', { name: '+ Reserva manual' }));
+    const dialog = screen.getByRole('dialog', { name: 'Reserva manual' });
+    await user.type(within(dialog).getByLabelText('Nome do cliente'), 'Rafa');
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Criar reserva' }),
+    );
+    expect(
+      within(dialog).getByRole('button', { name: 'Fechar' }),
+    ).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(
+      screen.getByRole('dialog', { name: 'Reserva manual' }),
+    ).toBeVisible();
+  });
+
+  it('closes with Esc when nothing is pending', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole('button', { name: '+ Reserva manual' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('limits the dates of the forms to 60 days ahead', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole('button', { name: '+ Reserva manual' }));
+    const date = within(
+      screen.getByRole('dialog', { name: 'Reserva manual' }),
+    ).getByLabelText('Data');
+    expect(date).toHaveAttribute('min', '2026-11-02');
+    expect(date).toHaveAttribute('max', '2027-01-01');
+  });
+
+  it('rejects an invalid phone before calling the API', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole('button', { name: '+ Reserva manual' }));
+    const dialog = screen.getByRole('dialog', { name: 'Reserva manual' });
+    await user.type(within(dialog).getByLabelText('Nome do cliente'), 'Rafa');
+    await user.type(within(dialog).getByLabelText(/Telefone/), '123');
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Criar reserva' }),
+    );
+    expect(mocks.apiSend).not.toHaveBeenCalled();
+    expect(within(dialog).getByText('Telefone inválido')).toBeVisible();
+  });
+
+  it('rejects a block that ends before it starts', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(screen.getByRole('button', { name: 'Bloquear horário' }));
+    const dialog = screen.getByRole('dialog', { name: 'Bloquear horário' });
+    await user.selectOptions(within(dialog).getByLabelText('Início'), '21:00');
+    await user.selectOptions(within(dialog).getByLabelText('Fim'), '20:00');
+    await user.click(within(dialog).getByRole('button', { name: 'Bloquear' }));
+    expect(mocks.apiSend).not.toHaveBeenCalled();
+    expect(
+      within(dialog).getByText('O fim precisa ser depois do início'),
+    ).toBeVisible();
+  });
+
   it('says so when the venue is closed that day and has no items', () => {
     render(
       <AgendaView
@@ -416,13 +520,11 @@ describe('AgendaView (wide)', () => {
 describe('AgendaView (phone)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setViewport(false);
   });
 
   it('lists the items by court instead of a grid', async () => {
     const user = userEvent.setup();
     renderView();
-    expect(screen.queryByRole('table')).toBeNull();
 
     const court1 = screen.getByRole('region', { name: 'Quadra 1' });
     const items = within(court1).getAllByRole('listitem');
@@ -434,7 +536,7 @@ describe('AgendaView (phone)', () => {
 
     await user.click(
       within(court1).getByRole('button', {
-        name: 'Reserva de Ana S., 18:00–20:00, confirmada',
+        name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
       }),
     );
     expect(screen.getByRole('dialog', { name: 'Reserva' })).toBeVisible();

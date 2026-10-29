@@ -2,7 +2,7 @@
 
 import { formatCents, type AgendaItem } from '@arenaz/contracts';
 import { Alert, Button } from '@arenaz/ui';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { bookingStatusLabel } from '@/lib/agenda-layout';
 import { apiSend } from '@/lib/api-client';
 import { formatPhoneBr } from '@/lib/format-br';
@@ -14,6 +14,8 @@ export interface BookingDetailProps {
   timezone: string;
   /** Called after the booking was cancelled or the block removed. */
   onDone: (message: string) => void;
+  /** Told when a request starts and ends (the dialog cannot close meanwhile). */
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function Row({ label, children }: { label: string; children: string }) {
@@ -36,9 +38,14 @@ export function BookingDetail({
   fieldName,
   timezone,
   onDone,
+  onBusyChange,
 }: BookingDetailProps) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
   const [error, setError] = useState<string | undefined>();
   const trigger = useRef<HTMLButtonElement>(null);
   const panelId = `${useId()}-confirmar`;

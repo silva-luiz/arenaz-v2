@@ -3,7 +3,7 @@
 import type { AgendaItem } from '@arenaz/contracts';
 import { Button, cn } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useRef, useState } from 'react';
 import { AgendaBlockForm } from './agenda-block-form';
 import { AgendaDialog } from './agenda-dialog';
 import {
@@ -14,29 +14,6 @@ import {
 } from './agenda-grid';
 import { BookingDetail } from './booking-detail';
 import { ManualBookingForm } from './manual-booking-form';
-
-const WIDE_QUERY = '(min-width: 768px)';
-
-function subscribeWide(onChange: () => void): () => void {
-  if (typeof window.matchMedia !== 'function') return () => undefined;
-  const query = window.matchMedia(WIDE_QUERY);
-  query.addEventListener('change', onChange);
-  return () => {
-    query.removeEventListener('change', onChange);
-  };
-}
-
-function wideSnapshot(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia(WIDE_QUERY).matches
-  );
-}
-
-/** Whether the grid fits (md up). The server and hydration say "phone". */
-function useIsWide(): boolean {
-  return useSyncExternalStore(subscribeWide, wideSnapshot, () => false);
-}
 
 type OpenDialog =
   | { kind: 'manual' }
@@ -66,7 +43,7 @@ export function AgendaView({
   hours,
 }: AgendaViewProps) {
   const router = useRouter();
-  const wide = useIsWide();
+  const [busy, setBusy] = useState(false);
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   const [notice, setNotice] = useState('');
   const region = useRef<HTMLDivElement>(null);
@@ -83,6 +60,7 @@ export function AgendaView({
 
   function done(message: string) {
     changed.current = true;
+    setBusy(false);
     setDialog(null);
     setNotice(message);
     router.refresh();
@@ -143,16 +121,26 @@ export function AgendaView({
           <p className="rounded-card border border-line p-6 text-muted">
             Cadastre uma quadra para ver a agenda.
           </p>
-        ) : wide ? (
-          <AgendaGrid
-            date={date}
-            timezone={timezone}
-            fields={fields}
-            hours={hours}
-            onOpen={openItem}
-          />
         ) : (
-          <AgendaList timezone={timezone} fields={fields} onOpen={openItem} />
+          <>
+            {/* Chosen by CSS, so the first paint is already the right one. */}
+            <div data-agenda="grid" className="hidden md:block">
+              <AgendaGrid
+                date={date}
+                timezone={timezone}
+                fields={fields}
+                hours={hours}
+                onOpen={openItem}
+              />
+            </div>
+            <div data-agenda="list" className="md:hidden">
+              <AgendaList
+                timezone={timezone}
+                fields={fields}
+                onOpen={openItem}
+              />
+            </div>
+          </>
         )}
       </div>
 
@@ -161,6 +149,7 @@ export function AgendaView({
           title="Reserva manual"
           onClose={close}
           fallbackFocusRef={region}
+          locked={busy}
           wasChanged={() => changed.current}
         >
           <ManualBookingForm
@@ -169,6 +158,7 @@ export function AgendaView({
             date={date}
             today={today}
             onDone={done}
+            onBusyChange={setBusy}
           />
         </AgendaDialog>
       ) : null}
@@ -177,6 +167,7 @@ export function AgendaView({
           title="Bloquear horário"
           onClose={close}
           fallbackFocusRef={region}
+          locked={busy}
           wasChanged={() => changed.current}
         >
           <AgendaBlockForm
@@ -185,6 +176,7 @@ export function AgendaView({
             date={date}
             today={today}
             onDone={done}
+            onBusyChange={setBusy}
           />
         </AgendaDialog>
       ) : null}
@@ -193,6 +185,7 @@ export function AgendaView({
           title={dialog.item.kind === 'booking' ? 'Reserva' : 'Bloqueio'}
           onClose={close}
           fallbackFocusRef={region}
+          locked={busy}
           wasChanged={() => changed.current}
         >
           <BookingDetail
@@ -200,6 +193,7 @@ export function AgendaView({
             fieldName={dialog.fieldName}
             timezone={timezone}
             onDone={done}
+            onBusyChange={setBusy}
           />
         </AgendaDialog>
       ) : null}

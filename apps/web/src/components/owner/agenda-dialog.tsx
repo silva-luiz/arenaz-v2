@@ -20,6 +20,8 @@ export interface AgendaDialogProps {
    * focus goes to `fallbackFocusRef` instead.
    */
   wasChanged: () => boolean;
+  /** A request is pending: Esc and "Fechar" do nothing until it settles. */
+  locked?: boolean;
   children: ReactNode;
 }
 
@@ -34,12 +36,18 @@ export function AgendaDialog({
   onClose,
   fallbackFocusRef,
   wasChanged,
+  locked = false,
   children,
 }: AgendaDialogProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const lockedRef = useRef(locked);
+
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -56,7 +64,7 @@ export function AgendaDialog({
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
-        onClose();
+        if (!lockedRef.current) onClose();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -77,14 +85,25 @@ export function AgendaDialog({
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onCancel={(event) => {
+        if (locked) event.preventDefault();
+      }}
+      onClose={() => {
+        if (!locked) onClose();
+      }}
       className="m-auto max-h-[92dvh] w-[min(32rem,calc(100vw-2rem))] overflow-hidden rounded-card bg-bg p-0 text-ink shadow-3 backdrop:bg-night/60 open:flex open:flex-col"
     >
       <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-3">
         <h2 id={titleId} className="text-lg font-bold tracking-tight">
           {title}
         </h2>
-        <Button ref={closeRef} variant="ghost" size="sm" onClick={onClose}>
+        <Button
+          ref={closeRef}
+          variant="ghost"
+          size="sm"
+          disabled={locked}
+          onClick={onClose}
+        >
           Fechar
         </Button>
       </div>

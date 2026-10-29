@@ -84,51 +84,69 @@ export function agendaRowMinutes(
   return [...rows].sort((a, b) => a - b);
 }
 
+export interface AgendaGridModel {
+  /** `cells[row][column]` */
+  cells: GridCell[][];
+  /** Per column: items that cannot sit at their true rows (see below). */
+  overflow: PlacedItem[][];
+}
+
 /**
- * The cells of the court × time table: `grid[row][column]`. An item sits in
- * its first row with a row span; the rows below are `covered`. An item that
- * starts inside the previous one of the same court is clipped to start after
- * it (it still shows in the phone list).
+ * The cells of the court × time table. An item is drawn only where it truly
+ * is: it must start on a row, end on a row boundary and not share a row with
+ * an item already placed in that court. Anything else (overlaps, odd
+ * minutes) is never moved or clipped: it goes to the court's `overflow` and
+ * the view lists it under the table.
  */
 export function buildAgendaGrid(
   fields: { items: AgendaItem[] }[],
   rows: number[],
   date: string,
   timeZone: string,
-): GridCell[][] {
-  const grid: GridCell[][] = rows.map(() =>
+): AgendaGridModel {
+  const cells: GridCell[][] = rows.map(() =>
     fields.map((): GridCell => ({ kind: 'empty' })),
   );
+  const overflow: PlacedItem[][] = fields.map(() => []);
 
   fields.forEach((field, column) => {
     const placed = field.items
       .map((item) => placeItem(item, date, timeZone))
-      .sort((a, b) => a.startMinute - b.startMinute);
-    let taken = -1; // last row index already used in this column
+      .sort(
+        (a, b) => a.startMinute - b.startMinute || b.endMinute - a.endMinute,
+      );
     for (const entry of placed) {
-      let first = rows.findIndex((minute) => minute + STEP > entry.startMinute);
-      if (first === -1) continue;
-      first = Math.max(first, taken + 1);
-      let last = first;
-      while (
-        rows[last + 1] !== undefined &&
-        (rows[last + 1] ?? 0) < entry.endMinute
-      ) {
-        last += 1;
+      const first = rows.indexOf(entry.startMinute);
+      let last = rows.indexOf(entry.endMinute - STEP);
+      const aligned =
+        first !== -1 &&
+        last >= first &&
+        entry.endMinute > entry.startMinute &&
+        rows[last] === entry.endMinute - STEP &&
+        // contiguous rows: nothing missing in between
+        last - first === (entry.endMinute - entry.startMinute) / STEP - 1;
+      let free = aligned;
+      if (aligned) {
+        for (let row = first; row <= last; row += 1) {
+          if (cells[row]?.[column]?.kind !== 'empty') free = false;
+        }
       }
-      if ((rows[first] ?? 0) >= entry.endMinute) continue;
-      const cell = grid[first];
-      if (!cell) continue;
-      cell[column] = { kind: 'item', placed: entry, span: last - first + 1 };
+      if (!free) {
+        overflow[column]?.push(entry);
+        continue;
+      }
+      last = Math.max(last, first);
+      const cell = cells[first];
+      if (cell)
+        cell[column] = { kind: 'item', placed: entry, span: last - first + 1 };
       for (let row = first + 1; row <= last; row += 1) {
-        const covered = grid[row];
+        const covered = cells[row];
         if (covered) covered[column] = { kind: 'covered' };
       }
-      taken = last;
     }
   });
 
-  return grid;
+  return { cells, overflow };
 }
 
 /** "confirmada" / "aguardando pagamento" for a booking in the agenda. */
@@ -136,11 +154,20 @@ export function bookingStatusLabel(status: string): string {
   return status === 'held' ? 'aguardando pagamento' : 'confirmada';
 }
 
-/** What a screen reader says for an agenda button. */
-export function itemAriaLabel(item: AgendaItem, timeZone: string): string {
+/**
+ * What a screen reader says for an agenda button. The visible texts (name or
+ * "Bloqueio", the time range, "Pelo app"/"Manual"/"Aguardando pagamento"/the
+ * reason) all appear in it, so the visible label is part of the name.
+ */
+export function itemAriaLabel(
+  item: AgendaItem,
+  fieldName: string,
+  timeZone: string,
+): string {
   const range = formatZonedRange(item.startsAt, item.endsAt, timeZone);
   if (item.kind === 'block') {
-    return `Bloqueio, ${range}${item.reason ? `, ${item.reason}` : ''}`;
+    return `${fieldName}, ${range}, bloqueio, ${item.reason ?? 'sem motivo'}`;
   }
-  return `Reserva de ${item.customerName}, ${range}, ${bookingStatusLabel(item.status)}`;
+  const origin = item.origin === 'app' ? 'pelo app' : 'manual';
+  return `${fieldName}, ${range}, reserva de ${item.customerName}, ${origin}, ${bookingStatusLabel(item.status)}`;
 }

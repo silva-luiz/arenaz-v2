@@ -5,14 +5,17 @@ import {
   manualBookingInputSchema,
 } from '@arenaz/contracts';
 import { Alert, Button, Field, Input, Select } from '@arenaz/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
+import { addDaysToDateKey } from '@/lib/booking-client';
 import { toZonedIso } from '@/lib/zoned-time';
 import { TIME_OPTIONS } from './time-options';
 
 const STEP = 30;
 const DEFAULT_START = 18 * 60;
 const DEFAULT_DURATION = 60;
+/** Bookings are accepted up to 60 days ahead. */
+const MAX_DAYS_AHEAD = 60;
 const DATE_MISSING = 'Informe a data';
 const FIELD_MISSING = 'Escolha a quadra';
 
@@ -68,6 +71,8 @@ export interface ManualBookingFormProps {
   /** Today in the venue's zone, the earliest day that can be chosen. */
   today: string;
   onDone: (message: string) => void;
+  /** Told when a request starts and ends (the dialog cannot close meanwhile). */
+  onBusyChange?: (busy: boolean) => void;
 }
 
 /**
@@ -81,6 +86,7 @@ export function ManualBookingForm({
   date: initialDate,
   today,
   onDone,
+  onBusyChange,
 }: ManualBookingFormProps) {
   const [fieldId, setFieldId] = useState(fields[0]?.id ?? '');
   const [date, setDate] = useState(initialDate);
@@ -91,6 +97,10 @@ export function ManualBookingForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [error, setError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    onBusyChange?.(saving);
+  }, [saving, onBusyChange]);
 
   async function submit() {
     setError(undefined);
@@ -170,6 +180,7 @@ export function ManualBookingForm({
             <Input
               type="date"
               min={today}
+              max={addDaysToDateKey(today, MAX_DAYS_AHEAD)}
               value={date}
               onChange={(event) => {
                 setDate(event.target.value);

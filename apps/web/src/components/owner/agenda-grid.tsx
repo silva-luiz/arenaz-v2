@@ -71,14 +71,15 @@ function ItemButton({
   return (
     <button
       type="button"
-      aria-label={itemAriaLabel(item, timezone)}
+      aria-label={itemAriaLabel(item, field.name, timezone)}
       onClick={() => {
         onOpen(item, field);
       }}
       className={cn(
         'flex flex-col items-start justify-center overflow-hidden rounded-[10px] border px-2 py-1 text-left text-xs leading-tight',
-        layout === 'cell' ? 'absolute inset-0.5' : 'min-h-14 w-full',
-        FOCUS,
+        layout === 'cell'
+          ? 'absolute inset-0.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand'
+          : cn('min-h-14 w-full', FOCUS),
         itemClasses(item),
       )}
     >
@@ -126,78 +127,120 @@ export function AgendaGrid({
     );
   }
 
-  const grid = buildAgendaGrid(fields, rows, date, timezone);
+  const { cells: grid, overflow } = buildAgendaGrid(
+    fields,
+    rows,
+    date,
+    timezone,
+  );
 
   return (
-    <div className="overflow-x-auto rounded-card border border-line">
-      <table className="w-full border-collapse">
-        <caption className="sr-only">
-          Agenda do dia, quadras por horário
-        </caption>
-        <thead>
-          <tr>
-            <th
-              scope="col"
-              className="sticky left-0 z-10 w-20 border-b border-line bg-bg px-2 py-3 text-left text-sm font-semibold"
-            >
-              Horário
-            </th>
-            {fields.map((field) => (
+    <div className="flex flex-col gap-4">
+      <div className="scroll-pl-20 overflow-x-auto rounded-card border border-line">
+        <table className="w-full border-collapse">
+          <caption className="sr-only">
+            Agenda do dia, quadras por horário
+          </caption>
+          <thead>
+            <tr>
               <th
-                key={field.id}
                 scope="col"
-                className="min-w-40 border-b border-l border-line px-3 py-3 text-left text-sm font-semibold"
+                className="sticky left-0 z-10 w-20 border-b border-line bg-bg px-2 py-3 text-left text-sm font-semibold"
               >
-                {field.name}
-                {field.isActive ? null : (
-                  <span className="block text-xs font-normal text-muted">
-                    Inativa
-                  </span>
-                )}
+                Horário
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((minute, rowIndex) => (
-            <tr key={minute} className="h-14">
-              <th
-                scope="row"
-                className="sticky left-0 z-10 border-t border-line bg-bg px-2 text-left align-top font-mono text-xs font-normal text-muted"
-              >
-                {formatMinute(minute)}
-              </th>
-              {fields.map((field, column) => {
-                const cell = grid[rowIndex]?.[column];
-                if (cell?.kind === 'covered') return null;
-                if (cell?.kind === 'item') {
+              {fields.map((field) => (
+                <th
+                  key={field.id}
+                  scope="col"
+                  className="min-w-40 border-b border-l border-line px-3 py-3 text-left text-sm font-semibold"
+                >
+                  {field.name}
+                  {field.isActive ? null : (
+                    <span className="block text-xs font-normal text-muted">
+                      Inativa
+                    </span>
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((minute, rowIndex) => (
+              <tr key={minute} className="h-14">
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 border-t border-line bg-bg px-2 text-left align-top font-mono text-xs font-normal text-muted"
+                >
+                  {formatMinute(minute)}
+                </th>
+                {fields.map((field, column) => {
+                  const cell = grid[rowIndex]?.[column];
+                  if (cell?.kind === 'covered') return null;
+                  if (cell?.kind === 'item') {
+                    return (
+                      <td
+                        key={field.id}
+                        rowSpan={cell.span}
+                        className="relative min-w-40 border-l border-t border-line align-top"
+                      >
+                        <ItemButton
+                          item={cell.placed.item}
+                          field={field}
+                          timezone={timezone}
+                          onOpen={onOpen}
+                          layout="cell"
+                        />
+                      </td>
+                    );
+                  }
                   return (
                     <td
                       key={field.id}
-                      rowSpan={cell.span}
-                      className="relative min-w-40 border-l border-t border-line align-top"
-                    >
-                      <ItemButton
-                        item={cell.placed.item}
-                        field={field}
-                        timezone={timezone}
-                        onOpen={onOpen}
-                        layout="cell"
-                      />
-                    </td>
+                      className="min-w-40 border-l border-t border-line"
+                    />
                   );
-                }
-                return (
-                  <td
-                    key={field.id}
-                    className="min-w-40 border-l border-t border-line"
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {fields.map((field, column) => {
+        const extra = overflow[column] ?? [];
+        if (extra.length === 0) return null;
+        return (
+          <section
+            key={field.id}
+            aria-labelledby={`agenda-outros-${field.id}`}
+            className="rounded-card border border-line p-4"
+          >
+            <h3
+              id={`agenda-outros-${field.id}`}
+              className="mb-1 text-base font-bold"
+            >
+              {`Outros horários nesta quadra: ${field.name}`}
+            </h3>
+            <p className="mb-3 text-sm text-muted">
+              Estes horários se sobrepõem a outros ou não começam em hora cheia
+              ou meia hora, por isso não cabem na grade.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {extra.map(({ item }) => (
+                <li key={item.id}>
+                  <ItemButton
+                    item={item}
+                    field={field}
+                    timezone={timezone}
+                    onOpen={onOpen}
+                    layout="row"
                   />
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

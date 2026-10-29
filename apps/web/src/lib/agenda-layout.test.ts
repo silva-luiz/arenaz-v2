@@ -93,62 +93,122 @@ describe('agendaRowMinutes', () => {
 });
 
 describe('buildAgendaGrid', () => {
-  const rows = [1080, 1110, 1140, 1170, 1200];
+  const rows = [1080, 1110, 1140, 1170, 1200, 1230, 1260];
+  const at = (hhmm: string, hhmmEnd: string, id: string) => {
+    // São Paulo is UTC-3.
+    const iso = (value: string) => {
+      const [h = 0, m = 0] = value.split(':').map(Number);
+      return new Date(Date.UTC(2026, 10, 2, h + 3, m)).toISOString();
+    };
+    return booking({ id, startsAt: iso(hhmm), endsAt: iso(hhmmEnd) });
+  };
+  const ids = (list: { item: { id: string } }[] | undefined) =>
+    (list ?? []).map((entry) => entry.item.id);
 
   it('puts an item in its first row with a row span, the rest is covered', () => {
-    const grid = buildAgendaGrid(
-      [
-        { items: [booking()] },
-        { items: [] },
-      ],
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items: [booking()] }, { items: [] }],
       rows,
       '2026-11-02',
       SP,
     );
-    expect(grid[0]?.[0]).toMatchObject({ kind: 'item', span: 4 });
-    expect(grid[1]?.[0]).toEqual({ kind: 'covered' });
-    expect(grid[3]?.[0]).toEqual({ kind: 'covered' });
-    expect(grid[4]?.[0]).toEqual({ kind: 'empty' });
-    expect(grid.every((row) => row[1]?.kind === 'empty')).toBe(true);
+    expect(cells[0]?.[0]).toMatchObject({ kind: 'item', span: 4 });
+    expect(cells[1]?.[0]).toEqual({ kind: 'covered' });
+    expect(cells[3]?.[0]).toEqual({ kind: 'covered' });
+    expect(cells[4]?.[0]).toEqual({ kind: 'empty' });
+    expect(cells.every((row) => row[1]?.kind === 'empty')).toBe(true);
+    expect(overflow).toEqual([[], []]);
   });
 
-  it('clips an item that starts inside the previous one', () => {
-    const grid = buildAgendaGrid(
-      [
-        {
-          items: [
-            booking(),
-            block({
-              startsAt: '2026-11-02T22:00:00.000Z',
-              endsAt: '2026-11-03T00:00:00.000Z',
-            }),
-          ],
-        },
-      ],
-      [1080, 1110, 1140, 1170, 1200, 1230],
+  it('sends an item contained in another to the overflow, never shifted', () => {
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items: [at('18:00', '20:00', 'big'), at('18:30', '19:00', 'small')] }],
+      rows,
       '2026-11-02',
       SP,
     );
-    expect(grid[4]?.[0]).toMatchObject({ kind: 'item', span: 2 });
+    expect(cells[0]?.[0]).toMatchObject({ kind: 'item', span: 4 });
+    expect(ids(overflow[0])).toEqual(['small']);
+  });
+
+  it('keeps one of two items with the same start and lists the other', () => {
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items: [at('18:00', '19:00', 'a'), at('18:00', '19:00', 'b')] }],
+      rows,
+      '2026-11-02',
+      SP,
+    );
+    expect(cells[0]?.[0]).toMatchObject({ kind: 'item', span: 2 });
+    expect(overflow[0]).toHaveLength(1);
+  });
+
+  it('lists the one that overlaps partially instead of clipping it', () => {
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items: [at('18:00', '20:00', 'a'), at('19:00', '21:00', 'b')] }],
+      rows,
+      '2026-11-02',
+      SP,
+    );
+    expect(cells[0]?.[0]).toMatchObject({ kind: 'item', span: 4 });
+    expect(cells[4]?.[0]).toEqual({ kind: 'empty' });
+    expect(ids(overflow[0])).toEqual(['b']);
+  });
+
+  it('lists an item that does not start and end on the 30-minute rows', () => {
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items: [at('18:10', '19:00', 'odd')] }],
+      rows,
+      '2026-11-02',
+      SP,
+    );
+    expect(cells.every((row) => row[0]?.kind === 'empty')).toBe(true);
+    expect(ids(overflow[0])).toEqual(['odd']);
+  });
+
+  it('every item is either placed or listed', () => {
+    const items = [
+      at('18:00', '19:00', 'a'),
+      at('18:30', '19:30', 'b'),
+      at('19:00', '20:00', 'c'),
+      at('19:15', '19:45', 'd'),
+    ];
+    const { cells, overflow } = buildAgendaGrid(
+      [{ items }],
+      rows,
+      '2026-11-02',
+      SP,
+    );
+    const placedIds = cells
+      .map((row) => row[0])
+      .flatMap((cell) => (cell?.kind === 'item' ? [cell.placed.item.id] : []));
+    expect([...placedIds, ...ids(overflow[0])].sort()).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+    ]);
   });
 });
 
 describe('itemAriaLabel', () => {
-  it('announces the customer, the time range and the status', () => {
-    expect(itemAriaLabel(booking(), SP)).toBe(
-      'Reserva de Ana S., 18:00–20:00, confirmada',
+  it('announces court, time range, customer, origin and status', () => {
+    expect(itemAriaLabel(booking(), 'Quadra 1', SP)).toBe(
+      'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
     );
-    expect(itemAriaLabel(booking({ status: 'held' }), SP)).toBe(
-      'Reserva de Ana S., 18:00–20:00, aguardando pagamento',
+    expect(itemAriaLabel(booking({ status: 'held' }), 'Quadra 1', SP)).toBe(
+      'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, aguardando pagamento',
+    );
+    expect(itemAriaLabel(booking({ origin: 'manual' }), 'Quadra 2', SP)).toBe(
+      'Quadra 2, 18:00–20:00, reserva de Ana S., manual, confirmada',
     );
   });
 
   it('names the reason of a block', () => {
-    expect(itemAriaLabel(block(), SP)).toBe(
-      'Bloqueio, 18:00–19:00, Manutenção',
+    expect(itemAriaLabel(block(), 'Quadra 1', SP)).toBe(
+      'Quadra 1, 18:00–19:00, bloqueio, Manutenção',
     );
-    expect(itemAriaLabel(block({ reason: null }), SP)).toBe(
-      'Bloqueio, 18:00–19:00',
+    expect(itemAriaLabel(block({ reason: null }), 'Quadra 1', SP)).toBe(
+      'Quadra 1, 18:00–19:00, bloqueio, sem motivo',
     );
   });
 });

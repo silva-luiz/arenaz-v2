@@ -68,7 +68,7 @@ test('dono vê a agenda, cria reserva manual, bloqueia e cancela', async ({
   await dialog.getByLabel('Nome do cliente').fill(customer);
   await dialog.getByRole('button', { name: 'Criar reserva' }).click();
   const booking = table.getByRole('button', {
-    name: `Reserva de ${customer}, 18:00–19:00, confirmada`,
+    name: `Society 1, 18:00–19:00, reserva de ${customer}, manual, confirmada`,
   });
   await expect(booking).toBeVisible();
   await expect(page.getByRole('status')).toHaveText('Reserva manual criada');
@@ -89,7 +89,9 @@ test('dono vê a agenda, cria reserva manual, bloqueia e cancela', async ({
   await blockDialog.getByLabel('Motivo').fill('Chuva');
   await blockDialog.getByRole('button', { name: 'Bloquear' }).click();
   await expect(
-    table.getByRole('button', { name: 'Bloqueio, 20:00–21:00, Chuva' }),
+    table.getByRole('button', {
+      name: 'Society 1, 20:00–21:00, bloqueio, Chuva',
+    }),
   ).toBeVisible();
 
   expect(await seriousViolations(page), 'violações na agenda').toEqual([]);
@@ -115,7 +117,9 @@ test('dono vê a agenda, cria reserva manual, bloqueia e cancela', async ({
   await expect(page.getByRole('table')).toHaveCount(0);
   const court = page.getByRole('region', { name: 'Society 1' });
   await expect(
-    court.getByRole('button', { name: 'Bloqueio, 20:00–21:00, Chuva' }),
+    court.getByRole('button', {
+      name: 'Society 1, 20:00–21:00, bloqueio, Chuva',
+    }),
   ).toBeVisible();
   expect(await seriousViolations(page), 'violações no celular').toEqual([]);
   await page.screenshot({

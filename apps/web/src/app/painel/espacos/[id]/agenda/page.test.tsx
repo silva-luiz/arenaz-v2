@@ -118,4 +118,18 @@ describe('/painel/espacos/[id]/agenda', () => {
       `/painel/espacos/${ID}`,
     );
   });
+
+  it('lets the not-found of the API (another owner, bad id) through', async () => {
+    mocks.apiGet.mockRejectedValue(new Error('NEXT_HTTP_ERROR_FALLBACK;404'));
+    await expect(renderPage()).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
+  });
+
+  it('lets a failing agenda request through instead of an empty page', async () => {
+    mocks.apiGet.mockImplementation((path: string) =>
+      path.includes('/agenda')
+        ? Promise.reject(new Error('GET falhou com status 500'))
+        : Promise.resolve(VENUE),
+    );
+    await expect(renderPage()).rejects.toThrow('status 500');
+  });
 });
