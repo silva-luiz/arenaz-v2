@@ -9,7 +9,7 @@ import {
   type CancelBookingResponse,
   type CreateBookingInput,
 } from '@arenaz/contracts';
-import { schema, type Db } from '@arenaz/db';
+import { expireDueHolds, schema, type Db } from '@arenaz/db';
 import {
   ConflictException,
   Inject,
@@ -17,7 +17,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, sql } from 'drizzle-orm';
+import { dbNow } from '../common/db-clock.js';
 import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { DB, type DbHandle } from '../db/db.module.js';
@@ -55,16 +56,6 @@ export interface Chargeable {
   holdExpiresAt: Date;
 }
 
-/** The database clock, read after the locks are held (not the transaction start). */
-async function dbNow(db: Pick<Db, 'execute'>): Promise<Date> {
-  const result = await db.execute<{ now: Date | string }>(
-    sql`SELECT clock_timestamp() AS now`,
-  );
-  const row = result.rows[0];
-  if (!row) throw new Error('relógio do banco indisponível');
-  return new Date(row.now);
-}
-
 /** `SELECT ... FROM field WHERE id = $1 FOR UPDATE`: every booking write starts here. */
 async function lockField(tx: Tx, fieldId: string) {
   const [row] = await tx
@@ -79,24 +70,6 @@ async function lockField(tx: Tx, fieldId: string) {
     .where(eq(field.id, fieldId))
     .for('update');
   return row;
-}
-
-/** Holds of this field past their deadline become `expired`, freeing the slot. */
-async function expireStaleHolds(
-  tx: Tx,
-  fieldId: string,
-  now: Date,
-): Promise<void> {
-  await tx
-    .update(booking)
-    .set({ status: 'expired' })
-    .where(
-      and(
-        eq(booking.fieldId, fieldId),
-        eq(booking.status, 'held'),
-        lte(booking.holdExpiresAt, now),
-      ),
-    );
 }
 
 const viewColumns = {
@@ -200,7 +173,8 @@ export class BookingsService {
         }
 
         const now = await dbNow(tx);
-        await expireStaleHolds(tx, target.id, now);
+        // Same helper (and marks) as the worker: stale holds of this field.
+        await expireDueHolds(tx, { fieldId: target.id, cutoff: now });
 
         const hours = await tx
           .select({
@@ -379,10 +353,7 @@ export class BookingsService {
         }
         const now = await dbNow(tx);
         if (row.holdExpiresAt === null || row.holdExpiresAt <= now) {
-          await tx
-            .update(booking)
-            .set({ status: 'expired' })
-            .where(eq(booking.id, bookingId));
+          await expireDueHolds(tx, { bookingId, cutoff: now });
           return 'expired';
         }
         await tx

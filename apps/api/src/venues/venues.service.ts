@@ -12,6 +12,7 @@ import {
 } from '@arenaz/contracts';
 import {
   schema,
+  type Db,
   type Field,
   type NewVenue,
   type VenuePhoto,
@@ -27,6 +28,9 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
+import { VENUE_HAS_BOOKINGS } from '../booking/booking-errors.js';
+import { hasUpcomingActiveBooking } from '../booking/busy.js';
+import { dbNow } from '../common/db-clock.js';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
@@ -38,13 +42,14 @@ import {
 import { findOwnedVenue } from './owner.js';
 import {
   assertPublishedStaysComplete,
+  lockVenueFields,
   lockVenueStatus,
   missingForPublish,
   PUBLISH_INCOMPLETE_MESSAGE,
 } from './publishing.js';
 import { slugify } from './slug.js';
 
-const { venue, venueHours, venuePhoto, field, priceRule } = schema;
+const { venue, venueHours, venuePhoto, field, priceRule, booking } = schema;
 
 /**
  * Drizzle drops the table qualifier in single-table selects, which would make
@@ -291,10 +296,13 @@ export class VenuesService {
       if ((await lockVenueStatus(tx, owned.id)) === undefined) {
         throw new NotFoundException(VENUE_NOT_FOUND);
       }
+      await this.assertNoUpcomingBookings(tx, owned.id);
       const photos = await tx
         .select({ storageKey: venuePhoto.storageKey })
         .from(venuePhoto)
         .where(eq(venuePhoto.venueId, owned.id));
+      // Only history is left: bookings reference field and venue with RESTRICT.
+      await tx.delete(booking).where(eq(booking.venueId, owned.id));
       await tx.delete(venue).where(eq(venue.id, owned.id));
       return photos.map((photo) => photo.storageKey);
     });
@@ -358,7 +366,30 @@ export class VenuesService {
 
   async unpublish(userId: string, venueId: string): Promise<Venue> {
     const owned = await findOwnedVenue(this.handle.db, venueId, userId);
-    return this.setStatus(owned.id, 'draft');
+    await this.handle.db.transaction(async (tx) => {
+      // venue -> fields: no booking write can interleave with the check.
+      const status = await lockVenueStatus(tx, owned.id);
+      if (status === undefined) throw new NotFoundException(VENUE_NOT_FOUND);
+      if (status === 'published') {
+        await this.assertNoUpcomingBookings(tx, owned.id);
+      }
+      await tx
+        .update(venue)
+        .set({ status: 'draft', updatedAt: sql`now()` })
+        .where(eq(venue.id, owned.id));
+    });
+    return this.load(owned.id);
+  }
+
+  /** 409 when any field of the venue has an upcoming active booking. */
+  private async assertNoUpcomingBookings(
+    tx: Pick<Db, 'select' | 'execute'>,
+    venueId: string,
+  ): Promise<void> {
+    await lockVenueFields(tx, venueId);
+    if (await hasUpcomingActiveBooking(tx, { venueId }, await dbNow(tx))) {
+      throw new ConflictException(VENUE_HAS_BOOKINGS);
+    }
   }
 
   /**
@@ -408,16 +439,5 @@ export class VenuesService {
     return toVenue(row, hours, photos, fields, (key) =>
       this.storage.publicUrl(key),
     );
-  }
-
-  private async setStatus(
-    venueId: string,
-    status: 'draft' | 'published',
-  ): Promise<Venue> {
-    await this.handle.db
-      .update(venue)
-      .set({ status, updatedAt: sql`now()` })
-      .where(eq(venue.id, venueId));
-    return this.load(venueId);
   }
 }

@@ -1,4 +1,5 @@
 export { createDb, type Db } from './client.js';
+export { expireDueHolds, type ExpireDueHoldsOptions } from './holds.js';
 export { runMigrations } from './migrations.js';
 export * as schema from './schema/index.js';
 export {

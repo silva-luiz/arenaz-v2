@@ -1,6 +1,6 @@
 import { schema } from '@arenaz/db';
 import { UnprocessableEntityException } from '@nestjs/common';
-import { and, count, eq } from 'drizzle-orm';
+import { and, asc, count, eq } from 'drizzle-orm';
 import type { Reader } from './owner.js';
 
 const { venue, venueHours, venuePhoto, field } = schema;
@@ -43,7 +43,7 @@ export async function missingForPublish(
 }
 
 /**
- * Locks the venue row (`SELECT ... FOR UPDATE`) and returns its status, so
+ * Locks the venue row (`SELECT ... FOR NO KEY UPDATE`) and returns its status, so
  * concurrent publish/mutation transactions run one after the other.
  */
 export async function lockVenueStatus(
@@ -54,8 +54,29 @@ export async function lockVenueStatus(
     .select({ status: venue.status })
     .from(venue)
     .where(eq(venue.id, venueId))
-    .for('update');
+    // NO KEY UPDATE, not UPDATE: inserting a booking takes FOR KEY SHARE on
+    // its venue (foreign key) while holding the field lock, and FOR UPDATE
+    // would deadlock with that (venue -> field here, field -> venue there).
+    // NO KEY UPDATE still excludes other owner transactions.
+    .for('no key update');
   return row?.status;
+}
+
+/**
+ * Second step of the venue -> field protocol: locks every field row of the
+ * venue (by id, so two owners' transactions cannot cross). Call it right
+ * after `lockVenueStatus`, before checking bookings of the whole venue.
+ */
+export async function lockVenueFields(
+  tx: Reader,
+  venueId: string,
+): Promise<void> {
+  await tx
+    .select({ id: field.id })
+    .from(field)
+    .where(eq(field.venueId, venueId))
+    .orderBy(asc(field.id))
+    .for('update');
 }
 
 /**

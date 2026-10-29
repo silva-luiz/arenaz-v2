@@ -455,10 +455,11 @@ describe('POST /api/bookings', () => {
     );
     expect(second.statusCode).toBe(201);
     const [old] = await handle.db
-      .select({ status: booking.status })
+      .select({ status: booking.status, cancelledBy: booking.cancelledBy })
       .from(booking)
       .where(eq(booking.id, first.id));
-    expect(old?.status).toBe('expired');
+    // Same marks as the worker's expireHolds (cancelled_by = system).
+    expect(old).toEqual({ status: 'expired', cancelledBy: 'system' });
   });
 
   it('no máximo 3 reservas aguardando pagamento por jogador', async () => {
@@ -711,10 +712,10 @@ describe('pagamento simulado e confirmação', () => {
     expect(paid.statusCode).toBe(409);
     expect(problem(paid).detail).toBe('O prazo para pagamento acabou');
     const [row] = await handle.db
-      .select({ status: booking.status })
+      .select({ status: booking.status, cancelledBy: booking.cancelledBy })
       .from(booking)
       .where(eq(booking.id, created.id));
-    expect(row?.status).toBe('expired');
+    expect(row).toEqual({ status: 'expired', cancelledBy: 'system' });
     // The slot is free again.
     const other = await newPlayer();
     expect(

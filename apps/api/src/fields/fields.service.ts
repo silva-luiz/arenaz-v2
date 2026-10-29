@@ -27,6 +27,15 @@ import {
 } from '@nestjs/common';
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
+import {
+  BLOCK_OVER_BOOKING,
+  FIELD_HAS_BOOKINGS,
+} from '../booking/booking-errors.js';
+import {
+  hasActiveBookingIn,
+  hasUpcomingActiveBooking,
+} from '../booking/busy.js';
+import { dbNow } from '../common/db-clock.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
@@ -37,7 +46,7 @@ import {
 } from '../venues/publishing.js';
 import { toMeters } from '../venues/venues.service.js';
 
-const { field, priceRule, availabilityBlock, venue } = schema;
+const { field, priceRule, availabilityBlock, venue, booking } = schema;
 
 export const BLOCK_NOT_FOUND = 'Bloqueio não encontrado';
 export const BLOCK_OVERLAP_MESSAGE = 'Já existe um bloqueio nesse período';
@@ -178,6 +187,21 @@ export class FieldsService {
         if ((await lockVenueStatus(tx, owned.venueId)) === undefined) {
           throw new NotFoundException(FIELD_NOT_FOUND);
         }
+        if (changes.isActive === false) {
+          // venue -> field: deactivating needs the field row too, and no
+          // upcoming active booking may be left behind.
+          const current = await this.lockField(tx, owned.id);
+          if (
+            current.isActive &&
+            (await hasUpcomingActiveBooking(
+              tx,
+              { fieldId: owned.id },
+              await dbNow(tx),
+            ))
+          ) {
+            throw new ConflictException(FIELD_HAS_BOOKINGS);
+          }
+        }
         const updated = await tx
           .update(field)
           .set({ ...changes, updatedAt: sql`now()` })
@@ -196,7 +220,20 @@ export class FieldsService {
       if ((await lockVenueStatus(tx, owned.venueId)) === undefined) {
         throw new NotFoundException(FIELD_NOT_FOUND);
       }
-      // Price rules and blocks go with it (ON DELETE CASCADE).
+      // venue -> field: the field row lock queues behind any booking write.
+      await this.lockField(tx, owned.id);
+      if (
+        await hasUpcomingActiveBooking(
+          tx,
+          { fieldId: owned.id },
+          await dbNow(tx),
+        )
+      ) {
+        throw new ConflictException(FIELD_HAS_BOOKINGS);
+      }
+      // Only history is left (past, cancelled or expired): the foreign key is
+      // RESTRICT, so it goes with the field. Price rules and blocks cascade.
+      await tx.delete(booking).where(eq(booking.fieldId, owned.id));
       const deleted = await tx
         .delete(field)
         .where(eq(field.id, owned.id))
@@ -254,6 +291,19 @@ export class FieldsService {
     try {
       created = await this.handle.db.transaction(async (tx) => {
         await this.lockField(tx, owned.id);
+        // Blocks and bookings live in different tables: check the other one
+        // under the same field lock every booking write takes.
+        if (
+          await hasActiveBookingIn(
+            tx,
+            owned.id,
+            period.startsAt,
+            period.endsAt,
+            await dbNow(tx),
+          )
+        ) {
+          throw new ConflictException(BLOCK_OVER_BOOKING);
+        }
         const [clash] = await tx
           .select({ id: availabilityBlock.id })
           .from(availabilityBlock)
@@ -306,13 +356,17 @@ export class FieldsService {
   }
 
   /** `SELECT ... FOR UPDATE` on the field row; 404 if it just disappeared. */
-  private async lockField(tx: Tx, fieldId: string): Promise<void> {
+  private async lockField(
+    tx: Tx,
+    fieldId: string,
+  ): Promise<{ id: string; isActive: boolean }> {
     const [row] = await tx
-      .select({ id: field.id })
+      .select({ id: field.id, isActive: field.isActive })
       .from(field)
       .where(eq(field.id, fieldId))
       .for('update');
     if (!row) throw new NotFoundException(FIELD_NOT_FOUND);
+    return row;
   }
 
   /** Field + its rules + blocks that have not ended yet (by start). */

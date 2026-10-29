@@ -17,6 +17,10 @@ export const NOT_AWAITING_PAYMENT =
 export const CANNOT_CANCEL = 'Essa reserva não pode ser cancelada';
 export const CANCEL_TOO_LATE =
   'O cancelamento só é possível com pelo menos 24 horas de antecedência';
+export const FIELD_HAS_BOOKINGS = 'Esta quadra tem reservas futuras';
+export const VENUE_HAS_BOOKINGS = 'Este espaço tem reservas futuras';
+export const BLOCK_OVER_BOOKING = 'Já existe uma reserva nesse período';
+export const FIELD_INACTIVE = 'Esta quadra está desativada';
 export const CANCELLED_HOLD = 'Reserva cancelada.';
 export const CANCELLED_PAID =
   'Cancelada. O reembolso será tratado pelo suporte.';
