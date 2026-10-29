@@ -1,0 +1,66 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { SiteHeader, initials } from './site-header';
+
+describe('initials', () => {
+  it.each([
+    ['Gabriel Ribeiro', 'GR'],
+    ['  gabriel   de souza ribeiro ', 'GR'],
+    ['maria', 'M'],
+    ['', ''],
+    ['   ', ''],
+  ])('%j -> %j', (name, expected) => {
+    expect(initials(name)).toBe(expected);
+  });
+});
+
+describe('SiteHeader', () => {
+  it('shows the initials linking to the account when signed in', () => {
+    render(<SiteHeader user={{ name: 'Gabriel Ribeiro' }} />);
+    const account = screen.getByRole('link', { name: 'Minha conta' });
+    expect(account).toHaveAttribute('href', '/conta');
+    expect(account).toHaveTextContent('GR');
+    expect(screen.queryByRole('link', { name: 'Entrar' })).toBeNull();
+  });
+
+  it('offers "Entrar" without a user', () => {
+    render(<SiteHeader user={null} />);
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute(
+      'href',
+      '/entrar',
+    );
+    expect(screen.queryByRole('link', { name: 'Minha conta' })).toBeNull();
+  });
+
+  it('links the logo home and the owner call to action to /painel', () => {
+    render(<SiteHeader user={null} />);
+    expect(
+      screen.getByRole('link', { name: 'ArenaZ, início' }),
+    ).toHaveAttribute('href', '/');
+    expect(
+      screen.getByRole('link', { name: 'Anuncie sua quadra' }),
+    ).toHaveAttribute('href', '/painel');
+  });
+
+  it('is sticky and renders the search slot', () => {
+    render(
+      <SiteHeader user={null}>
+        <div>Busca compacta</div>
+      </SiteHeader>,
+    );
+    expect(screen.getByRole('banner')).toHaveClass('sticky', 'top-0');
+    expect(screen.getByText('Busca compacta')).toBeVisible();
+  });
+
+  it('uses the injected link component for every link', () => {
+    function Custom(props: React.ComponentProps<'a'>) {
+      return <a data-custom="yes" {...props} />;
+    }
+    render(<SiteHeader user={null} linkComponent={Custom} />);
+    const links = screen.getAllByRole('link');
+    expect(links.length).toBeGreaterThanOrEqual(3);
+    links.forEach((link) => {
+      expect(link).toHaveAttribute('data-custom', 'yes');
+    });
+  });
+});
