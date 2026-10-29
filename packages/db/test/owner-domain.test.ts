@@ -142,6 +142,26 @@ describe('domínio do dono', () => {
     await expect(insertField(venueId, 10000, 60)).resolves.toBeDefined();
   });
 
+  it('rejeita medida da quadra zerada, aceita nula ou positiva', async () => {
+    const venueId = await createVenue(await createOwner());
+    const withMeasures = (length: string | null, width: string | null) =>
+      pool.query(
+        `insert into field (venue_id, name, sports, surface, min_slot_minutes,
+           base_price_cents_per_hour, length_m, width_m)
+         values ($1, 'Quadra 1', '{futsal}', 'piso_rigido', 60, 10000, $2, $3)`,
+        [venueId, length, width],
+      );
+    await expect(withMeasures('0', '20')).rejects.toMatchObject({
+      code: '23514',
+    });
+    await expect(withMeasures('40', '0.04')).rejects.toMatchObject({
+      code: '23514',
+    });
+    await expect(withMeasures(null, null)).resolves.toBeDefined();
+    await expect(withMeasures('40.5', '0.1')).resolves.toBeDefined();
+    await expect(withMeasures('40', null)).resolves.toBeDefined();
+  });
+
   it('apagar o usuário apaga venues e quadras em cascata', async () => {
     const ownerId = await createOwner();
     const venueId = await createVenue(ownerId);

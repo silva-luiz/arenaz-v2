@@ -158,6 +158,21 @@ describe('fieldInputSchema', () => {
     expect(bad({ name: 'A' })).toBe(false);
   });
 
+  it('medidas: no mínimo 0,1 e com até 1 casa decimal', () => {
+    const msg = 'Use metros com até 1 casa decimal (mínimo 0,1)';
+    for (const value of [0.04, 40.55, 0.05]) {
+      const r = fieldInputSchema.safeParse({ ...base, lengthM: value });
+      expect(r.success).toBe(false);
+      expect(r.error?.issues[0]?.message).toBe(msg);
+    }
+    expect(bad({ widthM: 0.04 })).toBe(false);
+    expect(bad({ lengthM: 40.5 })).toBe(true);
+    expect(bad({ lengthM: 0.1, widthM: 200 })).toBe(true);
+    expect(fieldUpdateSchema.safeParse({ lengthM: 0.04 }).success).toBe(false);
+    expect(fieldUpdateSchema.safeParse({ widthM: 40.55 }).success).toBe(false);
+    expect(fieldUpdateSchema.safeParse({ lengthM: 40.5 }).success).toBe(true);
+  });
+
   it('update aceita parcial', () => {
     expect(fieldUpdateSchema.safeParse({ name: 'Quadra 2' }).success).toBe(
       true,
@@ -267,6 +282,22 @@ describe('response schemas', () => {
     expect(r.priceRules).toHaveLength(1);
     expect(r.blocks).toHaveLength(1);
     expect(fieldSchema.safeParse(field).success).toBe(false);
+  });
+
+  it('medidas já gravadas nunca quebram a leitura (inclusive 0.0)', () => {
+    const stored = { ...field, lengthM: 0, widthM: 0.04, priceRulesCount: 0 };
+    expect(fieldSummarySchema.safeParse(stored).success).toBe(true);
+    expect(
+      fieldSchema.safeParse({
+        ...stored,
+        venueId: ID,
+        priceRules: [],
+        blocks: [],
+      }).success,
+    ).toBe(true);
+    expect(
+      fieldSummarySchema.safeParse({ ...stored, lengthM: -1 }).success,
+    ).toBe(false);
   });
 
   it('fieldSummarySchema traz priceRulesCount e não traz blocks', () => {

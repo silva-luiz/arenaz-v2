@@ -172,6 +172,39 @@ describe('owner fields e2e', () => {
     );
   });
 
+  it('medida que arredonda para 0,0 → 422 e nada é gravado', async () => {
+    const { api } = await newOwner();
+    const venue = await newVenue(api);
+    const create = await api.post(
+      `/api/owner/venues/${venue.id}/fields`,
+      fieldBody({ lengthM: 0.04 }),
+    );
+    expect(create.statusCode).toBe(422);
+    expect(JSON.stringify(problemOf(create).errors)).toContain(
+      'Use metros com até 1 casa decimal (mínimo 0,1)',
+    );
+    const stored = await handle.db
+      .select()
+      .from(schema.field)
+      .where(eq(schema.field.venueId, venue.id));
+    expect(stored).toHaveLength(0);
+
+    // The venue page still loads, and a PATCH with the same value is refused
+    // without touching the stored measures.
+    expect((await api.get(`/api/owner/venues/${venue.id}`)).statusCode).toBe(
+      200,
+    );
+    const field = await newField(api, venue.id, { lengthM: 40.5 });
+    const patch = await api.patch(`/api/owner/fields/${field.id}`, {
+      widthM: 0.04,
+    });
+    expect(patch.statusCode).toBe(422);
+    const read = fieldSchema.parse(
+      (await api.get(`/api/owner/fields/${field.id}`)).json(),
+    );
+    expect(read).toMatchObject({ lengthM: 40.5, widthM: null });
+  });
+
   it('a quadra sem medidas devolve lengthM e widthM nulos', async () => {
     const { field } = await setup();
     expect(field.lengthM).toBeNull();

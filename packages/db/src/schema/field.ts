@@ -47,6 +47,9 @@ export const field = pgTable(
       sql`${t.minSlotMinutes} in (30, 60, 90)`,
     ),
     check('field_base_price_check', sql`${t.basePriceCentsPerHour} > 0`),
+    // NULL passes (the measures are optional); 0.0 is refused.
+    check('field_length_m_check', sql`${t.lengthM} > 0`),
+    check('field_width_m_check', sql`${t.widthM} > 0`),
   ],
 );
 

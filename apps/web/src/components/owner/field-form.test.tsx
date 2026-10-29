@@ -232,6 +232,21 @@ describe('FieldForm (create)', () => {
     expect(mocks.apiSend).not.toHaveBeenCalled();
   });
 
+  it('flags a measure finer than one decimal place or below 0,1 m', async () => {
+    const user = userEvent.setup();
+    render(<FieldForm venueId={VENUE_ID} />);
+
+    await user.type(screen.getByLabelText('Comprimento (m)'), '0,04');
+    await user.type(screen.getByLabelText('Largura (m)'), '20,55');
+    await user.click(screen.getByRole('button', { name: 'Criar quadra' }));
+
+    const message = 'Use metros com até 1 casa decimal (mínimo 0,1)';
+    expect(await screen.findAllByText(message)).toHaveLength(2);
+    expect(screen.getByLabelText('Comprimento (m)')).toBeInvalid();
+    expect(screen.getByLabelText('Largura (m)')).toBeInvalid();
+    expect(mocks.apiSend).not.toHaveBeenCalled();
+  });
+
   it('shows the server error and stays on the page', async () => {
     mocks.apiSend.mockResolvedValue({
       ok: false,

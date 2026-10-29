@@ -20,10 +20,18 @@ const priceCentsSchema = centsSchema.refine((cents) => cents > 0, {
   error: 'O preço precisa ser maior que zero',
 });
 
+const MEASURE_MESSAGE = 'Use metros com até 1 casa decimal (mínimo 0,1)';
+
+// The column is numeric(5,1): anything finer than 0.1 would be rounded on
+// write (0.04 -> 0.0), so it is refused up front.
 const dimensionSchema = z
   .number({ error: 'Medida inválida' })
-  .positive({ error: 'A medida precisa ser maior que zero' })
-  .max(200, { error: 'A medida pode ter no máximo 200 metros' });
+  .min(0.1, { error: MEASURE_MESSAGE, abort: true })
+  .max(200, { error: 'A medida pode ter no máximo 200 metros' })
+  .multipleOf(0.1, { error: MEASURE_MESSAGE });
+
+// What is already stored must always parse on the way out, whatever it is.
+const storedDimensionSchema = z.number().nonnegative().nullable();
 
 // ---------------------------------------------------------------- fields ----
 
@@ -183,8 +191,8 @@ const fieldResponseShape = {
   sports: fieldBaseShape.sports,
   surface: fieldBaseShape.surface,
   format: fieldBaseShape.format,
-  lengthM: dimensionSchema.nullable(),
-  widthM: dimensionSchema.nullable(),
+  lengthM: storedDimensionSchema,
+  widthM: storedDimensionSchema,
   minSlotMinutes: fieldBaseShape.minSlotMinutes,
   basePriceCentsPerHour: fieldBaseShape.basePriceCentsPerHour,
   isActive: z.boolean(),
