@@ -1,4 +1,5 @@
 import {
+  addDays,
   daySlots,
   localDateOf,
   localDayRange,
@@ -33,14 +34,6 @@ interface BusyRow extends Record<string, unknown> {
   ends_at: Date | string;
 }
 
-/** `date` plus `days` calendar days (both `YYYY-MM-DD`). */
-function plusDays(date: string, days: number): string {
-  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-  return new Date(Date.UTC(y, m - 1, d) + days * DAY_MS)
-    .toISOString()
-    .slice(0, 10);
-}
-
 @Injectable()
 export class AvailabilityService {
   constructor(@Inject(DB) private readonly handle: DbHandle) {}
@@ -66,7 +59,7 @@ export class AvailabilityService {
     const now = new Date();
     const today = localDateOf(now, row.timezone);
     // Dates are fixed-width, so string order is calendar order.
-    if (date < today || date > plusDays(today, AVAILABILITY_HORIZON_DAYS)) {
+    if (date < today || date > addDays(today, AVAILABILITY_HORIZON_DAYS)) {
       throw new UnprocessableEntityException({
         errors: {
           date: [

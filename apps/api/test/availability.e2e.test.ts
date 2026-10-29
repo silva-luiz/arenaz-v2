@@ -334,6 +334,36 @@ describe('GET /api/venues/:slug/availability', () => {
     }
   });
 
+  it('bloqueio que atravessa a meia-noite vale nos dois dias', async () => {
+    const s = await seed({ allDay: true });
+    const day = dateIn(SP, 2);
+    const next = dateIn(SP, 3);
+    // 23:00 -> 01:00 local.
+    await handle.db.insert(availabilityBlock).values({
+      fieldId: s.fieldId,
+      period: { startsAt: at(day, '23:00'), endsAt: at(next, '01:00') },
+    });
+    const state = async (date: string) => {
+      const body = ok(
+        await get(`/api/venues/${s.slug}/availability?date=${date}`),
+      );
+      const slots = body.fields.find((f) => f.id === s.fieldId)?.slots ?? [];
+      return new Map(
+        slots.map((slot) => [slot.startsAt, slot.available] as const),
+      );
+    };
+    const first = await state(day);
+    // 60 min blocks: 22:00 ends exactly at 23:00 (free); 22:30 overlaps.
+    expect(first.get(at(day, '22:00').toISOString())).toBe(true);
+    expect(first.get(at(day, '22:30').toISOString())).toBe(false);
+    expect(first.get(at(day, '23:00').toISOString())).toBe(false);
+    expect(first.get(at(day, '23:30').toISOString())).toBe(false);
+    const second = await state(next);
+    expect(second.get(at(next, '00:00').toISOString())).toBe(false);
+    expect(second.get(at(next, '00:30').toISOString())).toBe(false);
+    expect(second.get(at(next, '01:00').toISOString())).toBe(true);
+  });
+
   it('um dia sem funcionamento devolve as quadras sem horários', async () => {
     const s = await seed();
     await handle.db.delete(venueHours).where(eq(venueHours.venueId, s.venueId));
@@ -355,6 +385,7 @@ describe('GET /api/venues/:slug/availability', () => {
       const problem = res.json<Problem>();
       expect(problem.status).toBe(422);
       expect(problem.errors?.['date']?.[0]).toMatch(/data/i);
+      expect(res.headers['cache-control']).toBe('no-store');
     }
   });
 
@@ -365,6 +396,7 @@ describe('GET /api/venues/:slug/availability', () => {
       const res = await get(`/api/venues/${s.slug}/availability${qs}`);
       expect(res.statusCode).toBe(422);
       expect(res.json<Problem>().title).toBe('Dados inválidos');
+      expect(res.headers['cache-control']).toBe('no-store');
     },
   );
 
@@ -376,6 +408,7 @@ describe('GET /api/venues/:slug/availability', () => {
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toContain('application/problem+json');
       expect(res.json<Problem>().detail).toBe('Espaço não encontrado');
+      expect(res.headers['cache-control']).toBe('no-store');
     }
   });
 

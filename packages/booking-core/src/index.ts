@@ -1,6 +1,7 @@
 export * from './availability.js';
 export * from './pricing.js';
 export {
+  addDays,
   localDateOf,
   localDayRange,
   localMinuteOf,
