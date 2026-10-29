@@ -8,6 +8,8 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module.js';
+import { AUTH, type Auth } from './auth/auth.js';
+import { registerAuthRoutes } from './auth/auth.routes.js';
 import { PinoNestLogger } from './common/nest-logger.js';
 import { ProblemFilter } from './common/problem.filter.js';
 import type { Env } from './config/env.js';
@@ -33,12 +35,19 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
   });
 
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.register({
-      url: env.DATABASE_URL,
-      onError: (error) => {
-        fastify.log.error({ err: error }, 'Erro em conexão ociosa do Postgres');
+    AppModule.register(
+      env,
+      {
+        url: env.DATABASE_URL,
+        onError: (error) => {
+          fastify.log.error(
+            { err: error },
+            'Erro em conexão ociosa do Postgres',
+          );
+        },
       },
-    }),
+      fastify.log,
+    ),
     adapter,
     { logger: new PinoNestLogger(fastify.log) },
   );
@@ -49,6 +58,8 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
   if (env.NODE_ENV !== 'test') {
     await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
   }
+  // After helmet and rate limiting so the route inherits both.
+  registerAuthRoutes(fastify, app.get<Auth>(AUTH));
   app.enableShutdownHooks();
   return app;
 }

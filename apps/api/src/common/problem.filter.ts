@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+export const PROBLEM_CONTENT_TYPE = 'application/problem+json; charset=utf-8';
+
 const TITLES: Record<number, string> = {
   400: 'Requisição inválida',
   401: 'Não autenticado',
@@ -20,7 +22,7 @@ const TITLES: Record<number, string> = {
   503: 'Serviço indisponível',
 };
 
-function titleFor(status: number): string {
+export function titleFor(status: number): string {
   const fallback = status >= 500 ? TITLES[500] : TITLES[400];
   return TITLES[status] ?? fallback ?? 'Erro interno';
 }
@@ -57,7 +59,7 @@ function fromHttpException(exception: HttpException): Problem {
 }
 
 /** Client errors raised by Fastify itself (bad JSON, payload too large...). */
-function fastifyClientStatus(error: unknown): number | undefined {
+export function fastifyClientStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
   const { statusCode } = error as { statusCode?: unknown };
   return typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500
@@ -90,9 +92,14 @@ export class ProblemFilter implements ExceptionFilter {
       }
     }
 
-    void reply
-      .status(problem.status)
-      .header('content-type', 'application/problem+json; charset=utf-8')
-      .send(problem);
+    sendProblem(reply, problem);
   }
+}
+
+/** Writes a `Problem` as `application/problem+json`. */
+export function sendProblem(reply: FastifyReply, problem: Problem): void {
+  void reply
+    .status(problem.status)
+    .header('content-type', PROBLEM_CONTENT_TYPE)
+    .send(problem);
 }
