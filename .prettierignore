@@ -3,3 +3,4 @@ docs/design/prototipo
 dist
 .next
 coverage
+.env.example
