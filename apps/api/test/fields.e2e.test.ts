@@ -452,6 +452,49 @@ describe('price rules e2e', () => {
 });
 
 describe('availability blocks e2e', () => {
+  it('EXCLUDE real: uma gravação concorrente não vista pela checagem vira 409', async () => {
+    const { api, field } = await setup();
+    const start = '[2031-05-10 10:00+00,2031-05-10 12:00+00)';
+    const raw = await handle.pool.connect();
+    try {
+      // An uncommitted block is invisible to the service's overlap check, but
+      // the EXCLUDE makes its insert wait for this transaction and then fail.
+      await raw.query('begin');
+      // The FK check would take a share lock on the field row and make the
+      // service wait at its own field lock instead; skip it (test superuser).
+      await raw.query('set local session_replication_role = replica');
+      await raw.query(
+        'insert into availability_block (field_id, period) values ($1, $2::tstzrange)',
+        [field.id, start],
+      );
+      const pending = api.post(`/api/owner/fields/${field.id}/blocks`, {
+        startsAt: '2031-05-10T11:00:00.000Z',
+        endsAt: '2031-05-10T13:00:00.000Z',
+      });
+      let waiting = false;
+      for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
+        const { rowCount } = await handle.pool.query(
+          `select 1 from pg_stat_activity
+            where wait_event_type = 'Lock' and query ilike '%availability_block%'`,
+        );
+        waiting = (rowCount ?? 0) > 0;
+        if (!waiting) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      expect(waiting).toBe(true);
+      await raw.query('commit');
+
+      const res = await pending;
+      expect(res.statusCode).toBe(409);
+      expect(problemOf(res)).toMatchObject({
+        status: 409,
+        detail: 'Já existe um bloqueio nesse período',
+      });
+    } finally {
+      await raw.query('rollback').catch(() => undefined);
+      raw.release();
+    }
+  });
+
   it('23P01 do EXCLUDE (corrida que escapou da checagem) também vira 409', async () => {
     const { api, field } = await setup();
     const exclusion = Object.assign(new Error('Failed query'), {

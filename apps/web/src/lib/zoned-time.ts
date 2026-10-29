@@ -37,7 +37,10 @@ function partsFormat(timeZone: string): Intl.DateTimeFormat {
   return format;
 }
 
-/** Offset of the zone at that instant, in minutes east of UTC (-180 in São Paulo). */
+/**
+ * Offset of the zone at that instant, in minutes east of UTC (-180 in São
+ * Paulo).
+ */
 function offsetMinutesAt(instantMs: number, timeZone: string): number {
   const name =
     offsetFormat(timeZone)
@@ -68,8 +71,9 @@ function formatOffset(offsetMinutes: number): string {
 
 /**
  * ISO 8601 timestamp, with the offset of THAT date in `timeZone` (an IANA
- * name, the venue's), for a wall-clock time there. `date` is "YYYY-MM-DD"; `minuteOfDay` runs 0–1440 and
- * 1440 ("24:00") rolls over to 00:00 of the next day.
+ * name, the venue's), for a wall-clock time there. `date` is "YYYY-MM-DD";
+ * `minuteOfDay` runs 0–1440 and 1440 ("24:00") rolls over to 00:00 of the next
+ * day.
  *
  * The offset comes from Intl, not from a constant: Brazil observed daylight
  * saving time until 2019, so old dates are -02:00 for part of the year.
@@ -98,7 +102,10 @@ export function toZonedIso(
   );
 }
 
-/** Today's date in `timeZone`, "YYYY-MM-DD" (in the evening UTC is already tomorrow). */
+/**
+ * Today's date in `timeZone`, "YYYY-MM-DD" (in the evening UTC is already
+ * tomorrow).
+ */
 export function todayInZone(timeZone: string): string {
   const parts = Object.fromEntries(
     partsFormat(timeZone)
@@ -137,8 +144,9 @@ function nextDayKey(dateKey: string, timeZone: string): string {
 }
 
 /**
- * "Sáb, 31/10 das 18:00 às 22:00 — Manutenção", in the time of `timeZone`. An end at
- * midnight of the following day reads "24:00"; a longer block names both days.
+ * "Sáb, 31/10 das 18:00 às 22:00 — Manutenção", in the time of `timeZone`. An
+ * end at midnight of the following day reads "24:00"; a longer block names
+ * both days.
  */
 export function formatBlockRange(
   startsAt: string,

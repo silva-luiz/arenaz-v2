@@ -399,6 +399,94 @@ describe('HoursEditor with several intervals per day', () => {
     ]);
   });
 
+  it('keeps a next-day 00:00 interval that already reaches the chosen time', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 1080, closeMinute: 1320 },
+          { weekday: 6, openMinute: 0, closeMinute: 240 },
+        ]}
+      />,
+    );
+
+    await user.selectOptions(
+      interval('Sexta', 1).getByLabelText('Vira a madrugada até'),
+      '02:00',
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar horário' }));
+
+    expect(payload()).toEqual([
+      { weekday: 5, openMinute: 1080, closeMinute: 1440 },
+      { weekday: 6, openMinute: 0, closeMinute: 240 },
+    ]);
+  });
+
+  it('announces what the shortcut did to the next day', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[{ weekday: 5, openMinute: 1080, closeMinute: 1320 }]}
+      />,
+    );
+
+    await user.selectOptions(
+      interval('Sexta', 1).getByLabelText('Vira a madrugada até'),
+      '02:00',
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Intervalo 00:00–02:00 adicionado em sábado',
+    );
+  });
+
+  it('offers the shortcut only on the last interval of the day', () => {
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 480, closeMinute: 720 },
+          { weekday: 5, openMinute: 1080, closeMinute: 1320 },
+        ]}
+      />,
+    );
+
+    expect(
+      interval('Sexta', 1).queryByLabelText('Vira a madrugada até'),
+    ).toBeNull();
+    expect(
+      interval('Sexta', 2).getByLabelText('Vira a madrugada até'),
+    ).toBeInTheDocument();
+  });
+
+  it('moves the focus to the previous interval after removing, or to the add button', async () => {
+    const user = userEvent.setup();
+    render(
+      <HoursEditor
+        venueId={VENUE_ID}
+        initialHours={[
+          { weekday: 5, openMinute: 480, closeMinute: 720 },
+          { weekday: 5, openMinute: 780, closeMinute: 900 },
+          { weekday: 5, openMinute: 1080, closeMinute: 1320 },
+        ]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remover intervalo 3 de Sexta' }),
+    );
+    expect(interval('Sexta', 2).getByLabelText('Abertura')).toHaveFocus();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remover intervalo 1 de Sexta' }),
+    );
+    expect(
+      screen.getByRole('button', { name: '+ Intervalo (Sexta)' }),
+    ).toHaveFocus();
+  });
+
   it('does not offer more than 21 intervals', () => {
     const hours = Array.from({ length: 21 }, (_, i) => ({
       weekday: i % 7,

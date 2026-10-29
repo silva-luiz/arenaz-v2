@@ -30,7 +30,8 @@ export const DEFAULT_TIMEZONE: BrazilTimezone = 'America/Sao_Paulo';
 export const TIMEZONE_LABELS: Record<BrazilTimezone, string> = {
   'America/Sao_Paulo': 'Horário de Brasília',
   'America/Bahia': 'Bahia (UTC−3)',
-  'America/Fortaleza': 'Nordeste: Ceará, Maranhão, Piauí (UTC−3)',
+  'America/Fortaleza':
+    'Ceará, Maranhão, Piauí, Rio Grande do Norte e Paraíba (UTC−3)',
   'America/Recife': 'Pernambuco (UTC−3)',
   'America/Maceio': 'Alagoas e Sergipe (UTC−3)',
   'America/Belem': 'Pará e Amapá (UTC−3)',

@@ -21,6 +21,19 @@ describe('timezone', () => {
     expect(TIMEZONE_LABELS['America/Manaus']).toBe('Amazonas (UTC−4)');
   });
 
+  it('o rótulo de cada fuso cita todos os estados que o mapa manda para ele', () => {
+    const fortaleza = TIMEZONE_LABELS['America/Fortaleza'];
+    for (const name of [
+      'Ceará',
+      'Maranhão',
+      'Piauí',
+      'Rio Grande do Norte',
+      'Paraíba',
+    ]) {
+      expect(fortaleza).toContain(name);
+    }
+  });
+
   it('todos os fusos são reconhecidos pelo Intl', () => {
     for (const zone of BRAZIL_TIMEZONES) {
       expect(

@@ -85,9 +85,9 @@ export function toFieldSummary(
 
 /**
  * DB rows → `Venue`, the one response mapper for owner venues. Hours are
- * sorted by weekday then opening minute, photos by position (URLs from `photoUrl`, i.e. the
- * storage's public URL), timestamps are ISO strings, and the result is
- * validated with the contract schema before it leaves the API.
+ * sorted by weekday then opening minute, photos by position (URLs from
+ * `photoUrl`, i.e. the storage's public URL), timestamps are ISO strings, and
+ * the result is validated with the contract schema before it leaves the API.
  */
 export function toVenue(
   row: VenueRow,
@@ -313,7 +313,8 @@ export class VenuesService {
     const owned = await findOwnedVenue(this.handle.db, venueId, userId);
     await this.handle.db.transaction(async (tx) => {
       // Touching the venue first takes its row lock, so two concurrent
-      // replacements run one after the other instead of colliding on the PK.
+      // replacements run one after the other (each deletes and re-inserts the
+      // whole set, so interleaving them would mix intervals).
       await tx
         .update(venue)
         .set({ updatedAt: sql`now()` })

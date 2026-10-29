@@ -9,8 +9,9 @@ import {
 } from '@arenaz/contracts';
 import { Alert, Button, Checkbox, Select } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
+import { formatMinute } from '@/lib/format-br';
 import { TIME_OPTIONS } from './time-options';
 
 const DEFAULT_OPEN = 8 * 60;
@@ -86,6 +87,37 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
   const [saving, setSaving] = useState(false);
+  // Polite live region: changes made to a day other than the one being edited.
+  const [announcement, setAnnouncement] = useState('');
+  const form = useRef<HTMLFormElement>(null);
+  // Where the focus goes once the next render is committed: "interval:W:P"
+  // (first control of that interval) or "add:W" (the day's add button).
+  const pendingFocus = useRef<string | null>(null);
+
+  // Removing unmounts the focused button, so focus is placed after the commit.
+  useEffect(() => {
+    const target = pendingFocus.current;
+    if (target === null) return;
+    pendingFocus.current = null;
+    const [kind, weekday, position] = target.split(':');
+    const day = form.current?.querySelector<HTMLElement>(
+      `[data-day="${weekday ?? ''}"]`,
+    );
+    if (kind === 'interval') {
+      day
+        ?.querySelector<HTMLElement>(
+          `[data-interval="${position ?? ''}"] select`,
+        )
+        ?.focus();
+      return;
+    }
+    const add = day?.querySelector<HTMLButtonElement>('[data-add]');
+    // A day that already ends at 24:00 has its add button disabled.
+    (add && !add.disabled
+      ? add
+      : day?.querySelector<HTMLElement>('select')
+    )?.focus();
+  });
 
   const total = days.reduce(
     (sum, day) => sum + (day.open ? day.intervals.length : 0),
@@ -136,6 +168,10 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
   }
 
   function removeInterval(weekday: number, position: number) {
+    pendingFocus.current =
+      position > 0
+        ? `interval:${String(weekday)}:${String(position - 1)}`
+        : `add:${String(weekday)}`;
     editDay(weekday, (day) => ({
       ...day,
       intervals: day.intervals.filter((_, index) => index !== position),
@@ -143,30 +179,51 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
   }
 
   /**
-   * The interval runs to 24:00 and the next weekday gets 00:00 to `until`
-   * (an interval already starting at 00:00 there is changed instead, and a
-   * closed day is opened).
+   * The (last) interval of the day runs to 24:00 and the next weekday gets
+   * 00:00 to `until`: an existing 00:00 interval there is kept when it already
+   * reaches `until`, extended when it falls short, and a new one is added
+   * otherwise (a closed day is opened). The change is announced.
    */
-  function overnight(weekday: number, position: number, until: number) {
+  function overnight(weekday: number, until: number) {
     const nextDay = (weekday + 1) % WEEKDAY_LABELS.length;
+    const dayName = (WEEKDAY_LABELS[nextDay] ?? '').toLowerCase();
+    const target = days[nextDay];
+    const midnight = target?.open
+      ? target.intervals.find((item) => item.openMinute === 0)
+      : undefined;
+    const range = `00:00–${formatMinute(until)}`;
+    if (midnight && midnight.closeMinute >= until) {
+      setAnnouncement(
+        `${dayName} já tem o intervalo ${formatMinute(0)}–${formatMinute(midnight.closeMinute)}, mantido`,
+      );
+    } else if (midnight) {
+      setAnnouncement(`Intervalo ${range} estendido em ${dayName}`);
+    } else {
+      setAnnouncement(`Intervalo ${range} adicionado em ${dayName}`);
+    }
+
     edit((current) =>
       current.map((day, index) => {
         if (index === weekday) {
+          // Only the last interval offers the shortcut.
           return {
             ...day,
             intervals: day.intervals.map((item, at) =>
-              at === position ? { ...item, closeMinute: DAY_END } : item,
+              at === day.intervals.length - 1
+                ? { ...item, closeMinute: DAY_END }
+                : item,
             ),
           };
         }
         if (index !== nextDay) return day;
         const intervals = day.open ? day.intervals : [];
-        const midnight = intervals.find((item) => item.openMinute === 0);
+        const first = intervals.find((item) => item.openMinute === 0);
+        if (first && first.closeMinute >= until) return { ...day, open: true };
         return {
           open: true,
-          intervals: midnight
+          intervals: first
             ? intervals.map((item) =>
-                item === midnight ? { ...item, closeMinute: until } : item,
+                item === first ? { ...item, closeMinute: until } : item,
               )
             : [
                 { key: newKey(), openMinute: 0, closeMinute: until },
@@ -252,6 +309,7 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
 
   return (
     <form
+      ref={form}
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -265,6 +323,7 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
           return (
             <fieldset
               key={label}
+              data-day={weekday}
               className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:gap-x-6"
             >
               <legend className="sr-only">{label}</legend>
@@ -292,6 +351,7 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
                     return (
                       <div
                         key={item.key}
+                        data-interval={position}
                         role="group"
                         aria-label={`Intervalo ${number}`}
                         className="flex flex-wrap items-center gap-2"
@@ -323,20 +383,18 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
                             });
                           }}
                         />
-                        <Select
-                          aria-label="Vira a madrugada até"
-                          options={OVERNIGHT_OPTIONS}
-                          placeholder="Vira a madrugada até"
-                          value=""
-                          className="h-10 w-52"
-                          onChange={(event) => {
-                            overnight(
-                              weekday,
-                              position,
-                              Number(event.target.value),
-                            );
-                          }}
-                        />
+                        {position === day.intervals.length - 1 ? (
+                          <Select
+                            aria-label="Vira a madrugada até"
+                            options={OVERNIGHT_OPTIONS}
+                            placeholder="Vira a madrugada até"
+                            value=""
+                            className="h-10 w-52"
+                            onChange={(event) => {
+                              overnight(weekday, Number(event.target.value));
+                            }}
+                          />
+                        ) : null}
                         {day.intervals.length > 1 ? (
                           <Button
                             variant="ghost"
@@ -364,6 +422,7 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
                     variant="secondary"
                     size="sm"
                     className="self-start"
+                    data-add=""
                     aria-label={`+ Intervalo (${label})`}
                     disabled={
                       total >= MAX_VENUE_HOURS ||
@@ -386,6 +445,9 @@ export function HoursEditor({ venueId, initialHours }: HoursEditorProps) {
           );
         })}
       </div>
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       <Alert tone={notice?.tone ?? 'error'}>{notice?.text}</Alert>
       <Button type="submit" loading={saving} className="self-start">
         Salvar horário
