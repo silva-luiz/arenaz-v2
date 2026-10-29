@@ -178,6 +178,47 @@ describe('owner fields e2e', () => {
     expect(field.widthM).toBeNull();
   });
 
+  it('PATCH com lengthM/widthM null limpa as medidas; ausente não mexe', async () => {
+    const { api, venue } = await setup();
+    const created = await api.post(
+      `/api/owner/venues/${venue.id}/fields`,
+      fieldBody({ lengthM: 40.5, widthM: 20 }),
+    );
+    const id = fieldSchema.parse(created.json()).id;
+
+    const untouched = await api.patch(`/api/owner/fields/${id}`, {
+      name: 'Outra',
+    });
+    expect(untouched.statusCode).toBe(200);
+    expect(fieldSchema.parse(untouched.json())).toMatchObject({
+      lengthM: 40.5,
+      widthM: 20,
+    });
+
+    const onlyLength = await api.patch(`/api/owner/fields/${id}`, {
+      lengthM: null,
+    });
+    expect(onlyLength.statusCode).toBe(200);
+    expect(fieldSchema.parse(onlyLength.json())).toMatchObject({
+      lengthM: null,
+      widthM: 20,
+    });
+
+    const both = await api.patch(`/api/owner/fields/${id}`, {
+      lengthM: null,
+      widthM: null,
+    });
+    expect(fieldSchema.parse(both.json())).toMatchObject({
+      lengthM: null,
+      widthM: null,
+    });
+    const read = await api.get(`/api/owner/fields/${id}`);
+    expect(fieldSchema.parse(read.json())).toMatchObject({
+      lengthM: null,
+      widthM: null,
+    });
+  });
+
   it('o espaço passa a listar as quadras com a contagem de faixas', async () => {
     const { api, venue, field } = await setup();
     const rules = await api.put(`/api/owner/fields/${field.id}/price-rules`, [

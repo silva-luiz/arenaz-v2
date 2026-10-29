@@ -68,7 +68,13 @@ async function postToStorage(
   }
   form.append('file', file);
   try {
-    const response = await fetch(url, { method: 'POST', body: form });
+    const response = await fetch(url, {
+      method: 'POST',
+      body: form,
+      // Storage is another origin: no cookies, no referrer.
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+    });
     return response.ok;
   } catch {
     return false;
@@ -80,10 +86,11 @@ export interface PhotoUploaderProps {
   photos: Photo[];
 }
 
-interface FocusTarget {
-  id: string;
-  direction: 'left' | 'right';
-}
+type FocusTarget =
+  /** After a move: the moved photo's arrow, or the other one at an end. */
+  | { kind: 'move'; id: string; direction: 'left' | 'right' }
+  /** After a removal: the Remover of a neighbouring photo, or the file input. */
+  | { kind: 'remove'; id: string | null };
 
 /** Photo grid plus uploads. The first photo is the cover. */
 export function PhotoUploader({
@@ -100,23 +107,37 @@ export function PhotoUploader({
   const grid = useRef<HTMLUListElement>(null);
   const refocus = useRef<FocusTarget | null>(null);
 
-  // After a move the button that was clicked may have become disabled (the
-  // photo reached an end); keep the keyboard where it was.
+  // The button that was clicked may be gone (removed photo) or disabled (a
+  // photo that reached an end), so the focus is placed after the commit.
   useEffect(() => {
     const target = refocus.current;
     if (!target) return;
+    if (target.kind === 'remove' && target.id === null) {
+      // The input is disabled while busy; wait for the render that enables it.
+      if (busy) return;
+      refocus.current = null;
+      input.current?.focus();
+      return;
+    }
     refocus.current = null;
-    const item = grid.current?.querySelector(`[data-photo-id="${target.id}"]`);
-    const buttons =
-      item?.querySelectorAll<HTMLButtonElement>('button[data-move]');
-    const wanted = [...(buttons ?? [])].find(
+    const item = grid.current?.querySelector(
+      `[data-photo-id="${target.id ?? ''}"]`,
+    );
+    if (target.kind === 'remove') {
+      item?.querySelector<HTMLButtonElement>('button[data-remove]')?.focus();
+      return;
+    }
+    const buttons = [
+      ...(item?.querySelectorAll<HTMLButtonElement>('button[data-move]') ?? []),
+    ];
+    const wanted = buttons.find(
       (button) => button.dataset.move === target.direction,
     );
-    const other = [...(buttons ?? [])].find(
+    const other = buttons.find(
       (button) => button.dataset.move !== target.direction,
     );
     (wanted?.disabled ? other : wanted)?.focus();
-  }, [photos]);
+  });
 
   function patchUpload(id: number, patch: Partial<Upload>) {
     setUploads((current) =>
@@ -168,7 +189,8 @@ export function PhotoUploader({
 
   async function upload(files: File[]) {
     setNotice('');
-    if (photos.length + files.length > PHOTO_MAX_PER_VENUE) {
+    const valid = files.filter(isValidFile);
+    if (photos.length + valid.length > PHOTO_MAX_PER_VENUE) {
       setNotice(`${LIMIT_MESSAGE}. Este espaço tem ${String(photos.length)}.`);
       return;
     }
@@ -215,7 +237,7 @@ export function PhotoUploader({
       setNotice(result.message);
       return;
     }
-    refocus.current = { id: moving.id, direction };
+    refocus.current = { kind: 'move', id: moving.id, direction };
     setPhotos(sortByPosition(result.data));
     router.refresh();
   }
@@ -232,8 +254,10 @@ export function PhotoUploader({
       setNotice(result.message);
       return;
     }
+    const at = photos.findIndex((other) => other.id === photo.id);
+    const neighbour = photos[at + 1] ?? photos[at - 1];
+    refocus.current = { kind: 'remove', id: neighbour?.id ?? null };
     setPhotos((current) => current.filter((other) => other.id !== photo.id));
-    input.current?.focus();
     router.refresh();
   }
 
@@ -299,6 +323,7 @@ export function PhotoUploader({
                   <Button
                     variant="ghost"
                     size="sm"
+                    data-remove=""
                     aria-label={`Remover foto ${number}`}
                     disabled={busy}
                     onClick={() => {
@@ -337,7 +362,11 @@ export function PhotoUploader({
       </Field>
 
       {uploads.length > 0 ? (
-        <ul aria-label="Envios" className="flex flex-col gap-1 text-sm">
+        <ul
+          aria-label="Envios"
+          aria-live="polite"
+          className="flex flex-col gap-1 text-sm"
+        >
           {uploads.map((item) => (
             <li
               key={item.id}

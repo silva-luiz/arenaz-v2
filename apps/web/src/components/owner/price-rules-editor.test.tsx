@@ -1,5 +1,5 @@
 import type { PriceRule } from '@arenaz/contracts';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,6 +99,80 @@ describe('PriceRulesEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Remover faixa 1' }));
     expect(screen.queryByRole('group', { name: 'Faixa 2' })).toBeNull();
     expect(within(row(1)).getByLabelText('Preço por hora')).toHaveValue('');
+  });
+
+  it('moves the focus to the neighbouring row after removing one', async () => {
+    const user = userEvent.setup();
+    render(
+      <PriceRulesEditor
+        fieldId={FIELD_ID}
+        initialRules={[WEEKNIGHTS, WEEKEND]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Remover faixa 1' }));
+
+    // The former second row is now the first.
+    expect(
+      screen.getByRole('button', { name: 'Remover faixa 1' }),
+    ).toHaveFocus();
+  });
+
+  it('falls back to the previous row when the last one is removed', async () => {
+    const user = userEvent.setup();
+    render(
+      <PriceRulesEditor
+        fieldId={FIELD_ID}
+        initialRules={[WEEKNIGHTS, WEEKEND]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Remover faixa 2' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Remover faixa 1' }),
+    ).toHaveFocus();
+  });
+
+  it('focuses "+ Faixa" when the only row is removed', async () => {
+    const user = userEvent.setup();
+    render(<PriceRulesEditor fieldId={FIELD_ID} initialRules={[WEEKEND]} />);
+
+    await user.click(screen.getByRole('button', { name: 'Remover faixa 1' }));
+
+    expect(screen.getByRole('button', { name: '+ Faixa' })).toHaveFocus();
+  });
+
+  it('disables the rows while saving', async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    mocks.apiSend.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<PriceRulesEditor fieldId={FIELD_ID} initialRules={[WEEKEND]} />);
+
+    await user.click(screen.getByRole('button', { name: 'Salvar faixas' }));
+
+    await waitFor(() => {
+      expect(within(row(1)).getByLabelText('Preço por hora')).toBeDisabled();
+    });
+    expect(
+      within(row(1)).getByRole('button', { name: 'Sexta' }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Remover faixa 1' }),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: '+ Faixa' })).toBeDisabled();
+
+    await act(async () => {
+      answer({ ok: true, data: [WEEKEND] });
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(within(row(1)).getByLabelText('Preço por hora')).toBeEnabled();
+    });
   });
 
   it('toggles a weekday', async () => {

@@ -100,6 +100,11 @@ export function toField(
   });
 }
 
+/** A measure in meters as the numeric column takes it; null stays NULL. */
+function measureColumn(value: number | null): string | null {
+  return value === null ? null : String(value);
+}
+
 /** An empty optional text becomes NULL. */
 function textOrNull(value: string | undefined): string | null {
   return value === undefined || value === '' ? null : value;
@@ -161,8 +166,11 @@ export class FieldsService {
     if (input.sports !== undefined) changes.sports = input.sports;
     if (input.surface !== undefined) changes.surface = input.surface;
     if (input.format !== undefined) changes.format = input.format;
-    if (input.lengthM !== undefined) changes.lengthM = String(input.lengthM);
-    if (input.widthM !== undefined) changes.widthM = String(input.widthM);
+    // null clears the measure; undefined leaves it alone.
+    if (input.lengthM !== undefined)
+      changes.lengthM = measureColumn(input.lengthM);
+    if (input.widthM !== undefined)
+      changes.widthM = measureColumn(input.widthM);
     if (input.minSlotMinutes !== undefined) {
       changes.minSlotMinutes = input.minSlotMinutes;
     }

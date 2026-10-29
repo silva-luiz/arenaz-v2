@@ -159,7 +159,7 @@ describe('PhotoUploader', () => {
     expect(screen.getByRole('img', { name: 'Foto 1 do espaço' })).toBeVisible();
   });
 
-  it('posts every signed field, the content type and the file last, with no credentials', async () => {
+  it('posts every signed field, the content type and the file last, with no credentials or referrer', async () => {
     storageAnswers();
     const user = setup();
     render(<PhotoUploader venueId={VENUE_ID} photos={[]} />);
@@ -176,7 +176,8 @@ describe('PhotoUploader', () => {
     ];
     expect(url).toBe(STORAGE_URL);
     expect(init.method).toBe('POST');
-    expect(init.credentials).toBeUndefined();
+    expect(init.credentials).toBe('omit');
+    expect(init.referrerPolicy).toBe('no-referrer');
     expect(init.headers).toBeUndefined();
     const body = init.body as FormData;
     const entries = [...body.entries()];
@@ -321,6 +322,35 @@ describe('PhotoUploader', () => {
     expect(mocks.apiSend).not.toHaveBeenCalled();
   });
 
+  it('counts only the valid files against the 20 photos', async () => {
+    storageAnswers();
+    const nineteen = Array.from({ length: 19 }, (_, index) => photo(index + 1));
+    const user = setup();
+    render(<PhotoUploader venueId={VENUE_ID} photos={nineteen} />);
+
+    await user.upload(screen.getByLabelText('Adicionar fotos'), [
+      png('a.png'),
+      new File(['x'], 'b.gif', { type: 'image/gif' }),
+    ]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Enviado')).toBeVisible();
+    });
+    expect(screen.getByText(/b\.gif/)).toBeVisible();
+    expect(screen.queryByText(/Limite de 20 fotos/)).toBeNull();
+  });
+
+  it('announces the uploads politely', async () => {
+    storageAnswers();
+    const user = setup();
+    render(<PhotoUploader venueId={VENUE_ID} photos={[]} />);
+
+    await user.upload(screen.getByLabelText('Adicionar fotos'), png());
+
+    const list = await screen.findByRole('list', { name: 'Envios' });
+    expect(list).toHaveAttribute('aria-live', 'polite');
+  });
+
   describe('grid', () => {
     const THREE = [photo(1), photo(2), photo(3)];
 
@@ -440,6 +470,73 @@ describe('PhotoUploader', () => {
         screen.getByRole('img', { name: 'Foto 1 do espaço' }),
       ).toBeVisible();
       expect(mocks.refresh).not.toHaveBeenCalled();
+    });
+
+    it('puts the focus on the next Remover button after removing a photo', async () => {
+      mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
+      const user = setup();
+      render(<PhotoUploader venueId={VENUE_ID} photos={THREE} />);
+
+      await user.click(screen.getByRole('button', { name: 'Remover foto 2' }));
+
+      // The former third photo is now photo 2.
+      await waitFor(() => {
+        expect(screen.getAllByRole('img')).toHaveLength(2);
+      });
+      expect(
+        screen.getByRole('button', { name: 'Remover foto 2' }),
+      ).toHaveFocus();
+    });
+
+    it('falls back to the previous photo when the last one is removed', async () => {
+      mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
+      const user = setup();
+      render(<PhotoUploader venueId={VENUE_ID} photos={THREE} />);
+
+      await user.click(screen.getByRole('button', { name: 'Remover foto 3' }));
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('img')).toHaveLength(2);
+      });
+      expect(
+        screen.getByRole('button', { name: 'Remover foto 2' }),
+      ).toHaveFocus();
+    });
+
+    it('focuses the file input once the last photo is gone', async () => {
+      mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
+      const user = setup();
+      render(<PhotoUploader venueId={VENUE_ID} photos={[photo(1)]} />);
+
+      await user.click(screen.getByRole('button', { name: 'Remover foto 1' }));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Adicionar fotos')).toHaveFocus();
+      });
+    });
+
+    it('keeps the focus on the moved photo arrow after a move', async () => {
+      mocks.apiSend.mockResolvedValue({
+        ok: true,
+        data: [
+          THREE[0],
+          { ...THREE[2], position: 1 },
+          { ...THREE[1], position: 2 },
+        ],
+      });
+      const user = setup();
+      render(<PhotoUploader venueId={VENUE_ID} photos={THREE} />);
+
+      await user.click(
+        screen.getByRole('button', { name: 'Mover foto 2 para a direita' }),
+      );
+
+      // Photo 2 became photo 3 and has nowhere further right: the other arrow takes the focus.
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Mover foto 3 para a esquerda' }),
+        ).toHaveFocus();
+      });
     });
 
     it('keeps the order and says why when the reorder fails', async () => {

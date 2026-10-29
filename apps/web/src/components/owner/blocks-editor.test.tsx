@@ -1,5 +1,6 @@
 import type { Block } from '@arenaz/contracts';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -212,6 +213,120 @@ describe('BlocksEditor', () => {
       screen.queryByRole('button', { name: 'Confirmar exclusão' }),
     ).toBeNull();
     expect(mocks.apiSend).not.toHaveBeenCalled();
+  });
+
+  it('returns the focus to the trigger after cancelling', async () => {
+    const user = userEvent.setup();
+    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[MAINTENANCE]} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(
+      screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+    ).toHaveFocus();
+  });
+
+  it('moves the focus to the next block after a deletion', async () => {
+    mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        initialBlocks={[MAINTENANCE, NO_REASON]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar exclusão' }),
+    );
+
+    // The former second block is now the first.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+      ).toHaveFocus();
+    });
+  });
+
+  it('falls back to the previous block, then to the date field', async () => {
+    mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
+    const user = userEvent.setup();
+    render(
+      <BlocksEditor
+        fieldId={FIELD_ID}
+        initialBlocks={[MAINTENANCE, NO_REASON]}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Excluir bloqueio 2' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar exclusão' }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+      ).toHaveFocus();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: 'Excluir bloqueio 1' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar exclusão' }),
+    );
+    await waitFor(() => {
+      expect(screen.getByLabelText('Data')).toHaveFocus();
+    });
+  });
+
+  it('disables the form while a block is being saved', async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    mocks.apiSend.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+
+    const pending = fill('2026-10-31', '18:00', '22:00', 'Torneio');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Motivo')).toBeDisabled();
+    });
+    expect(screen.getByLabelText('Data')).toBeDisabled();
+    expect(screen.getByLabelText('Início')).toBeDisabled();
+
+    await act(async () => {
+      answer({ ok: true, data: MAINTENANCE });
+      await Promise.resolve();
+    });
+    await pending;
+    await waitFor(() => {
+      expect(screen.getByLabelText('Motivo')).toBeEnabled();
+    });
+  });
+
+  it('does not offer days before today in São Paulo', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 01:00 UTC is still the evening of the 29th in São Paulo.
+    vi.setSystemTime(new Date('2026-10-30T01:00:00.000Z'));
+    try {
+      render(<BlocksEditor fieldId={FIELD_ID} initialBlocks={[]} />);
+
+      expect(screen.getByLabelText('Data')).toHaveAttribute(
+        'min',
+        '2026-10-29',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keeps the block and says why when the deletion fails', async () => {

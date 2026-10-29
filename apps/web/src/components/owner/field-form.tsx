@@ -180,11 +180,17 @@ export function FieldForm({ venueId, field }: FieldFormProps) {
       return;
     }
 
+    // On edit an empty measure is sent as null, which clears it on the server
+    // (leaving it out would keep the old value). On create, absent means null.
     const result = field
       ? await apiSend(
           'PATCH',
           `/owner/fields/${field.id}`,
-          parsed.data,
+          {
+            ...parsed.data,
+            lengthM: parsed.data.lengthM ?? null,
+            widthM: parsed.data.widthM ?? null,
+          },
           fieldSchema,
         )
       : await apiSend(
@@ -229,96 +235,102 @@ export function FieldForm({ venueId, field }: FieldFormProps) {
       }}
       className="flex flex-col gap-6"
     >
-      <Field label="Nome da quadra" error={errors.name?.message}>
-        <Input autoComplete="off" {...register('name')} />
-      </Field>
-
+      {/* Nothing can change while the request is in flight. */}
       <fieldset
-        aria-describedby={errors.sports ? sportsErrorId : undefined}
-        className="flex flex-col gap-3"
+        disabled={isSubmitting || redirecting}
+        className="flex min-w-0 flex-col gap-6"
       >
-        <legend className="mb-1 text-sm font-medium">Esportes</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {SPORTS.map((sport) => (
-            <Checkbox
-              key={sport}
-              label={SPORT_LABELS[sport]}
-              value={sport}
-              {...register('sports')}
-            />
-          ))}
-        </div>
-        {errors.sports?.message ? (
-          <p id={sportsErrorId} className="text-sm text-red-700">
-            {errors.sports.message}
-          </p>
-        ) : null}
-      </fieldset>
+        <Field label="Nome da quadra" error={errors.name?.message}>
+          <Input autoComplete="off" {...register('name')} />
+        </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Piso" error={errors.surface?.message}>
-          <Select
-            options={SURFACE_OPTIONS}
-            placeholder="Selecione"
-            {...register('surface')}
-          />
-        </Field>
-        <Field label="Formato" error={errors.format?.message}>
-          <Select options={FORMAT_OPTIONS} {...register('format')} />
-        </Field>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label="Comprimento (m)"
-          hint="Opcional."
-          error={errors.lengthM?.message}
+        <fieldset
+          aria-describedby={errors.sports ? sportsErrorId : undefined}
+          className="flex flex-col gap-3"
         >
-          <Input inputMode="decimal" {...register('lengthM')} />
-        </Field>
-        <Field
-          label="Largura (m)"
-          hint="Opcional."
-          error={errors.widthM?.message}
-        >
-          <Input inputMode="decimal" {...register('widthM')} />
-        </Field>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label="Duração mínima"
-          hint="Menor tempo que dá para reservar."
-          error={errors.minSlotMinutes?.message}
-        >
-          <Select options={SLOT_OPTIONS} {...register('minSlotMinutes')} />
-        </Field>
-        <Controller
-          control={control}
-          name="basePrice"
-          render={({ field: price }) => (
-            <Field
-              label="Preço base por hora"
-              hint="Vale quando nenhuma faixa de preço se aplica."
-              error={errors.basePrice?.message}
-            >
-              <MoneyInput
-                name={price.name}
-                value={price.value}
-                onChange={price.onChange}
-                onBlur={price.onBlur}
+          <legend className="mb-1 text-sm font-medium">Esportes</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SPORTS.map((sport) => (
+              <Checkbox
+                key={sport}
+                label={SPORT_LABELS[sport]}
+                value={sport}
+                {...register('sports')}
               />
-            </Field>
-          )}
-        />
-      </div>
+            ))}
+          </div>
+          {errors.sports?.message ? (
+            <p id={sportsErrorId} className="text-sm text-red-700">
+              {errors.sports.message}
+            </p>
+          ) : null}
+        </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <Checkbox label="Quadra ativa" {...register('isActive')} />
-        {errors.isActive?.message ? (
-          <p className="text-sm text-red-700">{errors.isActive.message}</p>
-        ) : null}
-      </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Piso" error={errors.surface?.message}>
+            <Select
+              options={SURFACE_OPTIONS}
+              placeholder="Selecione"
+              {...register('surface')}
+            />
+          </Field>
+          <Field label="Formato" error={errors.format?.message}>
+            <Select options={FORMAT_OPTIONS} {...register('format')} />
+          </Field>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Comprimento (m)"
+            hint="Opcional."
+            error={errors.lengthM?.message}
+          >
+            <Input inputMode="decimal" {...register('lengthM')} />
+          </Field>
+          <Field
+            label="Largura (m)"
+            hint="Opcional."
+            error={errors.widthM?.message}
+          >
+            <Input inputMode="decimal" {...register('widthM')} />
+          </Field>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Duração mínima"
+            hint="Menor tempo que dá para reservar."
+            error={errors.minSlotMinutes?.message}
+          >
+            <Select options={SLOT_OPTIONS} {...register('minSlotMinutes')} />
+          </Field>
+          <Controller
+            control={control}
+            name="basePrice"
+            render={({ field: price }) => (
+              <Field
+                label="Preço base por hora"
+                hint="Vale quando nenhuma faixa de preço se aplica."
+                error={errors.basePrice?.message}
+              >
+                <MoneyInput
+                  name={price.name}
+                  value={price.value}
+                  onChange={price.onChange}
+                  onBlur={price.onBlur}
+                />
+              </Field>
+            )}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Checkbox label="Quadra ativa" {...register('isActive')} />
+          {errors.isActive?.message ? (
+            <p className="text-sm text-red-700">{errors.isActive.message}</p>
+          ) : null}
+        </div>
+      </fieldset>
 
       <div className="flex flex-col gap-4">
         <Alert tone={notice?.tone ?? 'error'}>{notice?.text}</Alert>

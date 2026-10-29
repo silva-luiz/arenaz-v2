@@ -167,6 +167,30 @@ describe('fieldInputSchema', () => {
     expect(fieldUpdateSchema.parse({})).toEqual({});
     expect(fieldUpdateSchema.safeParse({ name: 'A' }).success).toBe(false);
   });
+
+  it('update aceita null em lengthM e widthM para limpar as medidas', () => {
+    expect(fieldUpdateSchema.parse({ lengthM: null, widthM: null })).toEqual({
+      lengthM: null,
+      widthM: null,
+    });
+    expect(fieldUpdateSchema.safeParse({ lengthM: 0 }).success).toBe(false);
+    expect(fieldUpdateSchema.safeParse({ widthM: 201 }).success).toBe(false);
+  });
+
+  it('create continua sem aceitar null nas medidas (ausente significa nulo)', () => {
+    const base = {
+      name: 'Quadra 1',
+      sports: ['futsal'],
+      surface: 'piso_rigido',
+      format: null,
+      minSlotMinutes: 60,
+      basePriceCentsPerHour: 18000,
+    };
+    expect(fieldInputSchema.safeParse(base).success).toBe(true);
+    expect(fieldInputSchema.safeParse({ ...base, lengthM: null }).success).toBe(
+      false,
+    );
+  });
 });
 
 describe('blockInputSchema', () => {

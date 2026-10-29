@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { formatBlockRange, toSaoPauloIso } from './sao-paulo';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { formatBlockRange, todayInSaoPaulo, toSaoPauloIso } from './sao-paulo';
 
 describe('toSaoPauloIso', () => {
   it('uses -03:00 on a regular date', () => {
@@ -37,6 +37,31 @@ describe('toSaoPauloIso', () => {
   it('describes the very same instant as the wall clock in São Paulo', () => {
     const iso = toSaoPauloIso('2026-10-31', 22 * 60);
     expect(new Date(iso).toISOString()).toBe('2026-11-01T01:00:00.000Z');
+  });
+});
+
+describe('toSaoPauloIso with years under 100', () => {
+  it('keeps the year instead of mapping it to 19xx', () => {
+    expect(toSaoPauloIso('0050-03-04', 10 * 60)).toMatch(
+      /^0050-03-04T10:00:00[-+]\d{2}:\d{2}$/,
+    );
+    expect(toSaoPauloIso('0099-12-31', 24 * 60)).toMatch(
+      /^0100-01-01T00:00:00[-+]\d{2}:\d{2}$/,
+    );
+  });
+});
+
+describe('todayInSaoPaulo', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is the date on the clock in São Paulo, not in UTC', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-30T01:00:00.000Z'));
+    expect(todayInSaoPaulo()).toBe('2026-10-29');
+    vi.setSystemTime(new Date('2026-10-30T03:00:00.000Z'));
+    expect(todayInSaoPaulo()).toBe('2026-10-30');
   });
 });
 

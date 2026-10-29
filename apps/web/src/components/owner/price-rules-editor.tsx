@@ -9,11 +9,12 @@ import {
 } from '@arenaz/contracts';
 import { Alert, Button, Field, Input, Select, cn } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
 import { MoneyInput } from './money-input';
 import { TIME_OPTIONS } from './time-options';
 
+const ADD_BUTTON = 'add-button';
 const DEFAULT_START = 18 * 60;
 const DEFAULT_END = 22 * 60;
 const PRICE_MISSING = 'Informe o preço por hora';
@@ -23,7 +24,7 @@ const rulesSchema = priceRuleSchema.array();
 
 interface RowState {
   /** Stable React key; rows have no id until the server saves them. */
-  key: number;
+  key: string;
   weekdays: number[];
   startMinute: number;
   endMinute: number;
@@ -34,16 +35,11 @@ interface RowState {
 type Notice = { tone: 'error' | 'success'; text: string } | null;
 type RowErrors = Record<number, string[]>;
 
-// Row keys only have to be unique among the rows on screen.
-let lastRowKey = 0;
-function newRowKey(): number {
-  lastRowKey += 1;
-  return lastRowKey;
-}
-
 function toRows(rules: PriceRule[]): RowState[] {
   return rules.map((rule) => ({
-    key: newRowKey(),
+    // The rule id: the same on the server and in the browser (it ends up in
+    // the markup), unlike a counter.
+    key: rule.id,
     weekdays: rule.weekdays,
     startMinute: rule.startMinute,
     endMinute: rule.endMinute,
@@ -82,6 +78,27 @@ export function PriceRulesEditor({
   const [errors, setErrors] = useState<RowErrors>({});
   const [notice, setNotice] = useState<Notice>(null);
   const [saving, setSaving] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  const newRows = useRef(0);
+  const addButton = useRef<HTMLButtonElement>(null);
+  // Where the focus goes once the next render is committed: a row key, or
+  // ADD_BUTTON.
+  const pendingFocus = useRef<string | null>(null);
+
+  // The button that was clicked is gone after removing a row, so the focus
+  // moves to a neighbouring row's Remover, or to "+ Faixa" with no rows left.
+  useEffect(() => {
+    const target = pendingFocus.current;
+    if (target === null) return;
+    pendingFocus.current = null;
+    if (target === ADD_BUTTON) {
+      addButton.current?.focus();
+      return;
+    }
+    form.current
+      ?.querySelector<HTMLElement>(`[data-row-key="${target}"] [data-remove]`)
+      ?.focus();
+  });
 
   function edit(index: number, patch: Partial<RowState>) {
     setRows((current) =>
@@ -106,7 +123,7 @@ export function PriceRulesEditor({
     setRows((current) => [
       ...current,
       {
-        key: newRowKey(),
+        key: `new-${String(newRows.current++)}`,
         weekdays: [],
         startMinute: DEFAULT_START,
         endMinute: DEFAULT_END,
@@ -119,6 +136,8 @@ export function PriceRulesEditor({
   }
 
   function removeRow(index: number) {
+    const neighbour = rows[index + 1] ?? rows[index - 1];
+    pendingFocus.current = neighbour ? neighbour.key : ADD_BUTTON;
     setRows((current) => current.filter((_, at) => at !== index));
     setNotice(null);
     setErrors({});
@@ -188,6 +207,7 @@ export function PriceRulesEditor({
 
   return (
     <form
+      ref={form}
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -195,132 +215,140 @@ export function PriceRulesEditor({
       }}
       className="flex flex-col gap-5"
     >
-      {rows.length === 0 ? (
-        <p className="text-muted">
-          Nenhuma faixa de preço. O preço base vale o dia todo.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {rows.map((row, index) => {
-            const number = index + 1;
-            const rowErrors = errors[index];
-            const errorId = `price-rule-${String(row.key)}-error`;
-            return (
-              <fieldset
-                key={row.key}
-                aria-describedby={rowErrors ? errorId : undefined}
-                className="flex flex-col gap-4 rounded-card border border-line p-4"
-              >
-                <legend className="px-1 text-sm font-semibold">
-                  {`Faixa ${String(number)}`}
-                </legend>
-                <div
-                  role="group"
-                  aria-label={`Dias da faixa ${String(number)}`}
-                  className="flex flex-wrap gap-2"
+      {/* Nothing can change while the list is being saved. */}
+      <fieldset disabled={saving} className="flex min-w-0 flex-col gap-5">
+        {rows.length === 0 ? (
+          <p className="text-muted">
+            Nenhuma faixa de preço. O preço base vale o dia todo.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {rows.map((row, index) => {
+              const number = index + 1;
+              const rowErrors = errors[index];
+              const errorId = `price-rule-${row.key}-error`;
+              return (
+                <fieldset
+                  key={row.key}
+                  data-row-key={row.key}
+                  aria-describedby={rowErrors ? errorId : undefined}
+                  className="flex flex-col gap-4 rounded-card border border-line p-4"
                 >
-                  {WEEKDAY_LABELS.map((name, day) => {
-                    const pressed = row.weekdays.includes(day);
-                    return (
-                      <button
-                        key={name}
-                        type="button"
-                        aria-label={name}
-                        aria-pressed={pressed}
-                        onClick={() => {
-                          toggleDay(index, day);
-                        }}
-                        className={cn(
-                          'h-10 min-w-12 rounded-button border px-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none',
-                          pressed
-                            ? 'border-brand bg-brand text-white'
-                            : 'border-line-control bg-bg text-ink hover:bg-surface',
-                        )}
-                      >
-                        <span aria-hidden="true">{name.slice(0, 3)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Início">
-                    <Select
-                      options={TIME_OPTIONS}
-                      value={String(row.startMinute)}
-                      onChange={(event) => {
-                        edit(index, {
-                          startMinute: Number(event.target.value),
-                        });
-                      }}
-                    />
-                  </Field>
-                  <Field label="Fim">
-                    <Select
-                      options={TIME_OPTIONS}
-                      value={String(row.endMinute)}
-                      onChange={(event) => {
-                        edit(index, { endMinute: Number(event.target.value) });
-                      }}
-                    />
-                  </Field>
-                  <Field label="Preço por hora">
-                    <MoneyInput
-                      value={row.price}
-                      onChange={(price) => {
-                        edit(index, { price });
-                      }}
-                    />
-                  </Field>
-                  <Field label="Rótulo">
-                    <Input
-                      value={row.label}
-                      maxLength={40}
-                      placeholder="Ex.: Noite"
-                      onChange={(event) => {
-                        edit(index, { label: event.target.value });
-                      }}
-                    />
-                  </Field>
-                </div>
-                {rowErrors ? (
-                  <div id={errorId} className="flex flex-col gap-1">
-                    {rowErrors.map((message) => (
-                      <p key={message} className="text-sm text-red-700">
-                        {message}
-                      </p>
-                    ))}
+                  <legend className="px-1 text-sm font-semibold">
+                    {`Faixa ${String(number)}`}
+                  </legend>
+                  <div
+                    role="group"
+                    aria-label={`Dias da faixa ${String(number)}`}
+                    className="flex flex-wrap gap-2"
+                  >
+                    {WEEKDAY_LABELS.map((name, day) => {
+                      const pressed = row.weekdays.includes(day);
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          aria-label={name}
+                          aria-pressed={pressed}
+                          onClick={() => {
+                            toggleDay(index, day);
+                          }}
+                          className={cn(
+                            'h-10 min-w-12 rounded-button border px-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none',
+                            pressed
+                              ? 'border-brand bg-brand text-white'
+                              : 'border-line-control bg-bg text-ink hover:bg-surface',
+                          )}
+                        >
+                          <span aria-hidden="true">{name.slice(0, 3)}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : null}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="self-start"
-                  aria-label={`Remover faixa ${String(number)}`}
-                  onClick={() => {
-                    removeRow(index);
-                  }}
-                >
-                  <span aria-hidden="true">Remover</span>
-                </Button>
-              </fieldset>
-            );
-          })}
-        </div>
-      )}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <Field label="Início">
+                      <Select
+                        options={TIME_OPTIONS}
+                        value={String(row.startMinute)}
+                        onChange={(event) => {
+                          edit(index, {
+                            startMinute: Number(event.target.value),
+                          });
+                        }}
+                      />
+                    </Field>
+                    <Field label="Fim">
+                      <Select
+                        options={TIME_OPTIONS}
+                        value={String(row.endMinute)}
+                        onChange={(event) => {
+                          edit(index, {
+                            endMinute: Number(event.target.value),
+                          });
+                        }}
+                      />
+                    </Field>
+                    <Field label="Preço por hora">
+                      <MoneyInput
+                        value={row.price}
+                        onChange={(price) => {
+                          edit(index, { price });
+                        }}
+                      />
+                    </Field>
+                    <Field label="Rótulo">
+                      <Input
+                        value={row.label}
+                        maxLength={40}
+                        placeholder="Ex.: Noite"
+                        onChange={(event) => {
+                          edit(index, { label: event.target.value });
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  {rowErrors ? (
+                    <div id={errorId} className="flex flex-col gap-1">
+                      {rowErrors.map((message) => (
+                        <p key={message} className="text-sm text-red-700">
+                          {message}
+                        </p>
+                      ))}
+                    </div>
+                  ) : null}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="self-start"
+                    data-remove=""
+                    aria-label={`Remover faixa ${String(number)}`}
+                    onClick={() => {
+                      removeRow(index);
+                    }}
+                  >
+                    <span aria-hidden="true">Remover</span>
+                  </Button>
+                </fieldset>
+              );
+            })}
+          </div>
+        )}
 
-      <Alert tone={notice?.tone ?? 'error'}>{notice?.text}</Alert>
-      <div className="flex flex-wrap gap-3">
         <Button
+          ref={addButton}
           variant="secondary"
+          className="self-start"
           disabled={rows.length >= MAX_PRICE_RULES}
           onClick={addRow}
         >
           + Faixa
         </Button>
-        <Button type="submit" loading={saving}>
-          Salvar faixas
-        </Button>
-      </div>
+      </fieldset>
+
+      <Alert tone={notice?.tone ?? 'error'}>{notice?.text}</Alert>
+      <Button type="submit" loading={saving} className="self-start">
+        Salvar faixas
+      </Button>
     </form>
   );
 }

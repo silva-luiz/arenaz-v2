@@ -1,5 +1,5 @@
 import type { FieldResponse } from '@arenaz/contracts';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -174,6 +174,52 @@ describe('FieldForm (create)', () => {
     });
   });
 
+  it('leaves empty measures out when creating', async () => {
+    mocks.apiSend.mockResolvedValue({ ok: true, data: FIELD });
+    const user = userEvent.setup();
+    render(<FieldForm venueId={VENUE_ID} />);
+
+    await user.type(screen.getByLabelText('Nome da quadra'), 'Quadra 3');
+    await user.click(screen.getByRole('checkbox', { name: 'Futsal' }));
+    await user.selectOptions(screen.getByLabelText('Piso'), 'Areia');
+    await user.type(screen.getByLabelText('Preço base por hora'), '100');
+    await user.click(screen.getByRole('button', { name: 'Criar quadra' }));
+
+    await waitFor(() => {
+      expect(mocks.apiSend).toHaveBeenCalled();
+    });
+    const body = mocks.apiSend.mock.calls[0]?.[2] as Record<string, unknown>;
+    expect('lengthM' in body).toBe(false);
+    expect('widthM' in body).toBe(false);
+  });
+
+  it('disables the controls while the court is being saved', async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    mocks.apiSend.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<FieldForm venueId={VENUE_ID} field={FIELD} />);
+
+    await user.click(screen.getByRole('button', { name: /Salvar alterações/ }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome da quadra')).toBeDisabled();
+    });
+    expect(screen.getByLabelText('Preço base por hora')).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'Futsal' })).toBeDisabled();
+
+    await act(async () => {
+      answer({ ok: true, data: FIELD });
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome da quadra')).toBeEnabled();
+    });
+  });
+
   it('flags a measure that is not a number', async () => {
     const user = userEvent.setup();
     render(<FieldForm venueId={VENUE_ID} />);
@@ -275,6 +321,30 @@ describe('FieldForm (edit)', () => {
     });
     expect(mocks.refresh).toHaveBeenCalled();
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('sends null for measures that were cleared, so the server clears them too', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: true,
+      data: { ...FIELD, lengthM: null, widthM: null },
+    });
+    const user = userEvent.setup();
+    render(<FieldForm venueId={VENUE_ID} field={FIELD} />);
+
+    await user.clear(screen.getByLabelText('Comprimento (m)'));
+    await user.clear(screen.getByLabelText('Largura (m)'));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await waitFor(() => {
+      expect(mocks.apiSend).toHaveBeenCalled();
+    });
+    expect(mocks.apiSend.mock.calls[0]?.[2]).toMatchObject({
+      lengthM: null,
+      widthM: null,
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Comprimento (m)')).toHaveValue('');
+    });
   });
 
   it('turns the format off with null', async () => {

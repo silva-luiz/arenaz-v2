@@ -58,8 +58,15 @@ export const fieldInputSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+// On update the measures are nullable: `null` clears them (absent leaves them
+// as they are), which `create` does not need because absent already means null.
 export const fieldUpdateSchema = z
-  .object({ ...fieldBaseShape, isActive: z.boolean() })
+  .object({
+    ...fieldBaseShape,
+    lengthM: dimensionSchema.nullable(),
+    widthM: dimensionSchema.nullable(),
+    isActive: z.boolean(),
+  })
   .partial();
 
 // ----------------------------------------------------------- price rules ----

@@ -7,6 +7,11 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": ["API_URL"]
     },
+    "@arenaz/web#build": {
+      "dependsOn": ["^build", "@arenaz/web#typecheck"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["API_URL"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

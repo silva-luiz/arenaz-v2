@@ -26,10 +26,16 @@ function offsetMinutesAt(instantMs: number): number {
     offsetFormat
       .formatToParts(new Date(instantMs))
       .find((part) => part.type === 'timeZoneName')?.value ?? 'GMT';
-  const match = /^GMT(?:([+-])(\d{1,2})(?::(\d{2}))?)?$/.exec(name);
+  // Very old dates carry the pre-1914 local mean time, with seconds
+  // ("GMT-03:06:28"); they are rounded to the minute.
+  const match = /^GMT(?:([+-])(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?)?$/.exec(
+    name,
+  );
   if (!match) throw new Error(`Fuso inesperado: ${name}`);
-  const [, sign, hours = '0', minutes = '0'] = match;
-  const total = Number(hours) * 60 + Number(minutes);
+  const [, sign, hours = '0', minutes = '0', seconds = '0'] = match;
+  const total = Math.round(
+    Number(hours) * 60 + Number(minutes) + Number(seconds) / 60,
+  );
   return sign === '-' ? -total : total;
 }
 
@@ -54,7 +60,10 @@ function formatOffset(offsetMinutes: number): string {
 export function toSaoPauloIso(date: string, minuteOfDay: number): string {
   const [year = 0, month = 1, day = 1] = date.split('-').map(Number);
   // Wall clock read as if it were UTC; also normalizes the day roll-over.
-  const wall = new Date(Date.UTC(year, month - 1, day, 0, minuteOfDay, 0, 0));
+  // setUTCFullYear, not Date.UTC: the latter maps years 0-99 to 1900-1999.
+  const wall = new Date(0);
+  wall.setUTCFullYear(year, month - 1, day);
+  wall.setUTCHours(0, minuteOfDay, 0, 0);
   const wallMs = wall.getTime();
 
   // Guess with the usual offset, then check it against the guessed instant;
@@ -66,6 +75,16 @@ export function toSaoPauloIso(date: string, minuteOfDay: number): string {
     `${pad(wall.getUTCFullYear(), 4)}-${pad(wall.getUTCMonth() + 1)}-${pad(wall.getUTCDate())}` +
     `T${pad(wall.getUTCHours())}:${pad(wall.getUTCMinutes())}:00${formatOffset(offset)}`
   );
+}
+
+/** Today's date in São Paulo, "YYYY-MM-DD" (in the evening UTC is already tomorrow). */
+export function todayInSaoPaulo(): string {
+  const parts = Object.fromEntries(
+    partsFormat
+      .formatToParts(new Date())
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string | undefined>;
+  return `${parts.year ?? ''}-${parts.month ?? ''}-${parts.day ?? ''}`;
 }
 
 interface WallClock {
