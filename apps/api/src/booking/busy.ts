@@ -53,7 +53,9 @@ const ACTIVE_AT = (now: Date) => sql`(status = 'confirmed'
 
 /**
  * Whether the field (or every field of the venue) has an active booking that
- * has not ended yet at `now`. The owner's delete/deactivate/unpublish rules
+ * has not ended yet at `now`. A booking in progress counts (it blocks delete,
+ * deactivate and unpublish) although the owner cannot cancel it: cancelling
+ * is for bookings that have not started. The owner's delete/deactivate/unpublish rules
  * use it; call it after taking the field locks so a hold being created
  * cannot slip in between the check and the change.
  */
@@ -87,6 +89,27 @@ export async function hasActiveBookingIn(
     SELECT 1 AS found FROM booking
      WHERE field_id = ${fieldId}::uuid AND ${ACTIVE_AT(now)}
        AND period && tstzrange(${from.toISOString()}::timestamptz, ${to.toISOString()}::timestamptz, '[)')
+     LIMIT 1
+  `);
+  return result.rows.length > 0;
+}
+
+/**
+ * Whether any booking of the field (or venue) was ever paid: confirmed now, or
+ * cancelled after confirmation (`confirmed_at` is never cleared). Paid history
+ * must survive, so these block a hard delete.
+ */
+export async function hasPaidHistory(
+  db: Pick<Db, 'execute'>,
+  scope: { fieldId: string } | { venueId: string },
+): Promise<boolean> {
+  const where =
+    'fieldId' in scope
+      ? sql`field_id = ${scope.fieldId}::uuid`
+      : sql`venue_id = ${scope.venueId}::uuid`;
+  const result = await db.execute<{ found: number }>(sql`
+    SELECT 1 AS found FROM booking
+     WHERE ${where} AND (status = 'confirmed' OR confirmed_at IS NOT NULL)
      LIMIT 1
   `);
   return result.rows.length > 0;

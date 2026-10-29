@@ -26,7 +26,12 @@ export const manualBookingInputSchema = z.object({
     .trim()
     .min(2, 'O nome precisa ter pelo menos 2 caracteres')
     .max(80, 'O nome pode ter no máximo 80 caracteres'),
-  customerPhone: phoneBrSchema.optional(),
+  // A blank phone field means "no phone".
+  customerPhone: z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    phoneBrSchema.optional(),
+  ),
 });
 export type ManualBookingInput = z.infer<typeof manualBookingInputSchema>;
 

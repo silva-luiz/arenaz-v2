@@ -1,6 +1,4 @@
-import { validateBooking } from '@arenaz/booking-core';
 import {
-  AVAILABILITY_HORIZON_DAYS,
   HOLD_MINUTES,
   MAX_ACTIVE_HOLDS,
   bookingSchema,
@@ -17,9 +15,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, asc, desc, eq, gt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { dbNow } from '../common/db-clock.js';
-import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { isUuid } from '../venues/owner.js';
@@ -35,13 +32,14 @@ import {
   NOT_AWAITING_PAYMENT,
   SLOT_TAKEN,
   TOO_MANY_HOLDS,
-  bookingRuleError,
 } from './booking-errors.js';
-import { loadBusy } from './busy.js';
+import {
+  lockField,
+  toPriceBreakdown,
+  validateUnderFieldLock,
+} from './booking-context.js';
 
-const { booking, venue, venueHours, field, priceRule } = schema;
-
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+const { booking, venue, field } = schema;
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -54,22 +52,6 @@ export interface Chargeable {
   id: string;
   totalCents: number;
   holdExpiresAt: Date;
-}
-
-/** `SELECT ... FROM field WHERE id = $1 FOR UPDATE`: every booking write starts here. */
-async function lockField(tx: Tx, fieldId: string) {
-  const [row] = await tx
-    .select({
-      id: field.id,
-      venueId: field.venueId,
-      isActive: field.isActive,
-      minSlotMinutes: field.minSlotMinutes,
-      basePriceCentsPerHour: field.basePriceCentsPerHour,
-    })
-    .from(field)
-    .where(eq(field.id, fieldId))
-    .for('update');
-  return row;
 }
 
 const viewColumns = {
@@ -150,9 +132,6 @@ export class BookingsService {
    */
   async create(userId: string, input: CreateBookingInput): Promise<Booking> {
     const startsAt = new Date(input.startsAt);
-    const endsAt = new Date(
-      startsAt.getTime() + input.durationMinutes * MINUTE_MS,
-    );
     let createdId: string;
     try {
       createdId = await this.handle.db.transaction(async (tx) => {
@@ -161,50 +140,15 @@ export class BookingsService {
         await tx.execute(
           sql`SELECT pg_advisory_xact_lock(hashtextextended(${`booking-holds:${userId}`}, 0))`,
         );
-        const target = await lockField(tx, input.fieldId);
-        if (!target?.isActive) throw new NotFoundException(FIELD_NOT_FOUND);
-        const [place] = await tx
-          .select({ timezone: venue.timezone, status: venue.status })
-          .from(venue)
-          .where(eq(venue.id, target.venueId))
-          .limit(1);
-        if (place?.status !== 'published') {
-          throw new NotFoundException(VENUE_NOT_FOUND);
-        }
-
-        const now = await dbNow(tx);
-        // Same helper (and marks) as the worker: stale holds of this field.
-        await expireDueHolds(tx, { fieldId: target.id, cutoff: now });
-
-        const hours = await tx
-          .select({
-            weekday: venueHours.weekday,
-            openMinute: venueHours.openMinute,
-            closeMinute: venueHours.closeMinute,
-          })
-          .from(venueHours)
-          .where(eq(venueHours.venueId, target.venueId));
-        const rules = await tx
-          .select()
-          .from(priceRule)
-          .where(eq(priceRule.fieldId, target.id))
-          .orderBy(asc(priceRule.startMinute), asc(priceRule.id));
-        const busy = await loadBusy(tx, [target.id], startsAt, endsAt, now);
-
-        const result = validateBooking({
-          start: startsAt,
-          durationMinutes: input.durationMinutes,
-          tz: place.timezone,
-          now,
-          hours,
-          field: target,
-          rules,
-          busy: busy.get(target.id) ?? [],
-          horizonDays: AVAILABILITY_HORIZON_DAYS,
-        });
-        if (!result.ok) {
-          throw bookingRuleError(result.code, target.minSlotMinutes);
-        }
+        const { target, now, endsAt, result } = await validateUnderFieldLock(
+          tx,
+          {
+            fieldId: input.fieldId,
+            startsAt,
+            durationMinutes: input.durationMinutes,
+            audience: 'player',
+          },
+        );
 
         const [holds] = await tx
           .select({ total: sql<number>`count(*)::int` })
@@ -231,11 +175,7 @@ export class BookingsService {
             status: 'held',
             period: { startsAt, endsAt },
             totalCents: result.totalCents,
-            priceBreakdown: result.segments.map((segment) => ({
-              startsAt: segment.startsAt.toISOString(),
-              endsAt: segment.endsAt.toISOString(),
-              priceCents: segment.priceCents,
-            })),
+            priceBreakdown: toPriceBreakdown(result.segments),
             holdExpiresAt: new Date(now.getTime() + HOLD_MINUTES * MINUTE_MS),
           })
           .returning({ id: booking.id });

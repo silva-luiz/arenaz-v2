@@ -36,6 +36,17 @@ describe('manualBookingInputSchema', () => {
   });
 });
 
+describe('telefone em branco', () => {
+  it('vira ausente', () => {
+    for (const blank of ['', '   ']) {
+      expect(
+        manualBookingInputSchema.parse({ ...base, customerPhone: blank })
+          .customerPhone,
+      ).toBeUndefined();
+    }
+  });
+});
+
 describe('agendaItemSchema', () => {
   it('distingue reserva de bloqueio pelo kind', () => {
     const block = agendaItemSchema.safeParse({

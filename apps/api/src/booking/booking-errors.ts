@@ -19,6 +19,10 @@ export const CANCEL_TOO_LATE =
   'O cancelamento só é possível com pelo menos 24 horas de antecedência';
 export const FIELD_HAS_BOOKINGS = 'Esta quadra tem reservas futuras';
 export const VENUE_HAS_BOOKINGS = 'Este espaço tem reservas futuras';
+export const FIELD_HAS_PAID_HISTORY =
+  'Esta quadra tem histórico de reservas pagas. Desative-a em vez de excluir.';
+export const VENUE_HAS_PAID_HISTORY =
+  'Este espaço tem histórico de reservas pagas. Despublique-o em vez de excluir.';
 export const BLOCK_OVER_BOOKING = 'Já existe uma reserva nesse período';
 export const FIELD_INACTIVE = 'Esta quadra está desativada';
 export const CANCELLED_HOLD = 'Reserva cancelada.';

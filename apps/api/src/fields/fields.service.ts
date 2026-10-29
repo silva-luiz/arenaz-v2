@@ -30,9 +30,11 @@ import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
 import {
   BLOCK_OVER_BOOKING,
   FIELD_HAS_BOOKINGS,
+  FIELD_HAS_PAID_HISTORY,
 } from '../booking/booking-errors.js';
 import {
   hasActiveBookingIn,
+  hasPaidHistory,
   hasUpcomingActiveBooking,
 } from '../booking/busy.js';
 import { dbNow } from '../common/db-clock.js';
@@ -231,8 +233,13 @@ export class FieldsService {
       ) {
         throw new ConflictException(FIELD_HAS_BOOKINGS);
       }
-      // Only history is left (past, cancelled or expired): the foreign key is
-      // RESTRICT, so it goes with the field. Price rules and blocks cascade.
+      // Paid history (past confirmed, or cancelled after paying) is kept: the
+      // owner deactivates instead.
+      if (await hasPaidHistory(tx, { fieldId: owned.id })) {
+        throw new ConflictException(FIELD_HAS_PAID_HISTORY);
+      }
+      // Only unpaid rows are left (held, expired, never confirmed); the foreign
+      // key is RESTRICT, so they go with the field. Rules and blocks cascade.
       await tx.delete(booking).where(eq(booking.fieldId, owned.id));
       const deleted = await tx
         .delete(field)

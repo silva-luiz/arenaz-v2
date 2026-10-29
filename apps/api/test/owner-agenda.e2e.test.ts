@@ -642,18 +642,10 @@ describe('regras com reservas futuras', () => {
     expect(ok.statusCode).toBe(201);
   });
 
-  it('reservas passadas, canceladas ou vencidas não impedem apagar quadra e espaço', async () => {
+  it('só histórico sem pagamento (cancelada, hold vencido) não impede apagar quadra e espaço', async () => {
     const { owner, s } = await newOwnerVenue();
     const player = await newPerson('Jogador');
     const date = spDate(4);
-    await insertBooking(
-      handle,
-      s,
-      player.userId,
-      new Date(Date.now() - 3 * HOUR),
-      new Date(Date.now() - 2 * HOUR),
-      'confirmed',
-    );
     await insertBooking(
       handle,
       s,
@@ -671,6 +663,14 @@ describe('regras com reservas futuras', () => {
       'held',
       new Date(Date.now() - MIN),
     );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '10:00'),
+      at(date, '11:00'),
+      'expired',
+    );
     // Quadra A is the only active field of a published venue: unpublish first.
     expect(
       (await owner.api.post(`/api/owner/venues/${s.venueId}/unpublish`))
@@ -687,6 +687,114 @@ describe('regras com reservas futuras', () => {
       .from(booking)
       .where(eq(booking.venueId, s.venueId));
     expect(left).toHaveLength(0);
+  });
+
+  describe('histórico pago nunca é apagado', () => {
+    async function withPaidHistory(kind: 'past-confirmed' | 'cancelled-paid') {
+      const { owner, s } = await newOwnerVenue();
+      const player = await newPerson('Jogador');
+      const past = [
+        new Date(Date.now() - 3 * HOUR),
+        new Date(Date.now() - 2 * HOUR),
+      ] as const;
+      const id = await insertBooking(
+        handle,
+        s,
+        player.userId,
+        past[0],
+        past[1],
+        'confirmed',
+      );
+      if (kind === 'cancelled-paid') {
+        await handle.db
+          .update(booking)
+          .set({
+            status: 'cancelled',
+            cancelledBy: 'owner',
+            cancelledAt: new Date(),
+          })
+          .where(eq(booking.id, id));
+      }
+      await owner.api.post(`/api/owner/venues/${s.venueId}/unpublish`);
+      return { owner, s, id };
+    }
+
+    it.each(['past-confirmed', 'cancelled-paid'] as const)(
+      'quadra (%s): 409 e a reserva continua',
+      async (kind) => {
+        const { owner, s, id } = await withPaidHistory(kind);
+        const res = await owner.api.del(`/api/owner/fields/${s.fieldId}`);
+        expect(res.statusCode).toBe(409);
+        expect(problem(res).detail).toBe(
+          'Esta quadra tem histórico de reservas pagas. Desative-a em vez de excluir.',
+        );
+        const [row] = await handle.db
+          .select({ id: booking.id })
+          .from(booking)
+          .where(eq(booking.id, id));
+        expect(row).toBeDefined();
+        const [f] = await handle.db
+          .select({ id: field.id })
+          .from(field)
+          .where(eq(field.id, s.fieldId));
+        expect(f).toBeDefined();
+      },
+    );
+
+    it.each(['past-confirmed', 'cancelled-paid'] as const)(
+      'espaço (%s): 409 e tudo continua',
+      async (kind) => {
+        const { owner, s, id } = await withPaidHistory(kind);
+        const res = await owner.api.del(`/api/owner/venues/${s.venueId}`);
+        expect(res.statusCode).toBe(409);
+        expect(problem(res).detail).toBe(
+          'Este espaço tem histórico de reservas pagas. Despublique-o em vez de excluir.',
+        );
+        const [v] = await handle.db
+          .select({ id: venue.id })
+          .from(venue)
+          .where(eq(venue.id, s.venueId));
+        expect(v).toBeDefined();
+        const [row] = await handle.db
+          .select({ id: booking.id })
+          .from(booking)
+          .where(eq(booking.id, id));
+        expect(row).toBeDefined();
+      },
+    );
+
+    it('desativar a quadra (e despublicar) segue permitido', async () => {
+      const { owner, s } = await withPaidHistory('past-confirmed');
+      const res = await owner.api.patch(`/api/owner/fields/${s.fieldId}`, {
+        isActive: false,
+      });
+      expect(res.statusCode).toBe(200);
+    });
+  });
+
+  it('desativar quadra com reserva futura em espaço publicado: 409 (não 422) e segue ativa', async () => {
+    const { owner, s } = await withFutureBooking('confirmed');
+    const res = await owner.api.patch(`/api/owner/fields/${s.fieldId}`, {
+      isActive: false,
+    });
+    expect(res.statusCode).toBe(409);
+    const [row] = await handle.db
+      .select({ isActive: field.isActive })
+      .from(field)
+      .where(eq(field.id, s.fieldId));
+    expect(row?.isActive).toBe(true);
+  });
+
+  it('apagar outra quadra do espaço é permitido mesmo que uma irmã tenha reserva futura', async () => {
+    const { owner, s } = await withFutureBooking('confirmed');
+    // The seed has no photo, so a published venue could not change at all.
+    await handle.db
+      .update(venue)
+      .set({ status: 'draft' })
+      .where(eq(venue.id, s.venueId));
+    const res = await owner.api.del(`/api/owner/fields/${s.inactiveFieldId}`);
+    expect(res.statusCode).toBe(204);
+    expect(await activeBookings(s.fieldId)).toBe(1);
   });
 
   it('apagar quadra/espaço e reservar ao mesmo tempo: ou a reserva vence (409 ao apagar) ou o apagar vence (404 ao reservar), sem deadlock', async () => {

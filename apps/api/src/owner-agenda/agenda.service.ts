@@ -1,47 +1,36 @@
-import { localDayRange, validateBooking } from '@arenaz/booking-core';
+import { localDayRange } from '@arenaz/booking-core';
 import {
-  AVAILABILITY_HORIZON_DAYS,
   agendaBookingSchema,
   ownerAgendaSchema,
   type AgendaBooking,
   type AgendaItem,
-  type BookingStatus,
   type ManualBookingInput,
   type OwnerAgenda,
 } from '@arenaz/contracts';
-import { expireDueHolds, schema, tstzrangeSql, type Db } from '@arenaz/db';
+import { schema, tstzrangeSql, type Db } from '@arenaz/db';
 import {
   ConflictException,
   Inject,
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import { and, asc, eq, gt, or, sql } from 'drizzle-orm';
 import {
   BOOKING_NOT_FOUND,
   CANNOT_CANCEL,
-  FIELD_INACTIVE,
   SLOT_TAKEN,
-  bookingRuleError,
 } from '../booking/booking-errors.js';
-import { loadBusy } from '../booking/busy.js';
+import {
+  toPriceBreakdown,
+  validateUnderFieldLock,
+} from '../booking/booking-context.js';
 import { dbNow } from '../common/db-clock.js';
-import { FIELD_NOT_FOUND } from '../common/not-found.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { shortName } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { findOwnedField, findOwnedVenue, isUuid } from '../venues/owner.js';
 
-const {
-  booking,
-  venue,
-  venueHours,
-  field,
-  priceRule,
-  availabilityBlock,
-  user,
-} = schema;
+const { booking, venue, field, availabilityBlock, user } = schema;
 
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
@@ -77,7 +66,7 @@ function toItem(row: BookingRow): AgendaBooking {
     id: row.id,
     startsAt: row.period.startsAt.toISOString(),
     endsAt: row.period.endsAt.toISOString(),
-    status: row.status as BookingStatus,
+    status: row.status,
     origin: row.origin,
     customerName:
       row.origin === 'manual'
@@ -189,58 +178,12 @@ export class AgendaService {
     let createdId: string;
     try {
       createdId = await this.handle.db.transaction(async (tx) => {
-        const [target] = await tx
-          .select({
-            id: field.id,
-            venueId: field.venueId,
-            isActive: field.isActive,
-            minSlotMinutes: field.minSlotMinutes,
-            basePriceCentsPerHour: field.basePriceCentsPerHour,
-          })
-          .from(field)
-          .where(eq(field.id, owned.id))
-          .for('update');
-        if (!target) throw new NotFoundException(FIELD_NOT_FOUND);
-        if (!target.isActive) {
-          throw new UnprocessableEntityException(FIELD_INACTIVE);
-        }
-        const [place] = await tx
-          .select({ timezone: venue.timezone })
-          .from(venue)
-          .where(eq(venue.id, target.venueId))
-          .limit(1);
-        if (!place) throw new NotFoundException(FIELD_NOT_FOUND);
-
-        const now = await dbNow(tx);
-        await expireDueHolds(tx, { fieldId: target.id, cutoff: now });
-        const hours = await tx
-          .select({
-            weekday: venueHours.weekday,
-            openMinute: venueHours.openMinute,
-            closeMinute: venueHours.closeMinute,
-          })
-          .from(venueHours)
-          .where(eq(venueHours.venueId, target.venueId));
-        const rules = await tx
-          .select()
-          .from(priceRule)
-          .where(eq(priceRule.fieldId, target.id))
-          .orderBy(asc(priceRule.startMinute), asc(priceRule.id));
-        const busy = await loadBusy(tx, [target.id], startsAt, endsAt, now);
-        const result = validateBooking({
-          start: startsAt,
+        const { target, now, result } = await validateUnderFieldLock(tx, {
+          fieldId: owned.id,
+          startsAt,
           durationMinutes: input.durationMinutes,
-          tz: place.timezone,
-          now,
-          hours,
-          field: target,
-          rules,
-          busy: busy.get(target.id) ?? [],
-          horizonDays: AVAILABILITY_HORIZON_DAYS,
+          audience: 'owner',
         });
-        if (!result.ok) {
-          throw bookingRuleError(result.code, target.minSlotMinutes);
-        }
         const [row] = await tx
           .insert(booking)
           .values({
@@ -252,11 +195,7 @@ export class AgendaService {
             status: 'confirmed',
             period: { startsAt, endsAt },
             totalCents: result.totalCents,
-            priceBreakdown: result.segments.map((segment) => ({
-              startsAt: segment.startsAt.toISOString(),
-              endsAt: segment.endsAt.toISOString(),
-              priceCents: segment.priceCents,
-            })),
+            priceBreakdown: toPriceBreakdown(result.segments),
             confirmedAt: now,
             customerName: input.customerName,
             customerPhone: input.customerPhone ?? null,

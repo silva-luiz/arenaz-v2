@@ -43,8 +43,13 @@ export async function missingForPublish(
 }
 
 /**
- * Locks the venue row (`SELECT ... FOR NO KEY UPDATE`) and returns its status, so
+ * Locks the venue row (`FOR NO KEY UPDATE`) and returns its status, so
  * concurrent publish/mutation transactions run one after the other.
+ *
+ * Not `FOR UPDATE`: inserting a booking takes FOR KEY SHARE on its venue (FK)
+ * while holding the field lock, and FOR UPDATE would deadlock with that
+ * (venue -> field here, field -> venue there). NO KEY UPDATE still excludes
+ * other owner transactions.
  */
 export async function lockVenueStatus(
   tx: Reader,
@@ -54,10 +59,6 @@ export async function lockVenueStatus(
     .select({ status: venue.status })
     .from(venue)
     .where(eq(venue.id, venueId))
-    // NO KEY UPDATE, not UPDATE: inserting a booking takes FOR KEY SHARE on
-    // its venue (foreign key) while holding the field lock, and FOR UPDATE
-    // would deadlock with that (venue -> field here, field -> venue there).
-    // NO KEY UPDATE still excludes other owner transactions.
     .for('no key update');
   return row?.status;
 }

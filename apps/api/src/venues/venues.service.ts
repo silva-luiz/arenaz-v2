@@ -28,8 +28,11 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
-import { VENUE_HAS_BOOKINGS } from '../booking/booking-errors.js';
-import { hasUpcomingActiveBooking } from '../booking/busy.js';
+import {
+  VENUE_HAS_BOOKINGS,
+  VENUE_HAS_PAID_HISTORY,
+} from '../booking/booking-errors.js';
+import { hasPaidHistory, hasUpcomingActiveBooking } from '../booking/busy.js';
 import { dbNow } from '../common/db-clock.js';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { textOrNull } from '../common/text.js';
@@ -301,7 +304,11 @@ export class VenuesService {
         .select({ storageKey: venuePhoto.storageKey })
         .from(venuePhoto)
         .where(eq(venuePhoto.venueId, owned.id));
-      // Only history is left: bookings reference field and venue with RESTRICT.
+      if (await hasPaidHistory(tx, { venueId: owned.id })) {
+        throw new ConflictException(VENUE_HAS_PAID_HISTORY);
+      }
+      // Only unpaid rows are left; bookings reference field and venue with
+      // RESTRICT, so they go with the venue.
       await tx.delete(booking).where(eq(booking.venueId, owned.id));
       await tx.delete(venue).where(eq(venue.id, owned.id));
       return photos.map((photo) => photo.storageKey);
