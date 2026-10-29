@@ -255,7 +255,7 @@ test('anônimo escolhe 2 horários, entra, paga e o dono vê na agenda', async (
     const table = agenda.getByRole('table');
     await expect(
       table.getByRole('button', {
-        name: new RegExp(`^Reserva de ${first}.*, confirmada$`),
+        name: new RegExp(`, reserva de ${first}.*, pelo app, confirmada$`),
       }),
     ).toBeVisible();
     expect(await seriousViolations(agenda), 'violações na agenda').toEqual([]);
