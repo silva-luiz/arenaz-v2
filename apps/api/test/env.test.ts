@@ -13,10 +13,36 @@ const valid = {
   S3_ACCESS_KEY_ID: 'minioadmin',
   S3_SECRET_ACCESS_KEY: 'minioadmin',
   S3_PUBLIC_URL: 'http://localhost:9000/arenaz-photos',
+  PAYMENT_PROVIDER: 'fake',
   NODE_ENV: 'test',
 };
 
 describe('loadEnv', () => {
+  it('exige PAYMENT_PROVIDER', () => {
+    const rest: Record<string, string | undefined> = { ...valid };
+    delete rest.PAYMENT_PROVIDER;
+    expect(() => loadEnv(rest)).toThrow(/PAYMENT_PROVIDER/);
+  });
+
+  it('rejeita PAYMENT_PROVIDER desconhecido', () => {
+    expect(() => loadEnv({ ...valid, PAYMENT_PROVIDER: 'stripe' })).toThrow(
+      /PAYMENT_PROVIDER/,
+    );
+  });
+
+  it('aceita PAYMENT_PROVIDER=fake fora de produção', () => {
+    expect(loadEnv(valid).PAYMENT_PROVIDER).toBe('fake');
+    expect(
+      loadEnv({ ...valid, NODE_ENV: 'development' }).PAYMENT_PROVIDER,
+    ).toBe('fake');
+  });
+
+  it('recusa PAYMENT_PROVIDER=fake em produção, citando a variável', () => {
+    expect(() => loadEnv({ ...valid, NODE_ENV: 'production' })).toThrow(
+      /PAYMENT_PROVIDER: não pode ser "fake" com NODE_ENV=production/,
+    );
+  });
+
   it('lista variáveis faltando', () => {
     expect(() => loadEnv({})).toThrow(/DATABASE_URL[\s\S]*BETTER_AUTH_SECRET/);
   });
@@ -144,10 +170,11 @@ describe('loadEnv', () => {
   });
 
   it('aceita GEO_PROVIDER=http em produção', () => {
-    expect(
-      loadEnv({ ...valid, GEO_PROVIDER: 'http', NODE_ENV: 'production' })
-        .GEO_PROVIDER,
-    ).toBe('http');
+    // Production cannot boot until the real payment provider exists (Plano 4),
+    // so the only complaint left must be about PAYMENT_PROVIDER.
+    expect(() =>
+      loadEnv({ ...valid, GEO_PROVIDER: 'http', NODE_ENV: 'production' }),
+    ).not.toThrow(/GEO_PROVIDER/);
   });
 
   it('rejeita GEO_PROVIDER desconhecido', () => {

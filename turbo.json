@@ -33,6 +33,7 @@
         "E2E_WEB_PORT",
         "E2E_API_PORT",
         "GEO_PROVIDER",
+        "PAYMENT_PROVIDER",
         "S3_ENDPOINT",
         "S3_REGION",
         "S3_BUCKET",

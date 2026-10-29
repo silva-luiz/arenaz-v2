@@ -24,6 +24,8 @@ export const testEnv: Env = {
   S3_FORCE_PATH_STYLE: true,
   // No network in tests: CEP lookups hit the fixed table.
   GEO_PROVIDER: 'fake',
+  // No real charges in tests: the simulated pix provider.
+  PAYMENT_PROVIDER: 'fake',
   NODE_ENV: 'test',
 };
 

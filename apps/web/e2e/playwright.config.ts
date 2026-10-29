@@ -50,6 +50,8 @@ const apiEnv: Record<string, string> = {
   ...storageEnv,
   NODE_ENV: 'test',
   GEO_PROVIDER: 'fake',
+  // Simulated pix: required by the API, refused with NODE_ENV=production.
+  PAYMENT_PROVIDER: 'fake',
 };
 
 // Shared packages (contracts, db) and the API are built once, before

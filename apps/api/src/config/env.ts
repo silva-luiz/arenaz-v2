@@ -21,6 +21,9 @@ function booleanString() {
     .transform((value) => value === 'true');
 }
 
+/** The simulated pix provider (a plain string test: more providers come with Plano 4). */
+export const isFakePayment = (provider: string): boolean => provider === 'fake';
+
 const envSchema = z
   .object({
     DATABASE_URL: urlWithProtocol(
@@ -53,6 +56,11 @@ const envSchema = z
     /** `fake` is a fixed table for tests and e2e; never allowed in production. */
     GEO_PROVIDER: z.enum(['http', 'fake']).default('http'),
     /**
+     * Payment provider. Only `fake` (simulated pix, no money moves) exists until
+     * Plano 4 adds the real one; so the API cannot boot in production yet.
+     */
+    PAYMENT_PROVIDER: z.enum(['fake']),
+    /**
      * Shared secret of server-to-server callers (the web's SSR). A request with
      * the same `x-internal-token` skips the rate limits. Absent or empty = off.
      */
@@ -69,6 +77,15 @@ const envSchema = z
     {
       path: ['GEO_PROVIDER'],
       error: 'não pode ser "fake" com NODE_ENV=production',
+    },
+  )
+  .refine(
+    (env) =>
+      !(isFakePayment(env.PAYMENT_PROVIDER) && env.NODE_ENV === 'production'),
+    {
+      path: ['PAYMENT_PROVIDER'],
+      error:
+        'não pode ser "fake" com NODE_ENV=production (o provedor real chega no Plano 4)',
     },
   );
 

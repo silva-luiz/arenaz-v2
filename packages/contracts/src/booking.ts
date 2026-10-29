@@ -16,6 +16,11 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   expired: 'Expirada',
 };
 
+/** How long a hold waits for the payment. */
+export const HOLD_MINUTES = 10;
+/** Holds a player may have waiting for payment at once. */
+export const MAX_ACTIVE_HOLDS = 3;
+
 export const BOOKING_MIN_MINUTES = 30;
 export const BOOKING_MAX_MINUTES = 360;
 
@@ -64,3 +69,10 @@ export const bookingSchema = z.object({
   address: bookingAddressSchema.nullable(),
 });
 export type Booking = z.infer<typeof bookingSchema>;
+
+/** Answer of the player's cancellation: the message says what happens next. */
+export const cancelBookingResponseSchema = z.object({
+  message: z.string(),
+  booking: bookingSchema,
+});
+export type CancelBookingResponse = z.infer<typeof cancelBookingResponseSchema>;

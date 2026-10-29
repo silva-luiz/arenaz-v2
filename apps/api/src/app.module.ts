@@ -2,12 +2,14 @@ import { Module, type DynamicModule } from '@nestjs/common';
 import type { FastifyBaseLogger } from 'fastify';
 import { AvailabilityModule } from './availability/availability.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { BookingsModule } from './booking/bookings.module.js';
 import type { Env } from './config/env.js';
 import { DbModule, type DbModuleOptions } from './db/db.module.js';
 import { FieldsModule } from './fields/fields.module.js';
 import { GeoModule } from './geo/geo.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PhotosModule } from './photos/photos.module.js';
+import { PaymentsModule } from './payments/payments.module.js';
 import { PublicVenuesModule } from './public/public-venues.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { VenuesModule } from './venues/venues.module.js';
@@ -32,6 +34,8 @@ export class AppModule {
         PhotosModule,
         PublicVenuesModule,
         AvailabilityModule,
+        BookingsModule,
+        PaymentsModule.forRoot(env),
       ],
     };
   }
