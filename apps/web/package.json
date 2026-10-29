@@ -9,7 +9,8 @@
     "start": "node scripts/next.mjs start",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "dependencies": {
     "@arenaz/contracts": "workspace:*",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@arenaz/config": "workspace:*",
     "@next/eslint-plugin-next": "^16.4.3",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

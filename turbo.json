@@ -16,6 +16,17 @@
       "dependsOn": ["^build"],
       "env": ["DATABASE_URL"]
     },
+    "e2e": {
+      "cache": false,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "BETTER_AUTH_SECRET",
+        "CI",
+        "E2E_WEB_PORT",
+        "E2E_API_PORT"
+      ]
+    },
     "dev": {
       "dependsOn": ["^build"],
       "cache": false,

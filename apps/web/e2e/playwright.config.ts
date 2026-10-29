@@ -1,0 +1,76 @@
+import { defineConfig, devices } from '@playwright/test';
+
+// Dedicated ports so the suite never collides with (or attaches to) a dev
+// server that may already be running on 3000/4000.
+const webPort = Number(process.env.E2E_WEB_PORT ?? 3100);
+const apiPort = Number(process.env.E2E_API_PORT ?? 4100);
+const webOrigin = `http://localhost:${String(webPort)}`;
+const apiOrigin = `http://localhost:${String(apiPort)}`;
+
+// Fixed TEST value (not a secret); only used against the throwaway e2e servers.
+const TEST_AUTH_SECRET =
+  'e2e-only-test-secret-not-for-production-use-0123456789';
+
+const isCI = Boolean(process.env.CI);
+
+// Playwright merges these over `process.env`. `DATABASE_URL` is forwarded when
+// set; otherwise the apps fall back to the monorepo root `.env`.
+const sharedEnv: Record<string, string> = {
+  NODE_ENV: 'production',
+  API_PORT: String(apiPort),
+  API_URL: apiOrigin,
+  WEB_ORIGIN: webOrigin,
+  BETTER_AUTH_URL: webOrigin,
+  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? TEST_AUTH_SECRET,
+  REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  ...(process.env.DATABASE_URL === undefined
+    ? {}
+    : { DATABASE_URL: process.env.DATABASE_URL }),
+};
+
+// Each command builds what it needs and starts it. `pnpm --filter "<pkg>..."`
+// builds the package's workspace dependencies first (topological order), and
+// the web build runs outside the turbo cache because the `/api/*` rewrite
+// destination (`API_URL`) is baked into the build.
+const SERVER_TIMEOUT_MS = 5 * 60 * 1000;
+
+export default defineConfig({
+  testDir: '.',
+  testMatch: '**/*.spec.ts',
+  outputDir: './test-results',
+  fullyParallel: false,
+  workers: 1,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: './playwright-report', open: 'never' }],
+  ],
+  use: {
+    baseURL: webOrigin,
+    trace: 'retain-on-failure',
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: [
+    {
+      command:
+        'pnpm --filter "@arenaz/api..." build && pnpm --filter @arenaz/db migrate && pnpm --filter @arenaz/api start',
+      url: `${apiOrigin}/api/health`,
+      env: sharedEnv,
+      reuseExistingServer: false,
+      timeout: SERVER_TIMEOUT_MS,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+    {
+      command:
+        'pnpm --filter "@arenaz/web..." build && pnpm --filter @arenaz/web start',
+      url: `${webOrigin}/entrar`,
+      env: { ...sharedEnv, WEB_PORT: String(webPort) },
+      reuseExistingServer: false,
+      timeout: SERVER_TIMEOUT_MS,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+  ],
+});
