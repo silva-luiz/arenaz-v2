@@ -10,6 +10,7 @@ import { BookingCard } from '@/components/public/booking-card';
 import { ShareButton } from '@/components/public/share-button';
 import { VenueDetails } from '@/components/public/venue-details';
 import { publicGet } from '@/lib/public-api';
+import { lowestPriceCents } from '@/lib/price-rule-summary';
 import { absoluteUrl } from '@/lib/site';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
 
@@ -100,7 +101,7 @@ export default async function VenuePage({ params }: Props) {
   }));
   const minPrice =
     venue.fields.length > 0
-      ? Math.min(...venue.fields.map((field) => field.basePriceCentsPerHour))
+      ? Math.min(...venue.fields.map(lowestPriceCents))
       : null;
 
   return (

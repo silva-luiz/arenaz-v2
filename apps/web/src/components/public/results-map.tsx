@@ -12,6 +12,7 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
+import { MapZoomControl } from '@/components/ui/map-zoom-control';
 import { AppLink } from '@/components/ui/next-link';
 import { priceIcon } from './map-pin';
 
@@ -256,6 +257,7 @@ export default function ResultsMap({
         center={FALLBACK_CENTER}
         zoom={FALLBACK_ZOOM}
         zoomAnimation={!prefersReducedMotion()}
+        zoomControl={false}
         className="size-full"
       >
         <TileLayer
@@ -263,6 +265,7 @@ export default function ResultsMap({
           attribution={OSM_ATTRIBUTION}
           maxZoom={19}
         />
+        <MapZoomControl />
         <FitResults points={points} />
         <HidePinsFromAssistiveTech />
         <RevealClicked request={revealRequest} />

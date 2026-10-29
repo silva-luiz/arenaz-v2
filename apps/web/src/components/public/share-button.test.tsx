@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ShareButton } from './share-button';
@@ -111,5 +111,81 @@ describe('ShareButton', () => {
     expect(
       await screen.findByRole('textbox', { name: 'Link do espaço' }),
     ).toHaveValue(PAGE_URL);
+  });
+
+  it('copies the link when the share sheet fails for a reason other than a dismissal', async () => {
+    const share = vi.fn<(data: ShareData) => Promise<void>>(() =>
+      Promise.reject(new DOMException('blocked', 'NotAllowedError')),
+    );
+    const writeText = vi.fn<(text: string) => Promise<void>>(() =>
+      Promise.resolve(),
+    );
+    const user = userEvent.setup();
+    stubNavigator({ share, writeText });
+    render(<ShareButton title="Arena" />);
+
+    await user.click(screen.getByRole('button', { name: 'Compartilhar' }));
+
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith(PAGE_URL);
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Link copiado');
+    });
+  });
+
+  it('clears "Link copiado" after a few seconds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const writeText = vi.fn<(text: string) => Promise<void>>(() =>
+        Promise.resolve(),
+      );
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      stubNavigator({ writeText });
+      render(<ShareButton title="Arena" />);
+
+      await user.click(screen.getByRole('button', { name: 'Compartilhar' }));
+      await waitFor(() => {
+        expect(screen.getByRole('status')).toHaveTextContent('Link copiado');
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(4000);
+      });
+
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('focuses the manual link, announces it and closes with "Fechar"', async () => {
+    const user = userEvent.setup();
+    stubNavigator({});
+    render(<ShareButton title="Arena" />);
+
+    await user.click(screen.getByRole('button', { name: 'Compartilhar' }));
+
+    const input = screen.getByRole('textbox', { name: 'Link do espaço' });
+    expect(input).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Copie o link no campo que apareceu.',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Fechar' }));
+
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Compartilhar' })).toHaveFocus();
+  });
+
+  it('closes the manual link with Esc and gives the focus back', async () => {
+    const user = userEvent.setup();
+    stubNavigator({});
+    render(<ShareButton title="Arena" />);
+
+    await user.click(screen.getByRole('button', { name: 'Compartilhar' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Compartilhar' })).toHaveFocus();
   });
 });

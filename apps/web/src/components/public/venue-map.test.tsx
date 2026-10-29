@@ -36,6 +36,19 @@ vi.mock('react-leaflet', () => ({
     captured.circles.push(props);
     return <div data-testid="circle" />;
   },
+  ZoomControl: ({
+    zoomInTitle,
+    zoomOutTitle,
+  }: {
+    zoomInTitle: string;
+    zoomOutTitle: string;
+  }) => (
+    <div
+      data-testid="zoom-control"
+      data-in={zoomInTitle}
+      data-out={zoomOutTitle}
+    />
+  ),
   Marker: () => {
     captured.markers += 1;
     return <div data-testid="marker" />;
@@ -68,7 +81,16 @@ describe('VenueMap', () => {
     expect(captured.markers).toBe(0);
   });
 
-  it('cannot be dragged or zoomed by accident, but keeps the zoom buttons', () => {
+  it('has zoom buttons named in Portuguese', () => {
+    render(<VenueMap lat={-23.55} lng={-46.69} />);
+
+    expect(captured.map?.zoomControl).toBe(false);
+    const zoom = screen.getByTestId('zoom-control');
+    expect(zoom).toHaveAttribute('data-in', 'Aproximar');
+    expect(zoom).toHaveAttribute('data-out', 'Afastar');
+  });
+
+  it('cannot be dragged or zoomed by accident', () => {
     render(<VenueMap lat={-23.55} lng={-46.69} />);
 
     expect(captured.map).toMatchObject({
@@ -76,7 +98,6 @@ describe('VenueMap', () => {
       scrollWheelZoom: false,
       doubleClickZoom: false,
     });
-    expect(captured.map?.zoomControl).not.toBe(false);
   });
 
   it('is a labelled region that keeps its panes under the sticky header', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeVenue } from '@/components/public/venue-fixture';
+import { makeVenue } from '@/test/venue-fixture';
 import { serializeJsonLd, venueJsonLd } from './venue-jsonld';
 
 const PAGE_URL = 'https://arenaz.test/espacos/arena-vila-madalena';
@@ -80,5 +80,16 @@ describe('serializeJsonLd', () => {
     expect(JSON.parse(json)).toEqual({
       name: '</script><script>alert(1)</script>',
     });
+  });
+
+  it('escapes the line and paragraph separators too', () => {
+    const ls = String.fromCharCode(0x2028);
+    const ps = String.fromCharCode(0x2029);
+    const json = serializeJsonLd({ name: `a${ls}b${ps}c` });
+
+    expect(json).not.toContain(ls);
+    expect(json).not.toContain(ps);
+    expect(json).toContain('a\\u2028b\\u2029c');
+    expect(JSON.parse(json)).toEqual({ name: `a${ls}b${ps}c` });
   });
 });

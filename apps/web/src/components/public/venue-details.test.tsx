@@ -12,7 +12,7 @@ vi.mock('next/dynamic', () => ({
 }));
 
 import { VenueDetails } from './venue-details';
-import { makeField, makeVenue } from './venue-fixture';
+import { makeField, makeVenue } from '@/test/venue-fixture';
 
 function section(name: string) {
   return screen.getByRole('region', { name });

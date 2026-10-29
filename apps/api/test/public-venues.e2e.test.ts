@@ -341,21 +341,33 @@ describe('GET /api/venues', () => {
     expect(body.items[0]?.distanceKm).toBeCloseTo(5.5, 1);
   });
 
-  it('minPrice e esportes ignoram quadra inativa e faixa de preço', async () => {
+  it('minPrice conta faixa mais barata de quadra ativa, mas não quadra inativa nem faixa mais cara', async () => {
     const token = uniqueToken();
     const target = await seed({
       neighborhood: `Preço ${token}`,
       fields: [
-        { sports: ['tenis'], price: 5000, active: false },
-        { sports: ['padel', 'futsal'], price: 9000, rules: [{ price: 1000 }] },
-        { sports: ['futsal', 'beach_tennis'], price: 7000 },
+        // Inactive: neither its base price nor its (cheaper) rule count.
+        {
+          sports: ['tenis'],
+          price: 5000,
+          active: false,
+          rules: [{ price: 500 }],
+        },
+        // A cheaper rule lowers the minimum.
+        { sports: ['padel', 'futsal'], price: 9000, rules: [{ price: 6000 }] },
+        // A more expensive rule does not.
+        {
+          sports: ['futsal', 'beach_tennis'],
+          price: 7000,
+          rules: [{ price: 8000 }],
+        },
       ],
     });
     const body = await search(q(token));
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({
       slug: target.slug,
-      minPriceCentsPerHour: 7000,
+      minPriceCentsPerHour: 6000,
       // Deduplicated, in the catalog's order, without the inactive field's.
       sports: ['futsal', 'beach_tennis', 'padel'],
     });

@@ -15,6 +15,12 @@ const NOTICE_ID = 'reserva-aviso';
  * direct child of the page's content wrapper: `sticky` only moves inside its
  * parent, and on a phone that must be the whole page content.
  *
+ * Focus must not hide under the bar (WCAG 2.4.11): the bar has a FIXED height,
+ * the `--booking-bar-h` variable of `globals.css`, and the same variable feeds
+ * the `scroll-padding-bottom` of `<html>` while a page with a `data-booking-bar`
+ * element is shown (`html:has([data-booking-bar])`, below `lg`). The text may
+ * wrap, but never grows the bar.
+ *
  * The button is `aria-disabled`, not `disabled`: it stays reachable with the
  * keyboard and the explanation is read with it. It has no handler, so a click
  * does nothing.
@@ -22,15 +28,16 @@ const NOTICE_ID = 'reserva-aviso';
 export function BookingCard({
   minPriceCentsPerHour,
 }: {
-  /** Lowest base price among the courts; `null` if there is none. */
+  /** Lowest price among the courts (base or rule); `null` if there is none. */
   minPriceCentsPerHour: number | null;
 }) {
   return (
     <aside
       aria-label="Reserva"
-      className="sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-30 -mx-4 border-t border-line bg-bg px-4 py-3 shadow-1 md:-mx-10 md:bottom-0 md:px-10 lg:col-start-2 lg:row-start-1 lg:top-28 lg:bottom-auto lg:mx-0 lg:self-start lg:rounded-card lg:border lg:p-6 lg:shadow-3"
+      data-booking-bar=""
+      className="h-(--booking-bar-h) lg:h-auto sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-30 -mx-4 border-t border-line bg-bg px-4 py-2 shadow-1 md:-mx-10 md:bottom-0 md:px-10 lg:col-start-2 lg:row-start-1 lg:top-28 lg:bottom-auto lg:mx-0 lg:self-start lg:rounded-card lg:border lg:p-6 lg:shadow-3"
     >
-      <div className="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:gap-4">
+      <div className="flex h-full items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:gap-4">
         <div className="min-w-0">
           {minPriceCentsPerHour === null ? null : (
             <PriceTag

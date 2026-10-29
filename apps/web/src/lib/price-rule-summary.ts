@@ -28,25 +28,40 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} e ${items.at(-1) ?? ''}`;
 }
 
-/** Splits sorted weekdays into runs of consecutive days. */
+/** Position of a weekday (0 = Sunday) in a week that starts on Monday. */
+function mondayFirst(weekday: number): number {
+  return (weekday + 6) % DAYS_IN_WEEK;
+}
+
+/** Splits weekdays (sorted Monday first) into runs of consecutive days. */
 function runsOf(sorted: number[]): number[][] {
   const runs: number[][] = [];
   for (const day of sorted) {
     const run = runs.at(-1);
-    if (run && run.at(-1) === day - 1) run.push(day);
-    else runs.push([day]);
+    const previous = run?.at(-1);
+    if (
+      run &&
+      previous !== undefined &&
+      mondayFirst(previous) === mondayFirst(day) - 1
+    ) {
+      run.push(day);
+    } else {
+      runs.push([day]);
+    }
   }
   return runs;
 }
 
 /**
- * The days of a price rule in words. Runs of 3 or more consecutive days
- * collapse ("Seg a Sex"), the others are listed ("Seg, Qua e Sex", "Sex e
- * Sáb"). Days are ordered by index with Sunday first, so a weekend written as
- * Sat + Sun reads "Dom e Sáb": no wrap-around special case.
+ * The days of a price rule in words, the week starting on Monday as
+ * Brazilians read it. Runs of 3 or more consecutive days collapse ("Seg a
+ * Sex", "Sex a Dom": Sunday follows Saturday), the others are listed ("Seg,
+ * Qua e Sex", "Sáb e Dom").
  */
 function describeDays(weekdays: number[]): string {
-  const sorted = [...new Set(weekdays)].sort((a, b) => a - b);
+  const sorted = [...new Set(weekdays)].sort(
+    (a, b) => mondayFirst(a) - mondayFirst(b),
+  );
   if (sorted.length === DAYS_IN_WEEK) return 'Todos os dias';
 
   const parts = runsOf(sorted).flatMap((run) => {
@@ -63,4 +78,18 @@ function describeDays(weekdays: number[]): string {
 /** "Sex e Sáb, 18h–23h: R$ 250 / hora" */
 export function summarizePriceRule(rule: PriceRule): string {
   return `${describeDays(rule.weekdays)}, ${formatClock(rule.startMinute)}–${formatClock(rule.endMinute)}: ${formatPrice(rule.priceCentsPerHour)} / hora`;
+}
+
+/**
+ * The lowest price per hour of a court: its base price or the cheapest of its
+ * price rules. This is what "a partir de" means everywhere (the API's search
+ * card uses the same definition).
+ */
+export function lowestPriceCents(
+  field: Pick<PublicField, 'basePriceCentsPerHour' | 'priceRules'>,
+): number {
+  return Math.min(
+    field.basePriceCentsPerHour,
+    ...field.priceRules.map((rule) => rule.priceCentsPerHour),
+  );
 }

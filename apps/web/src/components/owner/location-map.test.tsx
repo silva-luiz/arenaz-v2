@@ -28,16 +28,35 @@ vi.mock('react-leaflet', () => ({
   MapContainer: ({
     children,
     dragging,
+    zoomControl,
   }: {
     children: ReactNode;
     dragging?: boolean;
+    zoomControl?: boolean;
   }) => (
-    <div data-testid="map-container" data-dragging={String(dragging)}>
+    <div
+      data-testid="map-container"
+      data-dragging={String(dragging)}
+      data-zoom-control={String(zoomControl)}
+    >
       {children}
     </div>
   ),
   TileLayer: ({ url, attribution }: { url: string; attribution: string }) => (
     <div data-testid="tiles" data-url={url} data-attribution={attribution} />
+  ),
+  ZoomControl: ({
+    zoomInTitle,
+    zoomOutTitle,
+  }: {
+    zoomInTitle: string;
+    zoomOutTitle: string;
+  }) => (
+    <div
+      data-testid="zoom-control"
+      data-in={zoomInTitle}
+      data-out={zoomOutTitle}
+    />
   ),
   Marker: (props: MarkerProps) => {
     captured.marker = props;
@@ -65,6 +84,18 @@ describe('LocationMap', () => {
     captured.marker = null;
     captured.events = null;
     captured.inView = false;
+  });
+
+  it('has zoom buttons named in Portuguese', () => {
+    render(<LocationMap value={null} onChange={onChange} />);
+
+    expect(screen.getByTestId('map-container')).toHaveAttribute(
+      'data-zoom-control',
+      'false',
+    );
+    const zoom = screen.getByTestId('zoom-control');
+    expect(zoom).toHaveAttribute('data-in', 'Aproximar');
+    expect(zoom).toHaveAttribute('data-out', 'Afastar');
   });
 
   it('uses OpenStreetMap tiles with attribution', () => {

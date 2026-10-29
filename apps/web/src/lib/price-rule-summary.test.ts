@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { formatClock, summarizePriceRule } from './price-rule-summary';
+import {
+  formatClock,
+  lowestPriceCents,
+  summarizePriceRule,
+} from './price-rule-summary';
 
 function rule(
   weekdays: number[],
@@ -62,12 +66,24 @@ describe('summarizePriceRule', () => {
     expect(summarizePriceRule(rule([6]))).toBe('Sáb, 18h–23h: R$ 250 / hora');
   });
 
-  it('orders by weekday index with Sunday first, however they arrive', () => {
-    expect(summarizePriceRule(rule([6, 0]))).toBe(
-      'Dom e Sáb, 18h–23h: R$ 250 / hora',
+  it('orders the days with the week starting on Monday, however they arrive', () => {
+    expect(summarizePriceRule(rule([0, 6]))).toBe(
+      'Sáb e Dom, 18h–23h: R$ 250 / hora',
     );
     expect(summarizePriceRule(rule([5, 4, 3]))).toBe(
       'Qua a Sex, 18h–23h: R$ 250 / hora',
+    );
+  });
+
+  it('treats Sunday after Saturday as consecutive', () => {
+    expect(summarizePriceRule(rule([0, 5, 6]))).toBe(
+      'Sex a Dom, 18h–23h: R$ 250 / hora',
+    );
+    expect(summarizePriceRule(rule([0, 1, 2]))).toBe(
+      'Seg, Ter e Dom, 18h–23h: R$ 250 / hora',
+    );
+    expect(summarizePriceRule(rule([6, 0, 1]))).toBe(
+      'Seg, Sáb e Dom, 18h–23h: R$ 250 / hora',
     );
   });
 
@@ -87,5 +103,34 @@ describe('summarizePriceRule', () => {
     const weekdays = [6, 0, 5];
     summarizePriceRule(rule(weekdays));
     expect(weekdays).toEqual([6, 0, 5]);
+  });
+});
+
+describe('lowestPriceCents', () => {
+  const rules = (...prices: number[]) =>
+    prices.map((price) => rule([6], 600, 720, price));
+
+  it('is the base price without rules', () => {
+    expect(
+      lowestPriceCents({ basePriceCentsPerHour: 9000, priceRules: [] }),
+    ).toBe(9000);
+  });
+
+  it('is a cheaper rule when there is one', () => {
+    expect(
+      lowestPriceCents({
+        basePriceCentsPerHour: 9000,
+        priceRules: rules(12000, 6000),
+      }),
+    ).toBe(6000);
+  });
+
+  it('ignores rules that cost more than the base price', () => {
+    expect(
+      lowestPriceCents({
+        basePriceCentsPerHour: 9000,
+        priceRules: rules(12000, 9000),
+      }),
+    ).toBe(9000);
   });
 });

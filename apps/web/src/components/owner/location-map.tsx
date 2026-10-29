@@ -10,6 +10,7 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
+import { MapZoomControl } from '@/components/ui/map-zoom-control';
 import type { LatLngValue } from './location-picker';
 
 /** Brazil, for when there is no location yet. */
@@ -89,6 +90,7 @@ export default function LocationMap({ value, onChange }: LocationMapProps) {
       center={value ? [value.lat, value.lng] : BRAZIL_CENTER}
       zoom={value ? PIN_ZOOM : BRAZIL_ZOOM}
       scrollWheelZoom={false}
+      zoomControl={false}
       // A one-finger drag would otherwise trap the page scroll on phones; the
       // pin itself stays draggable and a tap still places it.
       dragging={!L.Browser.mobile}
@@ -99,6 +101,7 @@ export default function LocationMap({ value, onChange }: LocationMapProps) {
         attribution={OSM_ATTRIBUTION}
         maxZoom={19}
       />
+      <MapZoomControl />
       <ClickToPlace onChange={onChange} />
       <FollowValue value={value} />
       {value ? (

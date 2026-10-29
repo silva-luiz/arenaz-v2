@@ -37,3 +37,31 @@ html {
     scroll-padding-bottom: 0;
   }
 }
+
+/*
+ * Venue page: the booking bar sticks to the bottom of the viewport below `lg`
+ * (above the tab bar until `md`), so focus and anchors must not land under it
+ * either. The bar has the fixed height `--booking-bar-h` (booking-card.tsx);
+ * while the page has one, that height is added to the scroll padding. `:has()`
+ * (Chromium 105, Safari 15.4, Firefox 121) keeps this in CSS, without script;
+ * where it is missing the padding is just the tab bar's, as on other pages.
+ * From `lg` up the card is in the right column and nothing is added.
+ */
+:root {
+  --booking-bar-h: 4.5rem;
+}
+html:has([data-booking-bar]) {
+  scroll-padding-bottom: calc(
+    57px + env(safe-area-inset-bottom) + var(--booking-bar-h)
+  );
+}
+@media (min-width: 768px) {
+  html:has([data-booking-bar]) {
+    scroll-padding-bottom: var(--booking-bar-h);
+  }
+}
+@media (min-width: 1024px) {
+  html:has([data-booking-bar]) {
+    scroll-padding-bottom: 0;
+  }
+}

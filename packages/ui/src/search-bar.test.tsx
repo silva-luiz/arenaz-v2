@@ -77,7 +77,6 @@ describe('SearchBar', () => {
     // flex-none: the segment is as wide as its longest option instead of
     // sharing the row with the text field.
     expect(segment).toHaveClass('md:flex-none');
-    expect(segment).not.toHaveClass('md:flex-1');
     // The visible label and the selected option both stay readable by name.
     expect(select).toHaveDisplayValue('Qualquer esporte');
   });

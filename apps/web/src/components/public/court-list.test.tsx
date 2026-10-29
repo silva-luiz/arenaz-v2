@@ -6,7 +6,7 @@ import {
   formatMeasures,
   formatMinSlot,
 } from './court-list';
-import { makeField } from './venue-fixture';
+import { makeField } from '@/test/venue-fixture';
 
 const SECOND_ID = '11111111-1111-4111-8111-111111111112';
 
@@ -94,20 +94,42 @@ describe('CourtList', () => {
     expect(second).toHaveTextContent('R$ 90,50 / hora');
   });
 
-  it('says "a partir de" only for a court with price rules', () => {
+  const rule = (priceCentsPerHour: number) => ({
+    weekdays: [5, 6],
+    startMinute: 1080,
+    endMinute: 1380,
+    priceCentsPerHour,
+    label: null,
+  });
+
+  it('says "a partir de" with the lowest price when a rule is cheaper than the base', () => {
     render(
       <CourtList
         fields={[
           makeField({
-            priceRules: [
-              {
-                weekdays: [5, 6],
-                startMinute: 1080,
-                endMinute: 1380,
-                priceCentsPerHour: 25000,
-                label: null,
-              },
-            ],
+            basePriceCentsPerHour: 18000,
+            priceRules: [rule(25000), rule(15000)],
+          }),
+        ]}
+      />,
+    );
+
+    const [court] = screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.closest('li'));
+    expect(court).toHaveTextContent('a partir de R$ 150 / hora');
+    // The rules are still listed.
+    expect(court).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 250 / hora');
+    expect(court).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 150 / hora');
+  });
+
+  it('shows the plain base price when every rule is at or above it', () => {
+    render(
+      <CourtList
+        fields={[
+          makeField({
+            basePriceCentsPerHour: 18000,
+            priceRules: [rule(25000), rule(18000)],
           }),
           makeField({ id: SECOND_ID, name: 'Quadra 2' }),
         ]}
@@ -118,7 +140,8 @@ describe('CourtList', () => {
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.closest('li'));
     if (!withRules || !plain) throw new Error('two courts expected');
-    expect(withRules).toHaveTextContent('a partir de');
+    expect(withRules).not.toHaveTextContent('a partir de');
+    expect(withRules).toHaveTextContent('R$ 180 / hora');
     expect(withRules).toHaveTextContent('Sex e Sáb, 18h–23h: R$ 250 / hora');
     expect(plain).not.toHaveTextContent('a partir de');
   });

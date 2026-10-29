@@ -4,6 +4,7 @@ import { FOCUS_RING, cn } from '@arenaz/ui';
 import { useEffect, useRef, useState } from 'react';
 
 const COPIED_MESSAGE = 'Link copiado';
+const MANUAL_MESSAGE = 'Copie o link no campo que apareceu.';
 const MESSAGE_MS = 4000;
 
 /** This page without query or hash: the link worth sharing. */
@@ -42,7 +43,9 @@ export function ShareButton({ title }: { title: string }) {
   );
 
   useEffect(() => {
-    if (manualUrl !== null) inputRef.current?.select();
+    if (manualUrl === null) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
   }, [manualUrl]);
 
   function announce(text: string) {
@@ -80,6 +83,13 @@ export function ShareButton({ title }: { title: string }) {
     }
 
     setManualUrl(url);
+    announce(MANUAL_MESSAGE);
+  }
+
+  function closePanel() {
+    setManualUrl(null);
+    setMessage('');
+    buttonRef.current?.focus();
   }
 
   return (
@@ -115,12 +125,23 @@ export function ShareButton({ title }: { title: string }) {
       <p
         role="status"
         aria-live="polite"
-        className="absolute top-full right-0 mt-1 text-sm font-semibold whitespace-nowrap text-brand"
+        // Under the manual-link panel the text would sit behind it: keep it
+        // for screen readers only while the panel is open.
+        className={cn(
+          manualUrl === null
+            ? 'absolute top-full right-0 mt-1 text-sm font-semibold whitespace-nowrap text-brand'
+            : 'sr-only',
+        )}
       >
         {message}
       </p>
       {manualUrl === null ? null : (
-        <div className="absolute top-full right-0 z-10 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-photo border border-line bg-bg p-3 shadow-3">
+        <div
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') closePanel();
+          }}
+          className="absolute top-full right-0 z-10 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-photo border border-line bg-bg p-3 shadow-3"
+        >
           <label className="block text-xs font-semibold" htmlFor="link-espaco">
             Link do espaço
           </label>
@@ -133,17 +154,23 @@ export function ShareButton({ title }: { title: string }) {
             onFocus={(event) => {
               event.currentTarget.select();
             }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                setManualUrl(null);
-                buttonRef.current?.focus();
-              }
-            }}
             className="mt-1 h-11 w-full rounded-button border border-line-control bg-bg px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           />
-          <p className="mt-1 text-xs text-muted">
-            Copie o link e envie para quem quiser.
-          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted">
+              Copie o link e envie para quem quiser.
+            </p>
+            <button
+              type="button"
+              onClick={closePanel}
+              className={cn(
+                'h-10 shrink-0 rounded-button px-3 text-sm font-semibold hover:bg-surface',
+                FOCUS_RING,
+              )}
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       )}
     </div>

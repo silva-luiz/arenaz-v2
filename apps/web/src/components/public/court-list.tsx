@@ -4,7 +4,7 @@ import {
   type PublicField,
 } from '@arenaz/contracts';
 import { PriceTag } from '@arenaz/ui';
-import { summarizePriceRule } from '@/lib/price-rule-summary';
+import { lowestPriceCents, summarizePriceRule } from '@/lib/price-rule-summary';
 
 const MINUTES_PER_HOUR = 60;
 
@@ -43,38 +43,47 @@ export function courtFacts(field: PublicField): string[] {
 }
 
 /**
- * The courts of a venue: facts, base price and the price rules in words.
- * "a partir de" only shows when a court has rules (its price then varies).
+ * The courts of a venue: facts, price and the price rules in words. A court
+ * whose cheapest rule is below its base price shows "a partir de" and that
+ * lowest price; when every rule is at or above the base price, the base price
+ * is shown as is (the rules only list the dearer hours).
  */
 export function CourtList({ fields }: { fields: PublicField[] }) {
   if (fields.length === 0) return null;
 
   return (
     <ul role="list" className="flex flex-col gap-4">
-      {fields.map((field) => (
-        <li
-          key={field.id}
-          className="rounded-photo border border-line bg-bg p-5 shadow-1"
-        >
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-            <h3 className="text-lg font-semibold">{field.name}</h3>
-            <PriceTag
-              cents={field.basePriceCentsPerHour}
-              from={field.priceRules.length > 0}
-            />
-          </div>
-          <p className="mt-1 text-sm text-muted">
-            {courtFacts(field).join(' · ')}
-          </p>
-          {field.priceRules.length > 0 ? (
-            <ul role="list" className="mt-3 flex flex-col gap-1 text-sm">
-              {field.priceRules.map((rule, index) => (
-                <li key={index}>{summarizePriceRule(rule)}</li>
-              ))}
-            </ul>
-          ) : null}
-        </li>
-      ))}
+      {fields.map((field) => {
+        const lowest = lowestPriceCents(field);
+        return (
+          <li
+            key={field.id}
+            className="rounded-photo border border-line bg-bg p-5 shadow-1"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              <h3 className="text-lg font-semibold">{field.name}</h3>
+              <PriceTag
+                cents={lowest}
+                from={lowest < field.basePriceCentsPerHour}
+              />
+            </div>
+            <p className="mt-1 text-sm text-muted">
+              {courtFacts(field).join(' · ')}
+            </p>
+            {field.priceRules.length > 0 ? (
+              <ul role="list" className="mt-3 flex flex-col gap-1 text-sm">
+                {field.priceRules.map((rule) => (
+                  <li
+                    key={`${rule.weekdays.join(',')}@${String(rule.startMinute)}-${String(rule.endMinute)}`}
+                  >
+                    {summarizePriceRule(rule)}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }

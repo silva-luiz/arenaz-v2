@@ -24,11 +24,32 @@ const captured = vi.hoisted(() => ({
 }));
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: ReactNode }) => (
-    <div data-testid="map-container">{children}</div>
+  MapContainer: ({
+    children,
+    zoomControl,
+  }: {
+    children: ReactNode;
+    zoomControl?: boolean;
+  }) => (
+    <div data-testid="map-container" data-zoom-control={String(zoomControl)}>
+      {children}
+    </div>
   ),
   TileLayer: ({ url, attribution }: { url: string; attribution: string }) => (
     <div data-testid="tiles" data-url={url} data-attribution={attribution} />
+  ),
+  ZoomControl: ({
+    zoomInTitle,
+    zoomOutTitle,
+  }: {
+    zoomInTitle: string;
+    zoomOutTitle: string;
+  }) => (
+    <div
+      data-testid="zoom-control"
+      data-in={zoomInTitle}
+      data-out={zoomOutTitle}
+    />
   ),
   Marker: (props: MarkerProps) => {
     captured.markers.push(props);
@@ -105,6 +126,25 @@ describe('ResultsMap', () => {
     expect(
       screen.getByRole('region', { name: 'Mapa dos resultados' }),
     ).toBeInTheDocument();
+  });
+
+  it('has zoom buttons named in Portuguese', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
+    );
+
+    expect(screen.getByTestId('map-container')).toHaveAttribute(
+      'data-zoom-control',
+      'false',
+    );
+    const zoom = screen.getByTestId('zoom-control');
+    expect(zoom).toHaveAttribute('data-in', 'Aproximar');
+    expect(zoom).toHaveAttribute('data-out', 'Afastar');
   });
 
   it('uses OpenStreetMap tiles with attribution', () => {

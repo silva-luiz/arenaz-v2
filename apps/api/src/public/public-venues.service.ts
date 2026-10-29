@@ -78,8 +78,9 @@ export class PublicVenuesService {
 
   /**
    * One set-based query: the published venues with at least one active
-   * field, each with its cheapest active field, the sports of its active
-   * fields and its cover photo. Fetches one extra row to know `hasMore`.
+   * field, each with its lowest price (the cheapest of the base prices AND
+   * the price rules of its active fields: that is what "a partir de" means),
+   * the sports of its active fields and its cover photo. Fetches one extra row to know `hasMore`.
    *
    * Privacy: everything geographic (radius filter, ordering, distance, the
    * returned point) uses `approx_location`, never the exact `location`. Any
@@ -132,7 +133,17 @@ export class PublicVenuesService {
              ${distance} AS distance_m
         FROM venue v
         CROSS JOIN LATERAL (
-          SELECT min(f.base_price_cents_per_hour) AS min_price,
+          SELECT (SELECT min(price.cents)
+                    FROM (
+                      SELECT f2.base_price_cents_per_hour AS cents
+                        FROM field f2
+                       WHERE f2.venue_id = v.id AND f2.is_active
+                      UNION ALL
+                      SELECT r.price_cents_per_hour
+                        FROM price_rule r
+                        JOIN field f2 ON f2.id = r.field_id
+                       WHERE f2.venue_id = v.id AND f2.is_active
+                    ) price) AS min_price,
                  array_agg(DISTINCT s.sport) AS sports
             FROM field f
             CROSS JOIN LATERAL unnest(f.sports) AS s(sport)

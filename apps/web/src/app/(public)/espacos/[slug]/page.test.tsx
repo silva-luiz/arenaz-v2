@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { makeField, makeVenue } from '@/components/public/venue-fixture';
+import { makeField, makeVenue } from '@/test/venue-fixture';
 
 const mocks = vi.hoisted(() => ({
   publicGet: vi.fn(),
@@ -116,11 +116,22 @@ describe('venue page', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the booking card with the lowest base price across courts', async () => {
+  it('shows the booking card with the lowest price across courts, rules included', async () => {
     mocks.publicGet.mockResolvedValue(
       makeVenue({
         fields: [
-          makeField({ basePriceCentsPerHour: 18000 }),
+          makeField({
+            basePriceCentsPerHour: 18000,
+            priceRules: [
+              {
+                weekdays: [1],
+                startMinute: 600,
+                endMinute: 720,
+                priceCentsPerHour: 9000,
+                label: null,
+              },
+            ],
+          }),
           makeField({
             id: '11111111-1111-4111-8111-111111111112',
             name: 'Quadra 2',
@@ -134,10 +145,37 @@ describe('venue page', () => {
 
     const card = screen.getByRole('complementary', { name: 'Reserva' });
     expect(card).toHaveTextContent('a partir de');
-    expect(card).toHaveTextContent('R$ 120,50');
+    expect(card).toHaveTextContent('R$ 90 / hora');
     expect(
       within(card).getByRole('button', { name: 'Escolher horário' }),
     ).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not let a dearer rule raise the booking card price', async () => {
+    mocks.publicGet.mockResolvedValue(
+      makeVenue({
+        fields: [
+          makeField({
+            basePriceCentsPerHour: 12050,
+            priceRules: [
+              {
+                weekdays: [5],
+                startMinute: 1080,
+                endMinute: 1380,
+                priceCentsPerHour: 30000,
+                label: null,
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+
+    await renderPage();
+
+    expect(
+      screen.getByRole('complementary', { name: 'Reserva' }),
+    ).toHaveTextContent('R$ 120,50 / hora');
   });
 
   it('has a single h1 and a labelled section per block', async () => {

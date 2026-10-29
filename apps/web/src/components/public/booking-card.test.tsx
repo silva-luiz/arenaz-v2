@@ -51,6 +51,10 @@ describe('BookingCard', () => {
     // Sticky, not fixed: in flow at the end of the page, so it never covers
     // the content or the footer.
     expect(card).toHaveClass('sticky', 'lg:rounded-card', 'lg:shadow-3');
+    // A fixed height from the shared variable, which also feeds the page's
+    // scroll padding so focus does not hide under the bar.
+    expect(card).toHaveClass('h-(--booking-bar-h)', 'lg:h-auto');
+    expect(card).toHaveAttribute('data-booking-bar');
     expect(card).not.toHaveClass('fixed');
   });
 

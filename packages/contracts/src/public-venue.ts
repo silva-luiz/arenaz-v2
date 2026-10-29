@@ -106,7 +106,10 @@ export const publicVenueCardSchema = z.object({
   state: z.string(),
   coverUrl: z.string().nullable(),
   sports: z.array(z.enum(SPORTS)),
-  /** Lowest base price among the ACTIVE fields (price rules do not count). */
+  /**
+   * Lowest price per hour among the ACTIVE fields: the base prices and every
+   * price rule count ("a partir de").
+   */
   minPriceCentsPerHour: z.number().int().positive(),
   /** Latitude and longitude rounded to 2 decimals (about 1 km). */
   approxLocation: locationSchema,

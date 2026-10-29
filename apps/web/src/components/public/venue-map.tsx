@@ -2,6 +2,7 @@
 
 import 'leaflet/dist/leaflet.css';
 import { Circle, MapContainer, TileLayer } from 'react-leaflet';
+import { MapZoomControl } from '@/components/ui/map-zoom-control';
 
 /** The public location is rounded to 2 decimals: about 1 km of uncertainty. */
 const AREA_RADIUS_M = 1000;
@@ -54,6 +55,7 @@ export default function VenueMap({ lat, lng }: VenueMapProps) {
         touchZoom={false}
         boxZoom={false}
         keyboard={false}
+        zoomControl={false}
         className="size-full"
       >
         <TileLayer
@@ -61,6 +63,7 @@ export default function VenueMap({ lat, lng }: VenueMapProps) {
           attribution={OSM_ATTRIBUTION}
           maxZoom={19}
         />
+        <MapZoomControl />
         <Circle
           center={[lat, lng]}
           radius={AREA_RADIUS_M}
