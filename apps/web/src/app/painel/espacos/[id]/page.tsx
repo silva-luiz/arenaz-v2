@@ -27,7 +27,7 @@ export default async function EspacoPage({
   );
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-3xl flex-col gap-8">
       <div>
         <Link href="/painel" className={BACK_LINK}>
           Meus espaços
@@ -37,6 +37,14 @@ export default async function EspacoPage({
           <Badge tone={venue.status === 'published' ? 'free' : 'neutral'}>
             {venue.status === 'published' ? 'Publicado' : 'Rascunho'}
           </Badge>
+          {venue.status === 'published' ? (
+            <Link
+              href={`/espacos/${venue.slug}`}
+              className={buttonClasses({ variant: 'secondary', size: 'sm' })}
+            >
+              Ver página pública
+            </Link>
+          ) : null}
         </div>
         <div className="mt-4">
           <PublishToggle venueId={venue.id} status={venue.status} />

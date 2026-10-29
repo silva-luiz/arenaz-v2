@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'Novo espaço' };
 
 export default function NovoEspacoPage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex max-w-3xl flex-col gap-6">
       <div>
         <Link
           href="/painel"

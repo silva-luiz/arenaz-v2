@@ -16,6 +16,13 @@ export function initials(name: string): string {
 
 export interface SiteHeaderProps {
   user: { name: string } | null;
+  /**
+   * Small tag beside the logo (the owner panel passes "DONO"). It sits next to
+   * the home link, not inside it, so the link keeps its own name.
+   */
+  badge?: string | undefined;
+  /** Hide the "Anuncie sua quadra" link (it is pointless for an owner). */
+  showOwnerCta?: boolean | undefined;
   /** Slot for the compact search (the home hero has the full one). */
   children?: ReactNode;
   linkComponent?: LinkComponent | undefined;
@@ -29,6 +36,8 @@ const PILL_LINK = cn(
 
 export function SiteHeader({
   user,
+  badge,
+  showOwnerCta = true,
   children,
   linkComponent,
   className,
@@ -57,6 +66,11 @@ export function SiteHeader({
             arenaz
           </span>
         </Link>
+        {badge ? (
+          <span className="shrink-0 rounded-md bg-ink px-[7px] py-[3px] text-[11px] font-bold tracking-[0.04em] text-white">
+            {badge}
+          </span>
+        ) : null}
 
         <div className="flex min-w-0 flex-1 justify-center">{children}</div>
 
@@ -65,13 +79,15 @@ export function SiteHeader({
               whole phrase, which contains the visible text (WCAG 2.5.3). The space is
               a no-break one: a plain leading space is dropped inside the flex
               link. */}
-          <Link
-            href="/painel"
-            aria-label="Anuncie sua quadra"
-            className={PILL_LINK}
-          >
-            Anuncie<span className="max-md:hidden">{'\u00a0sua quadra'}</span>
-          </Link>
+          {showOwnerCta ? (
+            <Link
+              href="/painel"
+              aria-label="Anuncie sua quadra"
+              className={PILL_LINK}
+            >
+              Anuncie<span className="max-md:hidden">{'\u00a0sua quadra'}</span>
+            </Link>
+          ) : null}
           {user ? (
             <Link
               href="/conta"

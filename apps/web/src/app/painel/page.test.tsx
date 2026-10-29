@@ -75,4 +75,37 @@ describe('/painel', () => {
     ).toBeNull();
     expect(screen.getByRole('link', { name: '+ Novo espaço' })).toBeVisible();
   });
+
+  it('shows the cover when there is one and a logo tile when there is not', async () => {
+    mocks.apiGet.mockResolvedValue([
+      {
+        id: ID_A,
+        slug: 'arena-central',
+        name: 'Arena Central',
+        status: 'published',
+        city: 'São Paulo',
+        fieldsCount: 3,
+        coverUrl: 'https://cdn.example.com/capa.jpg',
+      },
+      {
+        id: ID_B,
+        slug: 'arena-norte',
+        name: 'Arena Norte',
+        status: 'draft',
+        city: 'Campinas',
+        fieldsCount: 0,
+        coverUrl: null,
+      },
+    ]);
+
+    render(await PainelPage());
+
+    const first = screen.getByRole('link', { name: /Arena Central/ });
+    expect(first.querySelector('img')).not.toBeNull();
+    expect(within(first).queryByTestId('owner-venue-fallback')).toBeNull();
+    const second = screen.getByRole('link', { name: /Arena Norte/ });
+    expect(second.querySelector('img')).toBeNull();
+    expect(within(second).getByTestId('owner-venue-fallback')).toBeVisible();
+    expect(within(second).getByText('0 quadras')).toBeVisible();
+  });
 });

@@ -24,7 +24,7 @@ export default async function QuadraPage({
   const venuePath = `/painel/espacos/${field.venueId}` as const;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex max-w-3xl flex-col gap-8">
       <div>
         <Link
           href={venuePath}

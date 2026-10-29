@@ -80,4 +80,25 @@ describe('SiteHeader', () => {
       expect(link).toHaveAttribute('data-custom', 'yes');
     });
   });
+
+  it('shows no badge by default and a tag next to the logo when given', () => {
+    const { rerender } = render(<SiteHeader user={null} />);
+    expect(screen.queryByText('DONO')).toBeNull();
+
+    rerender(<SiteHeader user={null} badge="DONO" />);
+    const badge = screen.getByText('DONO');
+    expect(badge).toBeVisible();
+    // Beside the logo link, not inside it: the link keeps its own name.
+    expect(
+      screen.getByRole('link', { name: 'ArenaZ, início' }),
+    ).not.toContainElement(badge);
+  });
+
+  it('can leave out the owner call to action', () => {
+    render(<SiteHeader user={null} showOwnerCta={false} />);
+    expect(
+      screen.queryByRole('link', { name: 'Anuncie sua quadra' }),
+    ).toBeNull();
+    expect(screen.getByRole('link', { name: 'Entrar' })).toBeVisible();
+  });
 });

@@ -132,3 +132,28 @@ describe('/painel/espacos/[id]', () => {
     expect(screen.getByText('Nenhuma quadra cadastrada.')).toBeVisible();
   });
 });
+
+describe('/painel/espacos/[id] public page link', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.apiGet.mockResolvedValue(VENUE);
+  });
+
+  it('offers no public page link while the venue is a draft', async () => {
+    render(await VenuePage({ params: Promise.resolve({ id: ID }) }));
+
+    expect(
+      screen.queryByRole('link', { name: /Ver página pública/ }),
+    ).toBeNull();
+  });
+
+  it('links to the public page, in the same tab, once the venue is published', async () => {
+    mocks.apiGet.mockResolvedValue({ ...VENUE, status: 'published' });
+
+    render(await VenuePage({ params: Promise.resolve({ id: ID }) }));
+
+    const link = screen.getByRole('link', { name: 'Ver página pública' });
+    expect(link).toHaveAttribute('href', '/espacos/arena-central');
+    expect(link).not.toHaveAttribute('target');
+  });
+});
