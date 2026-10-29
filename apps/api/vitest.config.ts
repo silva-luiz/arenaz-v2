@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [swc.vite()],
   test: {
     include: ['test/**/*.test.ts'],
-    globalSetup: ['@arenaz/db/test-setup'],
+    globalSetup: ['@arenaz/db/test-setup', './test/minio-setup.ts'],
     // The first run pulls/starts the PostGIS container.
     hookTimeout: 120_000,
     testTimeout: 30_000,

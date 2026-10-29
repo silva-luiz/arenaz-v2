@@ -23,6 +23,13 @@ const sharedEnv: Record<string, string> = {
   BETTER_AUTH_URL: webOrigin,
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? TEST_AUTH_SECRET,
   REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  // The API validates these at boot; the e2e flows never touch the storage
+  // (the client connects lazily), so placeholders are fine.
+  S3_ENDPOINT: 'http://localhost:9000',
+  S3_BUCKET: 'arenaz-photos-e2e',
+  S3_ACCESS_KEY_ID: 'e2e-only-not-a-secret',
+  S3_SECRET_ACCESS_KEY: 'e2e-only-not-a-secret',
+  S3_PUBLIC_URL: 'http://localhost:9000/arenaz-photos-e2e',
   ...(process.env.DATABASE_URL === undefined
     ? {}
     : { DATABASE_URL: process.env.DATABASE_URL }),

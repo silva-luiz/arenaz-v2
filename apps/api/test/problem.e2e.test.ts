@@ -1,19 +1,12 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.factory.js';
+import { testEnv } from './helpers.js';
 
 let app: NestFastifyApplication;
 
 beforeAll(async () => {
-  app = await createApp({
-    DATABASE_URL: inject('DATABASE_URL'),
-    REDIS_URL: 'redis://localhost:6379',
-    BETTER_AUTH_SECRET: 'a'.repeat(32),
-    BETTER_AUTH_URL: 'http://localhost:3000',
-    API_PORT: 4000,
-    WEB_ORIGIN: 'http://localhost:3000',
-    NODE_ENV: 'test',
-  });
+  app = await createApp(testEnv);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 });

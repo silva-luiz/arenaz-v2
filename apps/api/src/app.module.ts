@@ -5,6 +5,8 @@ import type { Env } from './config/env.js';
 import { DbModule, type DbModuleOptions } from './db/db.module.js';
 import { FieldsModule } from './fields/fields.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PhotosModule } from './photos/photos.module.js';
+import { StorageModule } from './storage/storage.module.js';
 import { VenuesModule } from './venues/venues.module.js';
 
 @Module({})
@@ -19,9 +21,11 @@ export class AppModule {
       imports: [
         DbModule.forRoot(db),
         AuthModule.forRoot(env, logger),
+        StorageModule.forRoot(env),
         HealthModule,
         VenuesModule,
         FieldsModule,
+        PhotosModule,
       ],
     };
   }

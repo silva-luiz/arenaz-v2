@@ -17,6 +17,7 @@ import {
   asUser,
   buildTestApp,
   signUpAs,
+  testEnv,
   uniqueToken,
   venueBody,
 } from './helpers.js';
@@ -322,7 +323,10 @@ describe('owner venues e2e', () => {
       format: null,
     });
     expect(live.photos).toHaveLength(1);
-    expect(live.photos[0]).toMatchObject({ url: `/${key}`, position: 0 });
+    expect(live.photos[0]).toMatchObject({
+      url: `${testEnv.S3_PUBLIC_URL}/${key}`,
+      position: 0,
+    });
 
     const summary = venueSummarySchema
       .array()
@@ -330,7 +334,7 @@ describe('owner venues e2e', () => {
     expect(summary[0]).toMatchObject({
       status: 'published',
       fieldsCount: 2,
-      coverUrl: `/${key}`,
+      coverUrl: `${testEnv.S3_PUBLIC_URL}/${key}`,
     });
 
     const draft = await api.post(`${base}/unpublish`);

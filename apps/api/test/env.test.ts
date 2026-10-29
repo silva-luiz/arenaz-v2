@@ -8,6 +8,11 @@ const valid = {
   BETTER_AUTH_URL: 'http://localhost:3000',
   API_PORT: '4000',
   WEB_ORIGIN: 'http://localhost:3000',
+  S3_ENDPOINT: 'http://localhost:9000',
+  S3_BUCKET: 'arenaz-photos',
+  S3_ACCESS_KEY_ID: 'minioadmin',
+  S3_SECRET_ACCESS_KEY: 'minioadmin',
+  S3_PUBLIC_URL: 'http://localhost:9000/arenaz-photos',
   NODE_ENV: 'test',
 };
 
@@ -52,5 +57,53 @@ describe('loadEnv', () => {
 
   it('API_PORT padrão 4000', () => {
     expect(loadEnv({ ...valid, API_PORT: undefined }).API_PORT).toBe(4000);
+  });
+
+  it('lista as variáveis S3 que faltam', () => {
+    expect(() => loadEnv({})).toThrow(
+      /S3_ENDPOINT[\s\S]*S3_BUCKET[\s\S]*S3_ACCESS_KEY_ID[\s\S]*S3_SECRET_ACCESS_KEY[\s\S]*S3_PUBLIC_URL/,
+    );
+  });
+
+  it('S3_REGION padrão us-east-1 e S3_FORCE_PATH_STYLE padrão true', () => {
+    const env = loadEnv(valid);
+    expect(env.S3_REGION).toBe('us-east-1');
+    expect(env.S3_FORCE_PATH_STYLE).toBe(true);
+  });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+  ])('interpreta S3_FORCE_PATH_STYLE=%s', (raw, expected) => {
+    expect(
+      loadEnv({ ...valid, S3_FORCE_PATH_STYLE: raw }).S3_FORCE_PATH_STYLE,
+    ).toBe(expected);
+  });
+
+  it.each(['yes', '1', ''])(
+    'rejeita S3_FORCE_PATH_STYLE inválido (%s)',
+    (raw) => {
+      expect(() => loadEnv({ ...valid, S3_FORCE_PATH_STYLE: raw })).toThrow(
+        /S3_FORCE_PATH_STYLE/,
+      );
+    },
+  );
+
+  it.each(['localhost:9000', 'not a url', 'ftp://localhost:9000'])(
+    'rejeita S3_ENDPOINT e S3_PUBLIC_URL inválidos (%s)',
+    (value) => {
+      expect(() => loadEnv({ ...valid, S3_ENDPOINT: value })).toThrow(
+        /S3_ENDPOINT/,
+      );
+      expect(() => loadEnv({ ...valid, S3_PUBLIC_URL: value })).toThrow(
+        /S3_PUBLIC_URL/,
+      );
+    },
+  );
+
+  it('rejeita credenciais e bucket vazios', () => {
+    expect(() =>
+      loadEnv({ ...valid, S3_BUCKET: '', S3_ACCESS_KEY_ID: '' }),
+    ).toThrow(/S3_BUCKET[\s\S]*S3_ACCESS_KEY_ID/);
   });
 });

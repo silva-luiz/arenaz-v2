@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { crc32, deflateSync } from 'node:zlib';
 import type { VenueInput } from '@arenaz/contracts';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { LightMyRequestResponse } from 'fastify';
@@ -13,6 +14,14 @@ export const testEnv: Env = {
   BETTER_AUTH_URL: 'http://localhost:3000',
   API_PORT: 4000,
   WEB_ORIGIN: 'http://localhost:3000',
+  // MinIO container started by test/minio-setup.ts.
+  S3_ENDPOINT: inject('S3_ENDPOINT'),
+  S3_REGION: 'us-east-1',
+  S3_BUCKET: inject('S3_BUCKET'),
+  S3_ACCESS_KEY_ID: inject('S3_ACCESS_KEY_ID'),
+  S3_SECRET_ACCESS_KEY: inject('S3_SECRET_ACCESS_KEY'),
+  S3_PUBLIC_URL: inject('S3_PUBLIC_URL'),
+  S3_FORCE_PATH_STYLE: true,
   NODE_ENV: 'test',
 };
 
@@ -105,4 +114,29 @@ export function venueBody(overrides: Partial<VenueInput> = {}): VenueInput {
     cancellationPolicy: 'moderada',
     ...overrides,
   };
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc32(body));
+  return Buffer.concat([length, body, checksum]);
+}
+
+/** A minimal valid PNG (a single opaque pixel). */
+export function makePng(): Buffer {
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(1, 0); // width
+  header.writeUInt32BE(1, 4); // height
+  header[8] = 8; // bit depth
+  header[9] = 2; // color type: truecolor
+  const pixel = Buffer.from([0, 0x1f, 0x8a, 0x3c]); // filter byte + RGB
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', header),
+    pngChunk('IDAT', deflateSync(pixel)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
 }

@@ -21,11 +21,17 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
 import { DB, type DbHandle } from '../db/db.module.js';
+import {
+  deleteQuietly,
+  STORAGE,
+  type StoragePort,
+} from '../storage/storage.port.js';
 import { findOwnedVenue, VENUE_NOT_FOUND } from './owner.js';
 import {
   assertPublishedStaysComplete,
@@ -48,15 +54,6 @@ const OUTER_VENUE_ID = sql.raw('"venue"."id"');
 const SLUG_ATTEMPTS = 10;
 
 // --------------------------------------------------------------- mapping ----
-
-/**
- * Public URL of a stored photo. The single place that turns a storage key
- * into a URL; Task 5 routes it through `StoragePort`. Until then it is the
- * key under `baseUrl` (default: a root-relative path).
- */
-export function photoUrl(key: string, baseUrl = ''): string {
-  return `${baseUrl.replace(/\/+$/, '')}/${key}`;
-}
 
 /** `numeric(5,1)` comes back from the driver as a string: number, or null. */
 export function toMeters(value: string | null): number | null {
@@ -85,14 +82,16 @@ export function toFieldSummary(
 
 /**
  * DB rows → `Venue`, the one response mapper for owner venues. Hours are
- * sorted by weekday, photos by position, timestamps are ISO strings, and the
- * result is validated with the contract schema before it leaves the API.
+ * sorted by weekday, photos by position (URLs from `photoUrl`, i.e. the
+ * storage's public URL), timestamps are ISO strings, and the result is
+ * validated with the contract schema before it leaves the API.
  */
 export function toVenue(
   row: VenueRow,
   hours: VenueHoursRow[],
   photos: VenuePhoto[],
   fields: { field: Field; priceRulesCount: number }[],
+  photoUrl: (storageKey: string) => string,
 ): Venue {
   return venueSchema.parse({
     id: row.id,
@@ -158,7 +157,12 @@ function isUniqueViolationOn(error: unknown, column: string): boolean {
 
 @Injectable()
 export class VenuesService {
-  constructor(@Inject(DB) private readonly handle: DbHandle) {}
+  private readonly logger = new Logger(VenuesService.name);
+
+  constructor(
+    @Inject(DB) private readonly handle: DbHandle,
+    @Inject(STORAGE) private readonly storage: StoragePort,
+  ) {}
 
   async list(userId: string): Promise<VenueSummary[]> {
     const rows = await this.handle.db
@@ -179,7 +183,7 @@ export class VenuesService {
     return rows.map(({ coverKey, ...rest }) =>
       venueSummarySchema.parse({
         ...rest,
-        coverUrl: coverKey === null ? null : photoUrl(coverKey),
+        coverUrl: coverKey === null ? null : this.storage.publicUrl(coverKey),
       }),
     );
   }
@@ -266,10 +270,24 @@ export class VenuesService {
     return this.load(owned.id);
   }
 
+  /**
+   * Deletes the venue (fields, hours and photo rows go with it, ON DELETE
+   * CASCADE) and, once that is committed, its photo objects. The keys are read
+   * under the venue lock, so a photo confirmed meanwhile is not missed; a
+   * storage failure only leaves orphan objects and is logged.
+   */
   async remove(userId: string, venueId: string): Promise<void> {
     const owned = await findOwnedVenue(this.handle.db, venueId, userId);
-    // Fields, hours and photo rows go with it (ON DELETE CASCADE).
-    await this.handle.db.delete(venue).where(eq(venue.id, owned.id));
+    const keys = await this.handle.db.transaction(async (tx) => {
+      await lockVenueStatus(tx, owned.id);
+      const photos = await tx
+        .select({ storageKey: venuePhoto.storageKey })
+        .from(venuePhoto)
+        .where(eq(venuePhoto.venueId, owned.id));
+      await tx.delete(venue).where(eq(venue.id, owned.id));
+      return photos.map((photo) => photo.storageKey);
+    });
+    await deleteQuietly(this.storage, keys, this.logger);
   }
 
   /** Replaces all opening hours at once, in a single transaction. */
@@ -372,7 +390,9 @@ export class VenuesService {
         .groupBy(field.id)
         .orderBy(asc(field.createdAt), asc(field.id)),
     ]);
-    return toVenue(row, hours, photos, fields);
+    return toVenue(row, hours, photos, fields, (key) =>
+      this.storage.publicUrl(key),
+    );
   }
 
   private async setStatus(

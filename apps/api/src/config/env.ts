@@ -14,6 +14,13 @@ function urlWithProtocol(protocols: readonly string[], example: string) {
     }, `precisa ser uma URL válida, como ${example}`);
 }
 
+/** "true" or "false" (nothing else), parsed to a boolean. */
+function booleanString() {
+  return z
+    .enum(['true', 'false'], 'precisa ser "true" ou "false"')
+    .transform((value) => value === 'true');
+}
+
 const envSchema = z.object({
   DATABASE_URL: urlWithProtocol(
     ['postgres:', 'postgresql:'],
@@ -29,6 +36,17 @@ const envSchema = z.object({
     .max(65535, 'porta inválida')
     .default(4000),
   WEB_ORIGIN: z.url(),
+  S3_ENDPOINT: urlWithProtocol(['http:', 'https:'], 'http://localhost:9000'),
+  S3_REGION: z.string().min(1, 'não pode ser vazia').default('us-east-1'),
+  S3_BUCKET: z.string().min(1, 'não pode ser vazia'),
+  S3_ACCESS_KEY_ID: z.string().min(1, 'não pode ser vazia'),
+  S3_SECRET_ACCESS_KEY: z.string().min(1, 'não pode ser vazia'),
+  /** Public base URL of the bucket, e.g. http://localhost:9000/arenaz-photos. */
+  S3_PUBLIC_URL: urlWithProtocol(
+    ['http:', 'https:'],
+    'http://localhost:9000/arenaz-photos',
+  ),
+  S3_FORCE_PATH_STYLE: booleanString().default(true),
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
     .default('development'),
