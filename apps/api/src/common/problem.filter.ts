@@ -37,7 +37,11 @@ function fromHttpException(exception: HttpException): Problem {
     title: titleFor(status),
     status,
   };
-  if (status >= 500) return problem;
+  // 5xx details stay hidden, except 503: handlers raise it on purpose with a
+  // user-facing message ("try again"), never from unexpected errors.
+  if (status >= 500 && status !== 503) {
+    return problem;
+  }
 
   const body = exception.getResponse();
   if (typeof body === 'string') {

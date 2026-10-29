@@ -106,4 +106,33 @@ describe('loadEnv', () => {
       loadEnv({ ...valid, S3_BUCKET: '', S3_ACCESS_KEY_ID: '' }),
     ).toThrow(/S3_BUCKET[\s\S]*S3_ACCESS_KEY_ID/);
   });
+
+  it('GEO_PROVIDER padrão http', () => {
+    expect(loadEnv(valid).GEO_PROVIDER).toBe('http');
+  });
+
+  it('aceita GEO_PROVIDER=fake fora de produção', () => {
+    expect(loadEnv({ ...valid, GEO_PROVIDER: 'fake' }).GEO_PROVIDER).toBe(
+      'fake',
+    );
+  });
+
+  it('rejeita GEO_PROVIDER=fake com NODE_ENV=production', () => {
+    expect(() =>
+      loadEnv({ ...valid, GEO_PROVIDER: 'fake', NODE_ENV: 'production' }),
+    ).toThrow(/GEO_PROVIDER/);
+  });
+
+  it('aceita GEO_PROVIDER=http em produção', () => {
+    expect(
+      loadEnv({ ...valid, GEO_PROVIDER: 'http', NODE_ENV: 'production' })
+        .GEO_PROVIDER,
+    ).toBe('http');
+  });
+
+  it('rejeita GEO_PROVIDER desconhecido', () => {
+    expect(() => loadEnv({ ...valid, GEO_PROVIDER: 'google' })).toThrow(
+      /GEO_PROVIDER/,
+    );
+  });
 });

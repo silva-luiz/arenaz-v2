@@ -22,6 +22,8 @@ export const testEnv: Env = {
   S3_SECRET_ACCESS_KEY: inject('S3_SECRET_ACCESS_KEY'),
   S3_PUBLIC_URL: inject('S3_PUBLIC_URL'),
   S3_FORCE_PATH_STYLE: true,
+  // No network in tests: CEP lookups hit the fixed table.
+  GEO_PROVIDER: 'fake',
   NODE_ENV: 'test',
 };
 
