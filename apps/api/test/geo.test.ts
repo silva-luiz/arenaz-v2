@@ -263,6 +263,7 @@ describe('HttpGeo', () => {
     ['timeout', () => Promise.reject(timeoutError())],
     ['HTTP 500', () => Promise.resolve(json({ message: 'boom' }, 500))],
     ['HTTP 503', () => Promise.resolve(json({}, 503))],
+    ['HTTP 404 (não é "não encontrado")', () => Promise.resolve(json({}, 404))],
     ['corpo que não é JSON', () => Promise.resolve(new Response('<html>'))],
     ['corpo com formato inesperado', () => Promise.resolve(json({ foo: 1 }))],
   ])(
@@ -338,6 +339,26 @@ describe('HttpGeo', () => {
       street: 'Avenida Paulista',
       location: null,
     });
+  });
+
+  it('usa timeout de 3000 ms e não segue redirecionamentos nas duas chamadas', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      const f = fakeFetch({
+        viacep: () => json(VIACEP_PAULISTA),
+        nominatim: () => json(NOMINATIM_HIT),
+      });
+      const geo = new HttpGeo({ fetch: f.fetch, ...fakeClock() });
+
+      await geo.lookupCep('01310118');
+
+      expect(timeout).toHaveBeenCalledTimes(2);
+      expect(timeout.mock.calls.every(([ms]) => ms === 3000)).toBe(true);
+      expect(f.viacep()[0]?.init?.redirect).toBe('error');
+      expect(f.nominatim()[0]?.init?.redirect).toBe('error');
+    } finally {
+      timeout.mockRestore();
+    }
   });
 
   it('CEP que não tem 8 dígitos nunca chega à rede', async () => {

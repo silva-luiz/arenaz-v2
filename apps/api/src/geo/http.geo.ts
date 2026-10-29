@@ -154,9 +154,11 @@ export class HttpGeo implements GeoPort {
     let body: unknown;
     try {
       const res = await this.fetchFn(`${VIACEP_URL}/${cep}/json/`, {
+        redirect: 'error',
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-      if (res.status === 400 || res.status === 404) return null;
+      // A real "not found" is `erro: true` (HTTP 200); 404 is not that.
+      if (res.status === 400) return null;
       if (!res.ok) throw new Error(`HTTP ${String(res.status)}`);
       body = await res.json();
     } catch (error) {
@@ -218,6 +220,7 @@ export class HttpGeo implements GeoPort {
     const body = await this.throttled(async () => {
       const res = await this.fetchFn(url, {
         headers: { 'User-Agent': USER_AGENT },
+        redirect: 'error',
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`HTTP ${String(res.status)}`);

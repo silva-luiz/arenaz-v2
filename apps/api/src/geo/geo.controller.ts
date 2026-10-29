@@ -5,12 +5,12 @@ import {
   Inject,
   NotFoundException,
   Param,
-  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { RouteConfig } from '@nestjs/platform-fastify';
 import { z } from 'zod';
 import { AuthGuard } from '../auth/auth.guard.js';
+import { PublicServiceUnavailableException } from '../common/public-service-unavailable.exception.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import { GEO, GeoUnavailableError, type GeoPort } from './geo.port.js';
 
@@ -35,7 +35,7 @@ export class GeoController {
       found = await this.geo.lookupCep(cep);
     } catch (error) {
       if (error instanceof GeoUnavailableError) {
-        throw new ServiceUnavailableException(
+        throw new PublicServiceUnavailableException(
           'Serviço de CEP indisponível, tente de novo',
         );
       }

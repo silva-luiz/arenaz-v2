@@ -7,6 +7,7 @@ import {
   type ExceptionFilter,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { PublicServiceUnavailableException } from './public-service-unavailable.exception.js';
 
 export const PROBLEM_CONTENT_TYPE = 'application/problem+json; charset=utf-8';
 
@@ -37,9 +38,12 @@ function fromHttpException(exception: HttpException): Problem {
     title: titleFor(status),
     status,
   };
-  // 5xx details stay hidden, except 503: handlers raise it on purpose with a
-  // user-facing message ("try again"), never from unexpected errors.
-  if (status >= 500 && status !== 503) {
+  // 5xx details stay hidden (they may carry internals), except for the
+  // exception type whose message is written for the end user.
+  if (
+    status >= 500 &&
+    !(exception instanceof PublicServiceUnavailableException)
+  ) {
     return problem;
   }
 
