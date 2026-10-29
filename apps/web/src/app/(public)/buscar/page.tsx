@@ -68,6 +68,19 @@ function countLabel(shown: number, hasMore: boolean): string {
   return shown === 1 ? '1 espaço' : `${String(shown)} espaços`;
 }
 
+function Heading({ title, page = 1 }: { title: string; page?: number }) {
+  return (
+    <h1 className="font-wordmark text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl">
+      {title}
+      {page > 1 ? (
+        <span className="font-semibold text-muted">
+          {' · '}Página {page}
+        </span>
+      ) : null}
+    </h1>
+  );
+}
+
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   // Layout and page prerender side by side; wait for a real request so
   // `next build` never calls the API (same as the home).
@@ -89,6 +102,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return (
       <div className="flex flex-col gap-6 pb-12">
         {search}
+        <Heading title={DEFAULT_TITLE} />
         <Alert tone="error" className="mx-auto w-full max-w-4xl">
           {Object.values(parsed.messages).map((message) => (
             <span key={message} className="block">
@@ -111,16 +125,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q, page } = parsed.query;
   const results = await loadResults(params);
 
-  const heading = (
-    <h1 className="font-wordmark text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl">
-      {titleFor(q)}
-      {page > 1 ? (
-        <span className="font-semibold text-muted">
-          {' · '}Página {page}
-        </span>
-      ) : null}
-    </h1>
-  );
+  const heading = <Heading title={titleFor(q)} page={page} />;
 
   if (results === null) {
     return (

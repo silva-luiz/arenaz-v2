@@ -71,12 +71,15 @@ export interface ResultsListProps {
  * between them. The hidden view is `display: none`, so it also leaves the tab
  * order and the accessibility tree.
  *
- * Hovering or focusing a card highlights its pin; clicking a pin opens the
- * preview. Both write the same `selectedSlug`.
+ * Two separate pieces of state: hovering or focusing a card only highlights
+ * its pin (and lets go on leave or blur); the preview opens only when a pin
+ * is clicked, and closes with its button, a click on the map or Esc.
  */
 export function ResultsList({ items, header, footer }: ResultsListProps) {
   const [view, setView] = useState<View>('list');
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [hoverSlug, setHoverSlug] = useState<string | null>(null);
+  const [focusSlug, setFocusSlug] = useState<string | null>(null);
+  const [previewSlug, setPreviewSlug] = useState<string | null>(null);
 
   return (
     <>
@@ -105,10 +108,16 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
               <li
                 key={venue.slug}
                 onMouseEnter={() => {
-                  setSelectedSlug(venue.slug);
+                  setHoverSlug(venue.slug);
+                }}
+                onMouseLeave={() => {
+                  setHoverSlug(null);
                 }}
                 onFocus={() => {
-                  setSelectedSlug(venue.slug);
+                  setFocusSlug(venue.slug);
+                }}
+                onBlur={() => {
+                  setFocusSlug(null);
                 }}
               >
                 <VenueCard
@@ -138,8 +147,9 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
         >
           <ResultsMap
             items={items}
-            selectedSlug={selectedSlug}
-            onSelect={setSelectedSlug}
+            hoveredSlug={hoverSlug ?? focusSlug}
+            previewSlug={previewSlug}
+            onPreview={setPreviewSlug}
           />
         </div>
       </div>

@@ -1,8 +1,8 @@
 import type { PublicVenueCard } from '@arenaz/contracts';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface MarkerProps {
   position: [number, number];
@@ -19,6 +19,8 @@ const captured = vi.hoisted(() => ({
   fitBounds: vi.fn(),
   panInside: vi.fn(),
   invalidateSize: vi.fn(),
+  size: { x: 800, y: 600 },
+  pane: { setAttribute: vi.fn() },
 }));
 
 vi.mock('react-leaflet', () => ({
@@ -37,8 +39,9 @@ vi.mock('react-leaflet', () => ({
     panInside: captured.panInside,
     setView: vi.fn(),
     invalidateSize: captured.invalidateSize,
-    getSize: () => ({ x: 800, y: 600 }),
+    getSize: () => captured.size,
     getContainer: () => document.createElement('div'),
+    getPane: () => captured.pane,
   }),
   useMapEvents: (handlers: { click: () => void }) => {
     captured.events = handlers;
@@ -80,17 +83,23 @@ function html(marker: MarkerProps | undefined): string {
 }
 
 describe('ResultsMap', () => {
-  const onSelect = vi.fn();
+  const onPreview = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     captured.markers = [];
     captured.events = null;
+    captured.size = { x: 800, y: 600 };
   });
 
   it('is a labelled region', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     expect(
@@ -100,7 +109,12 @@ describe('ResultsMap', () => {
 
   it('uses OpenStreetMap tiles with attribution', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     const tiles = screen.getByTestId('tiles');
@@ -113,7 +127,12 @@ describe('ResultsMap', () => {
 
   it('draws one price pin per result at its approximate location', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     expect(captured.markers.map((marker) => marker.position)).toEqual([
@@ -124,9 +143,14 @@ describe('ResultsMap', () => {
     expect(html(captured.markers[1])).toContain('R$ 120,50');
   });
 
-  it('highlights only the selected pin', () => {
+  it('highlights the hovered pin, and only that one', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug="arena-b" onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug="arena-b"
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     expect(html(captured.markers[0])).not.toContain('bg-ink');
@@ -134,9 +158,59 @@ describe('ResultsMap', () => {
     expect(html(captured.markers[1])).toContain('text-white');
   });
 
+  it('a hovered pin opens no preview', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug="arena-b"
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Fechar prévia' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('keeps the previewed pin highlighted', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug="arena-a"
+        onPreview={onPreview}
+      />,
+    );
+
+    expect(html(captured.markers[0])).toContain('bg-ink');
+  });
+
+  it('hides the pins from assistive technology: the list is the accessible equivalent', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
+    );
+
+    expect(captured.pane.setAttribute).toHaveBeenCalledWith(
+      'aria-hidden',
+      'true',
+    );
+  });
+
   it('keeps the pins out of the tab order: the list is the keyboard path', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     expect(captured.markers.every((marker) => marker.keyboard === false)).toBe(
@@ -144,29 +218,44 @@ describe('ResultsMap', () => {
     );
   });
 
-  it('selects a result when its pin is clicked', () => {
+  it('opens the preview of a result when its pin is clicked', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     captured.markers[1]?.eventHandlers.click();
 
-    expect(onSelect).toHaveBeenCalledWith('arena-b');
+    expect(onPreview).toHaveBeenCalledWith('arena-b');
   });
 
   it('clears the selection when the map itself is clicked', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug="arena-a" onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug="arena-a"
+        onPreview={onPreview}
+      />,
     );
 
     captured.events?.click();
 
-    expect(onSelect).toHaveBeenCalledWith(null);
+    expect(onPreview).toHaveBeenCalledWith(null);
   });
 
   it('fits the map to the results', () => {
     render(
-      <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+      />,
     );
 
     expect(captured.fitBounds).toHaveBeenCalledTimes(1);
@@ -178,38 +267,166 @@ describe('ResultsMap', () => {
     expect(bounds.getNorthEast()).toMatchObject({ lat: -23.55, lng: -46.69 });
   });
 
-  describe('revealing the selected pin', () => {
+  describe('revealing the clicked pin', () => {
     it('pans a clicked pin clear of the preview that will cover the bottom', () => {
-      const { rerender } = render(
-        <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
       );
 
-      captured.markers.at(-1)?.eventHandlers.click();
-      rerender(
-        <ResultsMap items={ITEMS} selectedSlug="arena-b" onSelect={onSelect} />,
-      );
+      act(() => {
+        captured.markers.at(-1)?.eventHandlers.click();
+      });
 
       expect(captured.panInside).toHaveBeenCalledTimes(1);
       expect(captured.panInside.mock.calls[0]?.[0]).toEqual([-23.56, -46.7]);
     });
 
+    it('pans again when the same pin is clicked again', () => {
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+
+      act(() => {
+        captured.markers[0]?.eventHandlers.click();
+      });
+      act(() => {
+        captured.markers[0]?.eventHandlers.click();
+      });
+
+      expect(captured.panInside).toHaveBeenCalledTimes(2);
+    });
+
     it('leaves the map alone when a card is hovered, so it does not jump around', () => {
       const { rerender } = render(
-        <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
       );
 
       rerender(
-        <ResultsMap items={ITEMS} selectedSlug="arena-b" onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug="arena-b"
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
       );
 
       expect(captured.panInside).not.toHaveBeenCalled();
     });
   });
 
+  describe('fitting', () => {
+    const observers: { callback: () => void; disconnect: () => void }[] = [];
+
+    beforeEach(() => {
+      observers.length = 0;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          disconnect: () => void;
+          constructor(callback: () => void) {
+            const entry = { callback, disconnect: vi.fn() };
+            observers.push(entry);
+            this.disconnect = entry.disconnect;
+          }
+          observe() {
+            // the container is a stub
+          }
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('waits for a real size before fitting (the map starts hidden on a phone)', () => {
+      captured.size = { x: 0, y: 0 };
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+
+      expect(captured.fitBounds).not.toHaveBeenCalled();
+
+      captured.size = { x: 375, y: 600 };
+      act(() => {
+        observers.at(-1)?.callback();
+      });
+
+      expect(captured.fitBounds).toHaveBeenCalledTimes(1);
+    });
+
+    it('only re-measures on later size changes, without refitting', () => {
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+      captured.invalidateSize.mockClear();
+
+      act(() => {
+        observers.at(-1)?.callback();
+      });
+
+      expect(captured.invalidateSize).toHaveBeenCalled();
+      expect(captured.fitBounds).toHaveBeenCalledTimes(1);
+    });
+
+    it('fits again when the results change (next page)', () => {
+      const { rerender } = render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+
+      rerender(
+        <ResultsMap
+          items={[venue('arena-c', 'Arena C', 9000, -23.6, -46.6)]}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+
+      expect(captured.fitBounds).toHaveBeenCalledTimes(2);
+      expect(observers[0]?.disconnect).toHaveBeenCalled();
+    });
+  });
+
   describe('preview', () => {
     it('is not shown without a selection', () => {
       render(
-        <ResultsMap items={ITEMS} selectedSlug={null} onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
       );
 
       expect(
@@ -219,7 +436,12 @@ describe('ResultsMap', () => {
 
     it('shows the selected venue with a link to its page', () => {
       render(
-        <ResultsMap items={ITEMS} selectedSlug="arena-b" onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-b"
+          onPreview={onPreview}
+        />,
       );
 
       const link = screen.getByRole('link', { name: /Arena B/ });
@@ -230,19 +452,59 @@ describe('ResultsMap', () => {
 
     it('can be closed', async () => {
       render(
-        <ResultsMap items={ITEMS} selectedSlug="arena-a" onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-a"
+          onPreview={onPreview}
+        />,
       );
 
       await userEvent.click(
         screen.getByRole('button', { name: 'Fechar prévia' }),
       );
 
-      expect(onSelect).toHaveBeenCalledWith(null);
+      expect(onPreview).toHaveBeenCalledWith(null);
     });
 
-    it('ignores a selection that is not among the results', () => {
+    it('closes with Esc', async () => {
       render(
-        <ResultsMap items={ITEMS} selectedSlug="outra" onSelect={onSelect} />,
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-a"
+          onPreview={onPreview}
+        />,
+      );
+
+      await userEvent.keyboard('{Escape}');
+
+      expect(onPreview).toHaveBeenCalledWith(null);
+    });
+
+    it('does not listen for Esc while no preview is open', async () => {
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+        />,
+      );
+
+      await userEvent.keyboard('{Escape}');
+
+      expect(onPreview).not.toHaveBeenCalled();
+    });
+
+    it('ignores a preview slug that is not among the results', () => {
+      render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="outra"
+          onPreview={onPreview}
+        />,
       );
 
       expect(

@@ -4,7 +4,7 @@ import type { PublicVenueCard } from '@arenaz/contracts';
 import { LogoMark, PriceTag } from '@arenaz/ui';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   MapContainer,
   Marker,
@@ -73,36 +73,70 @@ function FitResults({ points }: { points: L.LatLngTuple[] }) {
   return null;
 }
 
-// Room the preview card needs at the bottom (card, its offset and the mobile
-// view switch), so a pin never ends up hidden behind its own preview.
-const PREVIEW_CLEARANCE = 180;
+// Room the preview card needs at the bottom, so a pin never ends up hidden
+// behind its own preview: on a phone the card sits above the view switch
+// (80px + about 90px of card + the pin and a gap), from `lg` up it is lower.
+const PREVIEW_CLEARANCE_PHONE = 240;
+const PREVIEW_CLEARANCE_DESKTOP = 140;
+
+function previewClearance(): number {
+  return typeof window.matchMedia === 'function' &&
+    window.matchMedia('(min-width: 1024px)').matches
+    ? PREVIEW_CLEARANCE_DESKTOP
+    : PREVIEW_CLEARANCE_PHONE;
+}
+
+/** Asks the map to bring a point into view, clear of the preview. */
+interface RevealRequest {
+  point: L.LatLngTuple;
+}
 
 /**
- * Moves a pin that was just clicked out from under the preview. Only for
- * clicks: hovering cards selects pins too, and the map must not jump while
- * the mouse crosses the list.
+ * Moves a pin that was just clicked out from under the preview. Every click
+ * makes a new request object, so clicking the same pin again works too. Only
+ * clicks ask: hovering cards highlights pins as well, and the map must not
+ * jump while the mouse crosses the list.
  */
-function RevealClicked({
-  slug,
-  point,
-  clickedRef,
-}: {
-  slug: string | null;
-  point: L.LatLngTuple | null;
-  clickedRef: RefObject<string | null>;
-}) {
+function RevealClicked({ request }: { request: RevealRequest | null }) {
   const map = useMap();
 
   useEffect(() => {
-    if (slug === null || point === null || clickedRef.current !== slug) return;
-    clickedRef.current = null;
-    map.panInside(point, {
+    if (request === null) return;
+    map.panInside(request.point, {
       paddingTopLeft: [56, 56],
-      paddingBottomRight: [56, PREVIEW_CLEARANCE],
+      paddingBottomRight: [56, previewClearance()],
       animate: !prefersReducedMotion(),
     });
-  }, [map, slug, point, clickedRef]);
+  }, [map, request]);
 
+  return null;
+}
+
+/**
+ * The pins are not an accessible path (the list is), so assistive technology
+ * skips the marker pane instead of reading unnamed boxes.
+ */
+function HidePinsFromAssistiveTech() {
+  const map = useMap();
+
+  useEffect(() => {
+    map.getPane('markerPane')?.setAttribute('aria-hidden', 'true');
+  }, [map]);
+
+  return null;
+}
+
+/** Esc closes the preview, wherever the focus is. */
+function CloseOnEscape({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
   return null;
 }
 
@@ -177,39 +211,40 @@ function Preview({
 
 export interface ResultsMapProps {
   items: PublicVenueCard[];
-  selectedSlug: string | null;
-  onSelect: (slug: string | null) => void;
+  /** Pin highlighted because its card is hovered or focused. No preview. */
+  hoveredSlug: string | null;
+  /** Pin whose preview is open: only set by clicking the pin. */
+  previewSlug: string | null;
+  onPreview: (slug: string | null) => void;
 }
 
 /**
  * The Leaflet map of the search results, one price pin per venue. Loaded only
  * in the browser, see `results-list.tsx`.
  *
- * Accessibility: the region is labelled and Leaflet's own controls (zoom,
- * attribution, arrow-key panning on the focused map) stay as they are. The
- * pins are deliberately NOT focusable: the list next to the map has the same
+ * Accessibility: the labelled region is the map's accessible name (Leaflet's
+ * own container, which takes focus for arrow-key panning, adds no second
+ * label), and its controls (zoom, attribution) stay as they are. The pins are
+ * deliberately NOT focusable and are hidden from assistive technology
+ * (`aria-hidden` on the marker pane): the list next to the map has the same
  * venues, in the same order, as real links, so it is the accessible
  * equivalent and 20 extra tab stops on the map would only be noise.
  */
 export default function ResultsMap({
   items,
-  selectedSlug,
-  onSelect,
+  hoveredSlug,
+  previewSlug,
+  onPreview,
 }: ResultsMapProps) {
   const points = useMemo<L.LatLngTuple[]>(
     () =>
       items.map((item) => [item.approxLocation.lat, item.approxLocation.lng]),
     [items],
   );
-  const selected = items.find((item) => item.slug === selectedSlug) ?? null;
-  const selectedPoint = useMemo<L.LatLngTuple | null>(
-    () =>
-      selected
-        ? [selected.approxLocation.lat, selected.approxLocation.lng]
-        : null,
-    [selected],
+  const previewed = items.find((item) => item.slug === previewSlug) ?? null;
+  const [revealRequest, setRevealRequest] = useState<RevealRequest | null>(
+    null,
   );
-  const clickedRef = useRef<string | null>(null);
 
   return (
     <div
@@ -229,18 +264,16 @@ export default function ResultsMap({
           maxZoom={19}
         />
         <FitResults points={points} />
-        <RevealClicked
-          slug={selectedSlug}
-          point={selectedPoint}
-          clickedRef={clickedRef}
-        />
+        <HidePinsFromAssistiveTech />
+        <RevealClicked request={revealRequest} />
         <ClearOnMapClick
           onClear={() => {
-            onSelect(null);
+            onPreview(null);
           }}
         />
         {items.map((item) => {
-          const isSelected = item.slug === selectedSlug;
+          const isSelected =
+            item.slug === previewSlug || item.slug === hoveredSlug;
           return (
             <Marker
               key={item.slug}
@@ -251,21 +284,30 @@ export default function ResultsMap({
               zIndexOffset={isSelected ? 1000 : 0}
               eventHandlers={{
                 click: () => {
-                  clickedRef.current = item.slug;
-                  onSelect(item.slug);
+                  setRevealRequest({
+                    point: [item.approxLocation.lat, item.approxLocation.lng],
+                  });
+                  onPreview(item.slug);
                 },
               }}
             />
           );
         })}
       </MapContainer>
-      {selected ? (
-        <Preview
-          venue={selected}
-          onClose={() => {
-            onSelect(null);
-          }}
-        />
+      {previewed ? (
+        <>
+          <CloseOnEscape
+            onClose={() => {
+              onPreview(null);
+            }}
+          />
+          <Preview
+            venue={previewed}
+            onClose={() => {
+              onPreview(null);
+            }}
+          />
+        </>
       ) : null}
     </div>
   );

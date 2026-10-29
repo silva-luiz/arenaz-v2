@@ -86,6 +86,14 @@ describe('search page', () => {
       expect(mocks.publicGet).not.toHaveBeenCalled();
     });
 
+    it('keeps an h1 on the page', async () => {
+      await renderPage({ sport: 'xyz' });
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Buscar quadras' }),
+      ).toBeInTheDocument();
+    });
+
     it('offers the way back to all venues', async () => {
       await renderPage({ page: '99' });
 

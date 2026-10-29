@@ -6,7 +6,7 @@ import L from 'leaflet';
 // box has no size, so the label is centred on the point with a translate.
 // Tailwind sees these class names because they are literals in this file.
 const BASE =
-  'inline-flex min-h-8 -translate-x-1/2 -translate-y-1/2 items-center rounded-full border px-3 text-sm font-bold whitespace-nowrap shadow-1 transition-transform duration-150 motion-reduce:transition-none';
+  'inline-flex min-h-8 -translate-x-1/2 -translate-y-1/2 items-center rounded-full border px-3 text-sm font-bold whitespace-nowrap shadow-1';
 const IDLE = 'border-line-strong bg-white text-ink';
 const SELECTED = 'scale-110 border-ink bg-ink text-white';
 

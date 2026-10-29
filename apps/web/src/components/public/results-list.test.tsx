@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface MapProps {
   items: PublicVenueCard[];
-  selectedSlug: string | null;
-  onSelect: (slug: string | null) => void;
+  hoveredSlug: string | null;
+  previewSlug: string | null;
+  onPreview: (slug: string | null) => void;
 }
 
 const captured = vi.hoisted(() => ({ props: null as MapProps | null }));
@@ -17,7 +18,11 @@ vi.mock('next/dynamic', () => ({
     function MapStub(props: MapProps) {
       captured.props = props;
       return (
-        <div data-testid="map-stub" data-selected={props.selectedSlug ?? ''} />
+        <div
+          data-testid="map-stub"
+          data-hovered={props.hoveredSlug ?? ''}
+          data-preview={props.previewSlug ?? ''}
+        />
       );
     },
 }));
@@ -73,45 +78,96 @@ describe('ResultsList', () => {
     expect(header).toHaveClass('hidden');
   });
 
-  describe('selection', () => {
-    it('starts without a selected pin', () => {
+  describe('pin highlight and preview', () => {
+    it('starts with nothing highlighted and no preview', () => {
       render(<ResultsList items={ITEMS} />);
 
-      expect(captured.props?.selectedSlug).toBeNull();
+      expect(captured.props?.hoveredSlug).toBeNull();
+      expect(captured.props?.previewSlug).toBeNull();
     });
 
-    it('selects the pin of the card the mouse is over', async () => {
+    it('highlights the pin of the card the mouse is over, without a preview', async () => {
       render(<ResultsList items={ITEMS} />);
 
       await userEvent.hover(screen.getByRole('link', { name: 'Arena 2' }));
 
       expect(screen.getByTestId('map-stub')).toHaveAttribute(
-        'data-selected',
+        'data-hovered',
         'arena-2',
+      );
+      expect(screen.getByTestId('map-stub')).toHaveAttribute(
+        'data-preview',
+        '',
       );
     });
 
-    it('selects the pin of the card that gets keyboard focus', async () => {
+    it('lets go of the highlight when the mouse leaves the card', async () => {
       render(<ResultsList items={ITEMS} />);
+      const card = screen.getByRole('link', { name: 'Arena 2' });
 
-      await userEvent.tab();
-      expect(captured.props?.selectedSlug).toBe('arena-1');
-      await userEvent.tab();
-      expect(captured.props?.selectedSlug).toBe('arena-2');
+      await userEvent.hover(card);
+      await userEvent.unhover(card);
+
+      expect(captured.props?.hoveredSlug).toBeNull();
     });
 
-    it('follows a pin selected on the map', () => {
+    it('highlights the pin of the card that gets keyboard focus, without a preview', async () => {
+      render(<ResultsList items={ITEMS} />);
+
+      await userEvent.tab();
+      expect(captured.props?.hoveredSlug).toBe('arena-1');
+      await userEvent.tab();
+      expect(captured.props?.hoveredSlug).toBe('arena-2');
+      expect(captured.props?.previewSlug).toBeNull();
+    });
+
+    it('lets go of the highlight when the card loses focus', async () => {
+      render(<ResultsList items={ITEMS} />);
+
+      await userEvent.tab();
+      act(() => {
+        (document.activeElement as HTMLElement).blur();
+      });
+
+      expect(captured.props?.hoveredSlug).toBeNull();
+    });
+
+    it('keeps the highlight while the card is still focused after the mouse leaves', async () => {
+      render(<ResultsList items={ITEMS} />);
+      const card = screen.getByRole('link', { name: 'Arena 1' });
+
+      await userEvent.tab();
+      await userEvent.hover(card);
+      await userEvent.unhover(card);
+
+      expect(captured.props?.hoveredSlug).toBe('arena-1');
+    });
+
+    it('opens the preview only when a pin is clicked, and closes it', () => {
       render(<ResultsList items={ITEMS} />);
 
       act(() => {
-        captured.props?.onSelect('arena-3');
+        captured.props?.onPreview('arena-3');
+      });
+      expect(captured.props?.previewSlug).toBe('arena-3');
+      expect(captured.props?.hoveredSlug).toBeNull();
+
+      act(() => {
+        captured.props?.onPreview(null);
+      });
+      expect(captured.props?.previewSlug).toBeNull();
+    });
+
+    it('keeps the preview open while cards are hovered', async () => {
+      render(<ResultsList items={ITEMS} />);
+      act(() => {
+        captured.props?.onPreview('arena-3');
       });
 
-      expect(captured.props?.selectedSlug).toBe('arena-3');
-      act(() => {
-        captured.props?.onSelect(null);
-      });
-      expect(captured.props?.selectedSlug).toBeNull();
+      await userEvent.hover(screen.getByRole('link', { name: 'Arena 1' }));
+      await userEvent.unhover(screen.getByRole('link', { name: 'Arena 1' }));
+
+      expect(captured.props?.previewSlug).toBe('arena-3');
     });
   });
 
