@@ -12,9 +12,11 @@ import { Alert, Badge, Button, Field, Input } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
+import { reencodeImage } from '@/lib/reencode-image';
 
 const INVALID_FILE = 'Use JPG, PNG ou WebP até 10 MB';
 const LIMIT_MESSAGE = `Limite de ${String(PHOTO_MAX_PER_VENUE)} fotos por espaço`;
+const PROCESS_FAILED = 'Não foi possível processar esta foto';
 const STORAGE_FAILED = 'Não foi possível enviar a foto. Tente novamente.';
 const ACCEPT = PHOTO_CONTENT_TYPES.join(',');
 
@@ -57,7 +59,8 @@ function sortByPosition(photos: Photo[]): Photo[] {
 async function postToStorage(
   url: string,
   fields: Record<string, string>,
-  file: File,
+  file: Blob,
+  name: string,
 ): Promise<boolean> {
   const form = new FormData();
   for (const [name, value] of Object.entries(fields)) form.append(name, value);
@@ -66,7 +69,7 @@ async function postToStorage(
   ) {
     form.append('Content-Type', file.type);
   }
-  form.append('file', file);
+  form.append('file', file, name);
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -147,7 +150,16 @@ export function PhotoUploader({
     );
   }
 
-  async function sendOne(file: File, id: number, base: string) {
+  async function sendOne(original: File, id: number, base: string) {
+    // The photos are public: the upload is the canvas re-encoding of the
+    // picture, which carries no metadata (the original may hold exact GPS).
+    let file: Blob;
+    try {
+      file = await reencodeImage(original);
+    } catch {
+      patchUpload(id, { status: 'erro', message: PROCESS_FAILED });
+      return;
+    }
     const ticket = await apiSend(
       'POST',
       `${base}/upload-url`,
@@ -162,6 +174,7 @@ export function PhotoUploader({
       ticket.data.url,
       ticket.data.fields,
       file,
+      original.name,
     );
     if (!stored) {
       patchUpload(id, { status: 'erro', message: STORAGE_FAILED });

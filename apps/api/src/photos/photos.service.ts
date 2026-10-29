@@ -27,6 +27,7 @@ import {
   STORAGE,
   type StoragePort,
 } from '../storage/storage.port.js';
+import { hasExifMetadata } from './image-metadata.js';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { findOwnedVenue, isUuid } from '../venues/owner.js';
 import {
@@ -38,6 +39,9 @@ const { venuePhoto } = schema;
 
 export const PHOTO_LIMIT_MESSAGE = `Limite de ${String(PHOTO_MAX_PER_VENUE)} fotos por espaço`;
 export const PHOTO_INVALID_MESSAGE = 'Arquivo de foto inválido';
+/** How much of the object is read to look for metadata. */
+const HEAD_BYTES = 64 * 1024;
+
 export const PHOTO_DUPLICATE_MESSAGE = 'Foto já registrada';
 export const PHOTO_ORDER_MESSAGE = 'Envie a lista completa de fotos do espaço';
 export const PHOTO_NOT_FOUND = 'Foto não encontrada';
@@ -141,6 +145,15 @@ export class PhotosService {
       head.size < 1 ||
       head.size > PHOTO_MAX_BYTES
     ) {
+      throw new UnprocessableEntityException(PHOTO_INVALID_MESSAGE);
+    }
+
+    // Photos are public: a file that still carries EXIF (possibly the exact GPS
+    // position) is refused and removed. Only the first 64 KB is read.
+    const bytes = await this.storage.readHead(input.key, HEAD_BYTES);
+    if (!bytes) throw new UnprocessableEntityException(PHOTO_INVALID_MESSAGE);
+    if (hasExifMetadata(bytes, contentType)) {
+      await deleteQuietly(this.storage, [input.key], this.logger);
       throw new UnprocessableEntityException(PHOTO_INVALID_MESSAGE);
     }
 

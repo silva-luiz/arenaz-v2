@@ -277,6 +277,35 @@ describe('venue photos e2e', () => {
     },
   );
 
+  it('JPEG com metadados Exif é recusado (422) e o objeto é apagado', async () => {
+    const { api } = await newOwner();
+    const venue = await newVenue(api);
+    const upload = await requestUpload(api, venue.id, 'image/jpeg', 200);
+    const payload = Buffer.concat([
+      Buffer.from('Exif\0\0', 'latin1'),
+      Buffer.from('gps: -23.5505, -46.6333'),
+    ]);
+    const app1 = Buffer.alloc(4);
+    app1.writeUInt16BE(0xffe1, 0);
+    app1.writeUInt16BE(payload.length + 2, 2);
+    const jpeg = Buffer.concat([
+      Buffer.from([0xff, 0xd8]),
+      app1,
+      payload,
+      Buffer.from([0xff, 0xda, 0, 2, 0xff, 0xd9]),
+    ]);
+    const stored = await uploadToStorage(upload, jpeg, 'image/jpeg');
+    expect(stored.ok).toBe(true);
+    expect(await storage.head(upload.key)).not.toBeNull();
+
+    const res = await api.post(photosUrl(venue.id), { key: upload.key });
+
+    expect(res.statusCode).toBe(422);
+    expect(problemOf(res).detail).toBe('Arquivo de foto inválido');
+    expect(await photoRows(venue.id)).toEqual([]);
+    expect(await storage.head(upload.key)).toBeNull();
+  });
+
   it('o storage recusa mais bytes do que o tamanho declarado (4xx)', async () => {
     const { api } = await newOwner();
     const venue = await newVenue(api);

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   apiSend: vi.fn(),
   refresh: vi.fn(),
   storageFetch: vi.fn(),
+  createImageBitmap: vi.fn(),
   calls: [] as string[],
 }));
 
@@ -20,6 +21,7 @@ import { PhotoUploader } from './photo-uploader';
 const VENUE_ID = '3f0c2b9e-6a4e-4d6b-9a52-1b6e0c7d9f10';
 const STORAGE_URL = 'http://localhost:9000/arenaz-photos';
 const INVALID = 'Use JPG, PNG ou WebP até 10 MB';
+const REENCODED_BYTES = 321;
 
 function photo(n: number): Photo {
   return {
@@ -79,10 +81,25 @@ describe('PhotoUploader', () => {
       return Promise.resolve(new Response(null, { status: 204 }));
     });
     vi.stubGlobal('fetch', mocks.storageFetch);
+    mocks.createImageBitmap.mockResolvedValue({
+      width: 800,
+      height: 600,
+      close: vi.fn(),
+    });
+    vi.stubGlobal('createImageBitmap', mocks.createImageBitmap);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+      (callback: BlobCallback, type?: string) => {
+        callback(new Blob([new Uint8Array(REENCODED_BYTES)], { type }));
+      },
+    );
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('accepts several JPG, PNG and WebP files', () => {
@@ -146,7 +163,11 @@ describe('PhotoUploader', () => {
       string,
       unknown,
     ];
-    expect(requestBody).toEqual({ contentType: 'image/png', size: 1024 });
+    // The declared size is the re-encoded blob's, not the original file's.
+    expect(requestBody).toEqual({
+      contentType: 'image/png',
+      size: REENCODED_BYTES,
+    });
     const [, confirmPath, confirmBody] = mocks.apiSend.mock.calls[1] as [
       string,
       string,
@@ -189,7 +210,64 @@ describe('PhotoUploader', () => {
       'file',
     ]);
     expect(body.get('Content-Type')).toBe('image/png');
-    expect((body.get('file') as File).name).toBe('quadra.png');
+    const sent = body.get('file') as File;
+    expect(sent.name).toBe('quadra.png');
+    // The bytes sent are the re-encoded ones (metadata stripped), not the file.
+    expect(sent).not.toBe(file);
+    expect(sent.type).toBe('image/png');
+    expect(sent.size).toBe(REENCODED_BYTES);
+    expect(mocks.createImageBitmap).toHaveBeenCalledWith(file, {
+      imageOrientation: 'from-image',
+    });
+  });
+
+  it('re-encodes before asking for the upload URL', async () => {
+    const order: string[] = [];
+    mocks.createImageBitmap.mockImplementation(() => {
+      order.push('decode');
+      return Promise.resolve({ width: 10, height: 10, close: vi.fn() });
+    });
+    mocks.apiSend.mockImplementation(() => {
+      order.push('upload-url');
+      return Promise.resolve({
+        ok: false,
+        status: 422,
+        fieldErrors: {},
+        message: 'parou',
+      });
+    });
+    const user = setup();
+    render(<PhotoUploader venueId={VENUE_ID} photos={[]} />);
+
+    await user.upload(screen.getByLabelText('Adicionar fotos'), png());
+
+    await waitFor(() => {
+      expect(order).toEqual(['decode', 'upload-url']);
+    });
+  });
+
+  it('skips a photo that cannot be processed and still sends the others', async () => {
+    storageAnswers();
+    mocks.createImageBitmap.mockRejectedValueOnce(new Error('corrupt'));
+    const user = setup();
+    render(<PhotoUploader venueId={VENUE_ID} photos={[]} />);
+
+    await user.upload(screen.getByLabelText('Adicionar fotos'), [
+      png('quebrada.png'),
+      png('boa.png'),
+    ]);
+
+    expect(
+      await screen.findByText(/Não foi possível processar esta foto/),
+    ).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText('Enviado')).toBeVisible();
+    });
+    expect(apiCalls()).toEqual([
+      `POST /owner/venues/${VENUE_ID}/photos/upload-url`,
+      `POST /owner/venues/${VENUE_ID}/photos`,
+    ]);
+    expect(mocks.storageFetch).toHaveBeenCalledTimes(1);
   });
 
   it('adds the content type itself when the signed fields leave it out', async () => {

@@ -1,5 +1,6 @@
 import {
   DeleteObjectsCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -81,6 +82,22 @@ export class S3Storage implements StoragePort {
         size: out.ContentLength ?? 0,
         contentType: out.ContentType ?? '',
       };
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+  }
+
+  async readHead(key: string, bytes: number): Promise<Uint8Array | null> {
+    try {
+      const out = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Range: `bytes=0-${String(bytes - 1)}`,
+        }),
+      );
+      return (await out.Body?.transformToByteArray()) ?? new Uint8Array();
     } catch (error) {
       if (isNotFound(error)) return null;
       throw error;

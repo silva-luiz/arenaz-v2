@@ -30,6 +30,11 @@ export interface StoragePort {
   ): Promise<UploadPost>;
   /** Size and type of the stored object, or `null` when it does not exist. */
   head(key: string): Promise<StoredObject | null>;
+  /**
+   * The first `bytes` bytes of the object (a ranged read, never the whole
+   * file), or `null` when it does not exist.
+   */
+  readHead(key: string, bytes: number): Promise<Uint8Array | null>;
   /** Deletes objects; keys that do not exist are not an error. */
   delete(keys: string[]): Promise<void>;
   /** Public (anonymous GET) URL of a stored object. */
