@@ -1,8 +1,45 @@
 import process from 'node:process';
 import { createDb } from '@arenaz/db';
+import { Redis } from 'ioredis';
 import pino from 'pino';
 import { loadEnv } from './env.js';
-import { startMaintenance } from './maintenance.js';
+import { redisConnection, startMaintenance } from './maintenance.js';
+
+const REDIS_CHECK_TIMEOUT_MS = 5_000;
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
+/** Rejects with a clear message when Redis does not answer a PING in time. */
+async function assertRedisReachable(url: string): Promise<void> {
+  const client = new Redis({
+    ...redisConnection(url),
+    lazyConnect: true,
+    maxRetriesPerRequest: 0,
+    enableOfflineQueue: false,
+    retryStrategy: () => null,
+    connectTimeout: REDIS_CHECK_TIMEOUT_MS,
+  });
+  // Connection errors surface through the rejected promises below.
+  client.on('error', () => undefined);
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      client.connect().then(() => client.ping()),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('tempo esgotado'));
+        }, REDIS_CHECK_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Redis inacessível em REDIS_URL (${reason})`, {
+      cause: error,
+    });
+  } finally {
+    clearTimeout(timer);
+    client.disconnect();
+  }
+}
 
 async function bootstrap(): Promise<void> {
   const env = loadEnv(process.env);
@@ -12,17 +49,22 @@ async function bootstrap(): Promise<void> {
       logger.error({ err: error }, 'erro em conexão ociosa do Postgres');
     },
   });
-  const maintenance = await startMaintenance({
-    db,
-    redisUrl: env.REDIS_URL,
-    logger,
-  });
 
-  let stopping = false;
+  // Handlers go first, so a signal during startup is not lost.
+  const state = { stopping: false };
+  const isStopping = (): boolean => state.stopping;
+  let maintenance: Awaited<ReturnType<typeof startMaintenance>> | undefined;
   const shutdown = (signal: string): void => {
-    if (stopping) return;
-    stopping = true;
+    if (state.stopping) return;
+    state.stopping = true;
     logger.info({ signal }, 'encerrando');
+    // A close() that hangs (stuck job, dead Redis) must not keep us alive.
+    setTimeout(() => {
+      logger.error('encerramento excedeu o tempo limite; forçando saída');
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS).unref();
+    // Still starting: bootstrap sees `state.stopping` and closes what it opened.
+    if (!maintenance) return;
     // close() waits for the running job to finish before disconnecting.
     maintenance
       .close()
@@ -39,6 +81,28 @@ async function bootstrap(): Promise<void> {
     process.on(signal, () => {
       shutdown(signal);
     });
+  }
+
+  try {
+    await assertRedisReachable(env.REDIS_URL);
+    if (isStopping()) {
+      await pool.end();
+      process.exit(0);
+    }
+    const started = await startMaintenance({
+      db,
+      redisUrl: env.REDIS_URL,
+      logger,
+    });
+    if (isStopping()) {
+      await started.close();
+      await pool.end();
+      process.exit(0);
+    }
+    maintenance = started;
+  } catch (error) {
+    await pool.end().catch(() => undefined);
+    throw error;
   }
 }
 
