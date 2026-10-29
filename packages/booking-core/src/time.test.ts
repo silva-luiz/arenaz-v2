@@ -134,3 +134,25 @@ describe('date helpers', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
   });
 });
+
+describe('time zone guard and DST gap', () => {
+  it('throws RangeError for an unknown zone', () => {
+    expect(() => toInstant('2026-11-06', 0, 'Foo/Bar')).toThrow(RangeError);
+    expect(() => toInstant('2026-11-06', 0, 'Foo/Bar')).toThrow(
+      'invalid time zone',
+    );
+    expect(() => localDateOf(new Date(0), 'Foo/Bar')).toThrow(
+      'invalid time zone',
+    );
+    expect(() => localDayRange('2026-11-06', 'Foo/Bar')).toThrow(
+      'invalid time zone',
+    );
+  });
+
+  it('a wall time inside a DST gap shifts forward by the gap length', () => {
+    // 2018-11-04 00:30 does not exist in Sao Paulo (00:00 -> 01:00): 01:30 local.
+    expect(iso(toInstant('2018-11-04', 30, 'America/Sao_Paulo'))).toBe(
+      '2018-11-04T03:30:00.000Z',
+    );
+  });
+});

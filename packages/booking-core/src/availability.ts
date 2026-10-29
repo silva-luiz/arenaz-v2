@@ -33,8 +33,8 @@ export type BookingErrorCode =
 export const DEFAULT_HORIZON_DAYS = 60;
 /** A 24h venue could chain forever; stop after a week of consecutive days. */
 const MAX_CHAIN_DAYS = 7;
-const DAY_MS = 86_400_000;
 
+/** Rows of the weekday; invalid rows (out of range or open >= close) are dropped silently. */
 function dayRows(hours: readonly HoursRow[], date: string): HoursRow[] {
   const weekday = weekdayOfDate(date);
   return hours
@@ -106,8 +106,9 @@ function fitsWindow(windows: readonly Interval[], block: Interval): boolean {
   );
 }
 
-const horizonOf = (now: Date, horizonDays: number | undefined) =>
-  now.getTime() + (horizonDays ?? DEFAULT_HORIZON_DAYS) * DAY_MS;
+/** Last bookable local date: today in the venue zone + horizonDays (inclusive). */
+const horizonDate = (now: Date, tz: string, horizonDays: number | undefined) =>
+  addDays(localDateOf(now, tz), horizonDays ?? DEFAULT_HORIZON_DAYS);
 
 export interface DaySlot {
   startsAt: Date;
@@ -132,7 +133,7 @@ export interface DaySlotsInput {
 
 export function daySlots(input: DaySlotsInput): DaySlot[] {
   const { date, tz, now, hours, field, rules, busy } = input;
-  const horizon = horizonOf(now, input.horizonDays);
+  const lastDate = horizonDate(now, tz, input.horizonDays);
   const dayEnd = localDayRange(date, tz).end.getTime();
   const windows = openWindows(date, tz, hours);
   const blockMs = Math.max(field.minSlotMinutes, SLOT_MINUTES) * 60_000;
@@ -146,7 +147,7 @@ export function daySlots(input: DaySlotsInput): DaySlot[] {
       const block = { start: new Date(t), end: new Date(t + blockMs) };
       const available =
         t >= now.getTime() &&
-        t <= horizon &&
+        date <= lastDate &&
         fitsWindow(windows, block) &&
         !busy.some((b) => overlaps(b, block));
       slots.push({
@@ -192,6 +193,7 @@ export function validateBooking(
 ): ValidateBookingResult {
   const { start, durationMinutes, tz, now, hours, field, rules, busy } = input;
   const t = start.getTime();
+  // Alignment is checked on the epoch: valid because every Brazilian zone has a whole-30-minute offset.
   if (
     Number.isNaN(t) ||
     t % SLOT_MS !== 0 ||
@@ -204,7 +206,9 @@ export function validateBooking(
     return fail('too_short');
   }
   if (t < now.getTime()) return fail('past');
-  if (t > horizonOf(now, input.horizonDays)) return fail('too_far');
+  if (localDateOf(start, tz) > horizonDate(now, tz, input.horizonDays)) {
+    return fail('too_far');
+  }
 
   const block = { start, end: new Date(t + durationMinutes * 60_000) };
   const windows = openWindows(localDateOf(start, tz), tz, hours);

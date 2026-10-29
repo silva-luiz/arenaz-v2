@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { localDayRange } from './time.js';
 import {
   daySlots,
   openWindows,
@@ -185,7 +186,13 @@ describe('daySlots', () => {
       horizonDays: 0,
     });
     expect(edge[0]?.available).toBe(true);
-    expect(edge[1]?.available).toBe(false);
+    expect(edge[1]?.available).toBe(true); // same local day is inside horizon 0
+    const prev = daySlots({
+      ...args,
+      now: d('2026-11-05T15:00:00Z'),
+      horizonDays: 0,
+    });
+    expect(prev.every((s) => !s.available)).toBe(true);
   });
 
   it('prices the minimum block by segment, rules included', () => {
@@ -360,10 +367,10 @@ describe('validateBooking', () => {
   });
 
   it('horizon is 60 days by default and configurable', () => {
-    const edge = d('2027-01-01T12:00:00Z'); // 09:00 SP, now + 60 days exactly
+    const edge = d('2027-01-01T12:00:00Z'); // 09:00 SP, day +60
     expect(validateBooking({ ...ok, start: edge }).ok).toBe(true);
     expect(
-      validateBooking({ ...ok, start: d('2027-01-01T12:30:00Z') }),
+      validateBooking({ ...ok, start: d('2027-01-02T12:00:00Z') }),
     ).toEqual({ ok: false, code: 'too_far' });
     expect(validateBooking({ ...ok, horizonDays: 3 })).toEqual({
       ok: false,
@@ -484,5 +491,75 @@ describe('validateBooking', () => {
         code: 'closed',
       });
     }
+  });
+});
+
+describe('calendar-day horizon (venue zone, inclusive of day +60)', () => {
+  const allDays = [0, 1, 2, 3, 4, 5, 6].map((w) => h(w, '00:00', '24:00'));
+  const field = { minSlotMinutes: 30, basePriceCentsPerHour: 10000 };
+  const base = {
+    tz: SP,
+    hours: allDays,
+    field,
+    rules: [] as PriceRule[],
+    busy: [] as Interval[],
+  };
+  // now = 2026-11-02 10:00 SP; day +60 = 2027-01-01, day +61 = 2027-01-02.
+  const now = d('2026-11-02T13:00:00Z');
+
+  it('the whole of day +60 is bookable, day +61 never', () => {
+    const last = validateBooking({
+      ...base,
+      now,
+      start: d('2027-01-02T02:30:00Z'), // 2027-01-01 23:30 SP
+      durationMinutes: 30,
+    });
+    expect(last.ok).toBe(true);
+    expect(
+      validateBooking({
+        ...base,
+        now,
+        start: d('2027-01-02T03:00:00Z'), // 2027-01-02 00:00 SP
+        durationMinutes: 30,
+      }),
+    ).toEqual({ ok: false, code: 'too_far' });
+  });
+
+  it('daySlots: last slot of day +60 available, first of day +61 not', () => {
+    const d60 = daySlots({ ...base, now, date: '2027-01-01' });
+    expect(d60.at(-1)?.available).toBe(true);
+    expect(d60[0]?.available).toBe(true);
+    const d61 = daySlots({ ...base, now, date: '2027-01-02' });
+    expect(d61.every((s) => !s.available)).toBe(true);
+  });
+
+  it.each([
+    ['America/Manaus', '2026-11-02T03:59:00Z', '2026-11-02T04:00:00Z'],
+    ['America/Noronha', '2026-11-02T01:59:00Z', '2026-11-02T02:00:00Z'],
+  ])('%s: the horizon day flips at local midnight', (tz, before, after) => {
+    // before = Nov 1 23:59 local (day +60 = Dec 31); after = Nov 2 00:00 local (day +60 = Jan 1).
+    const dec31End = (tzName: string) => {
+      const r = localDayRange('2026-12-31', tzName);
+      return new Date(r.end.getTime() - 30 * 60_000);
+    };
+    const jan1Start = (tzName: string) =>
+      localDayRange('2027-01-01', tzName).start;
+    const args = { ...base, tz, durationMinutes: 30 };
+    expect(
+      validateBooking({ ...args, now: d(before), start: dec31End(tz) }).ok,
+    ).toBe(true);
+    expect(
+      validateBooking({ ...args, now: d(before), start: jan1Start(tz) }),
+    ).toEqual({
+      ok: false,
+      code: 'too_far',
+    });
+    expect(
+      validateBooking({ ...args, now: d(after), start: jan1Start(tz) }).ok,
+    ).toBe(true);
+    const slots = daySlots({ ...base, tz, now: d(before), date: '2027-01-01' });
+    expect(slots.every((s) => !s.available)).toBe(true);
+    const slots2 = daySlots({ ...base, tz, now: d(after), date: '2027-01-01' });
+    expect(slots2.at(-1)?.available).toBe(true);
   });
 });
