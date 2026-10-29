@@ -27,6 +27,11 @@ function photo(n: number): Photo {
   return {
     id: `00000000-0000-4000-8000-00000000000${String(n)}`,
     url: `${STORAGE_URL}/venues/${VENUE_ID}/${String(n)}.png`,
+    // Variants are made later by the worker: the first photo has them.
+    srcSet:
+      n === 1
+        ? `${STORAGE_URL}/venues/${VENUE_ID}/1.w400.webp 400w, ${STORAGE_URL}/venues/${VENUE_ID}/1.w800.webp 800w`
+        : null,
     position: n - 1,
   };
 }
@@ -442,6 +447,22 @@ describe('PhotoUploader', () => {
       expect(
         screen.getByRole('img', { name: 'Foto 3 do espaço' }),
       ).toBeVisible();
+    });
+
+    it('offers the thumbnail variants sized to the grid, the original while pending', () => {
+      render(<PhotoUploader venueId={VENUE_ID} photos={THREE} />);
+
+      const first = screen.getByRole('img', { name: 'Foto 1 do espaço' });
+      expect(first).toHaveAttribute('srcset', THREE[0]?.srcSet);
+      expect(first).toHaveAttribute(
+        'sizes',
+        '(min-width: 1024px) 164px, (min-width: 848px) 224px, (min-width: 640px) calc(33vw - 43px), calc(50vw - 49px)',
+      );
+      expect(first).toHaveAttribute('loading', 'lazy');
+      const pending = screen.getByRole('img', { name: 'Foto 2 do espaço' });
+      expect(pending).toHaveAttribute('src', THREE[1]?.url);
+      expect(pending).not.toHaveAttribute('srcset');
+      expect(pending).not.toHaveAttribute('sizes');
     });
 
     it('names each button after its photo and disables the ends', () => {

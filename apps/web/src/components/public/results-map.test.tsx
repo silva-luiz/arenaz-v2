@@ -86,6 +86,7 @@ function venue(
     city: 'São Paulo',
     state: 'SP',
     coverUrl: null,
+    coverSrcSet: null,
     sports: ['futsal'],
     minPriceCentsPerHour: cents,
     approxLocation: { lat, lng },
@@ -226,6 +227,31 @@ describe('ResultsMap', () => {
     );
 
     expect(html(captured.markers[0])).toContain('bg-ink');
+  });
+
+  it('shows the cover variants in the preview, sized to its thumbnail', () => {
+    const [first, second] = ITEMS;
+    if (!first || !second) throw new Error('fixture');
+    render(
+      <ResultsMap
+        items={[
+          {
+            ...first,
+            coverUrl: 'http://img.test/a.jpg',
+            coverSrcSet: 'http://img.test/a.w400.webp 400w',
+          },
+          second,
+        ]}
+        hoveredSlug={null}
+        previewSlug="arena-a"
+        onPreview={onPreview}
+      />,
+    );
+
+    const img = document.querySelector('img');
+    expect(img).toHaveAttribute('src', 'http://img.test/a.jpg');
+    expect(img).toHaveAttribute('srcset', 'http://img.test/a.w400.webp 400w');
+    expect(img).toHaveAttribute('sizes', '112px');
   });
 
   it('hides the pins from assistive technology: the list is the accessible equivalent', () => {

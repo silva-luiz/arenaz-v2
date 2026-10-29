@@ -17,6 +17,10 @@ function card(index: number) {
     city: 'São Paulo',
     state: 'SP',
     coverUrl: index % 2 === 0 ? `http://img.test/${String(index)}.jpg` : null,
+    coverSrcSet:
+      index % 2 === 0
+        ? `http://img.test/${String(index)}.w400.webp 400w`
+        : null,
     sports: ['futsal', 'padel'],
     minPriceCentsPerHour: 12000,
     approxLocation: { lat: -23.55, lng: -46.69 },
@@ -98,6 +102,19 @@ describe('home page', () => {
       '/espacos/arena-2',
     );
     expect(within(list).getAllByText(/^Vila Madalena · /)).toHaveLength(3);
+  });
+
+  it('sizes the card covers to the rail columns', async () => {
+    render(await HomePage());
+
+    const list = screen.getByRole('list', { name: 'Espaços em destaque' });
+    const img = list.querySelector('img');
+    expect(img).toHaveAttribute('src', 'http://img.test/2.jpg');
+    expect(img).toHaveAttribute('srcset', 'http://img.test/2.w400.webp 400w');
+    expect(img).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 301px, (min-width: 1024px) calc(25vw - 39px), (min-width: 768px) calc(33vw - 45px), (min-width: 640px) calc(50vw - 34px), calc(78vw - 37px)',
+    );
   });
 
   it('shows at most 8 venues', async () => {

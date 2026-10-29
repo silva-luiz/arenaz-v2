@@ -28,6 +28,7 @@ function card(index: number, distanceKm: number | null = null) {
     city: 'São Paulo',
     state: 'SP',
     coverUrl: null,
+    coverSrcSet: null,
     sports: ['futsal', 'padel'],
     minPriceCentsPerHour: 18000,
     approxLocation: { lat: -23.55, lng: -46.69 },

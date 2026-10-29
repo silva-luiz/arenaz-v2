@@ -38,11 +38,14 @@ export function makeVenue(overrides: Partial<PublicVenue> = {}): PublicVenue {
       {
         id: '22222222-2222-4222-8222-222222222221',
         url: 'http://storage.test/a.jpg',
+        srcSet:
+          'http://storage.test/a.w400.webp 400w, http://storage.test/a.w800.webp 800w',
         position: 0,
       },
       {
         id: '22222222-2222-4222-8222-222222222222',
         url: 'http://storage.test/b.jpg',
+        srcSet: null,
         position: 1,
       },
     ],

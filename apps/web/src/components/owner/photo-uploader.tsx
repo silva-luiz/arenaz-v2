@@ -95,6 +95,13 @@ type FocusTarget =
   /** After a removal: the Remover of a neighbouring photo, or the file input. */
   | { kind: 'remove'; id: string | null };
 
+/*
+ * Thumbnail `sizes`: 2 / 3 (sm) / 4 (lg) columns with 16px gaps, inside the
+ * editor's Card (24px / 32px padding from sm) in its max-w-3xl column.
+ */
+const THUMB_SIZES =
+  '(min-width: 1024px) 164px, (min-width: 848px) 224px, (min-width: 640px) calc(33vw - 43px), calc(50vw - 49px)';
+
 /** Photo grid plus uploads. The first photo is the cover. */
 export function PhotoUploader({
   venueId,
@@ -298,6 +305,9 @@ export function PhotoUploader({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.url}
+                    {...(photo.srcSet
+                      ? { srcSet: photo.srcSet, sizes: THUMB_SIZES }
+                      : {})}
                     alt={`Foto ${number} do espaço`}
                     loading="lazy"
                     className="size-full object-cover"

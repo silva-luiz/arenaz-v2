@@ -37,6 +37,7 @@ function venue(index: number): PublicVenueCard {
     city: 'São Paulo',
     state: 'SP',
     coverUrl: null,
+    coverSrcSet: null,
     sports: ['futsal'],
     minPriceCentsPerHour: 18000,
     approxLocation: { lat: -23.55, lng: -46.69 },
@@ -57,6 +58,29 @@ describe('ResultsList', () => {
 
     const list = screen.getByRole('list', { name: 'Espaços encontrados' });
     expect(within(list).getAllByRole('link')).toHaveLength(3);
+  });
+
+  it('sizes the card covers to the results grid', () => {
+    render(
+      <ResultsList
+        items={[
+          {
+            ...venue(9),
+            coverUrl: 'http://img.test/9.jpg',
+            coverSrcSet: 'http://img.test/9.w400.webp 400w',
+          },
+        ]}
+      />,
+    );
+
+    const img = screen
+      .getByRole('list', { name: 'Espaços encontrados' })
+      .querySelector('img');
+    expect(img).toHaveAttribute('srcset', 'http://img.test/9.w400.webp 400w');
+    expect(img).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 364px, (min-width: 1024px) calc(30vw - 44px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)',
+    );
   });
 
   it('renders the footer after the cards', () => {

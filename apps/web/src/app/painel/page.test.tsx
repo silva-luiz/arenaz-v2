@@ -47,6 +47,7 @@ describe('/painel', () => {
         city: 'São Paulo',
         fieldsCount: 3,
         coverUrl: 'https://cdn.example.com/capa.jpg',
+        coverSrcSet: 'https://cdn.example.com/capa.w400.webp 400w',
       },
       {
         id: ID_B,
@@ -56,6 +57,7 @@ describe('/painel', () => {
         city: 'Campinas',
         fieldsCount: 1,
         coverUrl: null,
+        coverSrcSet: null,
       },
     ]);
 
@@ -86,6 +88,7 @@ describe('/painel', () => {
         city: 'São Paulo',
         fieldsCount: 3,
         coverUrl: 'https://cdn.example.com/capa.jpg',
+        coverSrcSet: 'https://cdn.example.com/capa.w400.webp 400w',
       },
       {
         id: ID_B,
@@ -95,13 +98,25 @@ describe('/painel', () => {
         city: 'Campinas',
         fieldsCount: 0,
         coverUrl: null,
+        coverSrcSet: null,
       },
     ]);
 
     render(await PainelPage());
 
     const first = screen.getByRole('link', { name: /Arena Central/ });
-    expect(first.querySelector('img')).not.toBeNull();
+    const cover = first.querySelector('img');
+    expect(cover).toHaveAttribute('src', 'https://cdn.example.com/capa.jpg');
+    expect(cover).toHaveAttribute(
+      'srcset',
+      'https://cdn.example.com/capa.w400.webp 400w',
+    );
+    // The painel grid: 1 column, 2 from 480px, 3 from lg, 4 from xl.
+    expect(cover).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 302px, (min-width: 1280px) calc(25vw - 38px), (min-width: 1024px) calc(33vw - 43px), (min-width: 480px) calc(50vw - 28px), calc(100vw - 32px)',
+    );
+    expect(cover).toHaveAttribute('loading', 'lazy');
     expect(within(first).queryByTestId('owner-venue-fallback')).toBeNull();
     const second = screen.getByRole('link', { name: /Arena Norte/ });
     expect(second.querySelector('img')).toBeNull();

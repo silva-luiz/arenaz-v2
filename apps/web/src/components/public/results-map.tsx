@@ -167,6 +167,10 @@ function Preview({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={venue.coverUrl}
+              // The thumbnail is w-28 (112px) wide.
+              {...(venue.coverSrcSet
+                ? { srcSet: venue.coverSrcSet, sizes: '112px' }
+                : {})}
               alt=""
               className="absolute inset-0 size-full object-cover"
             />

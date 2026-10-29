@@ -1,7 +1,14 @@
 import type { VenueSummary } from '@arenaz/contracts';
 import { Badge, FOCUS_RING, LogoMark, cn } from '@arenaz/ui';
-import Image from 'next/image';
 import Link from 'next/link';
+
+/*
+ * Cover `sizes` for the painel grid (app/painel/page.tsx): 1 column, 2 from
+ * 480px, 3 from lg, 4 from xl, 24px gaps, in the 1360px container with 16px /
+ * 40px (md) gutters.
+ */
+const COVER_SIZES =
+  '(min-width: 1360px) 302px, (min-width: 1280px) calc(25vw - 38px), (min-width: 1024px) calc(33vw - 43px), (min-width: 480px) calc(50vw - 28px), calc(100vw - 32px)';
 
 function courtsLabel(count: number): string {
   return `${String(count)} ${count === 1 ? 'quadra' : 'quadras'}`;
@@ -32,15 +39,18 @@ export function OwnerVenueCard({ venue }: { venue: VenueSummary }) {
     >
       <div className="relative aspect-square overflow-hidden rounded-photo bg-bg shadow-1 transition-shadow duration-200 ease-out group-hover:shadow-2 motion-reduce:transition-none">
         {venue.coverUrl ? (
-          // Photos live in object storage on another origin, which
-          // next/image would need configured to optimize; unoptimized skips it.
-          <Image
+          // Photos live in object storage on another origin and come with
+          // their own resized variants (srcSet), so no next/image here.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={venue.coverUrl}
+            {...(venue.coverSrcSet
+              ? { srcSet: venue.coverSrcSet, sizes: COVER_SIZES }
+              : {})}
             alt=""
-            fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-            unoptimized
-            className="object-cover transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 size-full object-cover transition-transform duration-300 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         ) : (
           <div

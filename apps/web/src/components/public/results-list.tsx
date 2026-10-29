@@ -51,6 +51,14 @@ function ToggleButton({
   );
 }
 
+/*
+ * Cover `sizes` of the result cards: 1 column, 2 from sm; from lg the list is
+ * the 3fr of a 3fr/2fr split with the map (32px gap) inside the page content
+ * (1360px max, 16px / 40px gutters from md). 20px between cards.
+ */
+const CARD_SIZES =
+  '(min-width: 1360px) 364px, (min-width: 1024px) calc(30vw - 44px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)';
+
 export interface ResultsListProps {
   items: PublicVenueCard[];
   /**
@@ -126,6 +134,8 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
                   name={venue.name}
                   imageUrl={venue.coverUrl}
                   imageAlt=""
+                  imageSrcSet={venue.coverSrcSet}
+                  imageSizes={CARD_SIZES}
                   meta={venueCardMeta(venue)}
                   priceCents={venue.minPriceCentsPerHour}
                   priceFrom

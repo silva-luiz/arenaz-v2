@@ -54,6 +54,10 @@ async function loadFeatured() {
 // Mobile: peek of the next card (78%). Wider screens: 2, 3 and 4 per view.
 const RAIL =
   'grid auto-cols-[78%] grid-flow-col gap-5 overflow-x-auto overscroll-x-contain snap-x snap-mandatory scroll-px-2 rounded-photo px-2 pt-2 pb-8 sm:auto-cols-[calc((100%-1.25rem)/2)] md:auto-cols-[calc((100%-2.5rem)/3)] lg:auto-cols-[calc((100%-3.75rem)/4)]';
+// Cover `sizes` of those columns: the rail is the page content (1360px max,
+// 16px / 40px gutters from md) minus its own 8px padding on each side.
+const RAIL_CARD_SIZES =
+  '(min-width: 1360px) 301px, (min-width: 1024px) calc(25vw - 39px), (min-width: 768px) calc(33vw - 45px), (min-width: 640px) calc(50vw - 34px), calc(78vw - 37px)';
 
 function FieldLines({ className }: { className: string }) {
   return (
@@ -156,6 +160,8 @@ export default async function HomePage() {
                     name={venue.name}
                     imageUrl={venue.coverUrl}
                     imageAlt=""
+                    imageSrcSet={venue.coverSrcSet}
+                    imageSizes={RAIL_CARD_SIZES}
                     meta={venueCardMeta(venue)}
                     priceCents={venue.minPriceCentsPerHour}
                     priceFrom

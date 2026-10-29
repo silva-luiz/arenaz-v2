@@ -147,6 +147,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
 
   const photos = sortedPhotos(venue.photos).map((photo, index) => ({
     url: photo.url,
+    srcSet: photo.srcSet,
     alt: `${venue.name}, foto ${String(index + 1)}`,
   }));
   const minPrice =

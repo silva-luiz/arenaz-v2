@@ -126,6 +126,19 @@ describe('venue page', () => {
     ).toBeInTheDocument();
   });
 
+  it('hands the gallery the photo variants', async () => {
+    await renderPage();
+
+    const imgs = document.querySelectorAll('button img');
+    expect(imgs[0]).toHaveAttribute('src', 'http://storage.test/a.jpg');
+    expect(imgs[0]).toHaveAttribute(
+      'srcset',
+      'http://storage.test/a.w400.webp 400w, http://storage.test/a.w800.webp 800w',
+    );
+    expect(imgs[0]).toHaveAttribute('sizes');
+    expect(imgs[1]).not.toHaveAttribute('srcset');
+  });
+
   it('works without photos', async () => {
     mocks.publicGet.mockResolvedValue(makeVenue({ photos: [] }));
 
