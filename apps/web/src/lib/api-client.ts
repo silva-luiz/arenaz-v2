@@ -1,4 +1,7 @@
+import { navigate } from './navigate';
 import { GENERIC_ERROR, problemToFormError } from './problem';
+
+const SESSION_EXPIRED = 'Sua sessão expirou. Entre novamente.';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -39,6 +42,9 @@ async function readJson(response: Response): Promise<unknown> {
  * only with a body: the API answers 400 to an empty body declared as JSON, so
  * publish/unpublish/delete must not send it.
  *
+ * A 401 (expired session) sends the browser to the sign-in page, which brings
+ * the user back to the current path.
+ *
  * Never throws: network failures, problem+json answers and bodies that do not
  * match the schema all come back as `{ ok: false }`. Without a schema the
  * body is ignored (204 and fire-and-forget calls).
@@ -71,6 +77,16 @@ export async function apiSend<T>(
     response = await fetch(`/api${path}`, init);
   } catch {
     return failure(0);
+  }
+
+  if (response.status === 401) {
+    // The session expired while the page was open: sign in again and come back.
+    const here = encodeURIComponent(window.location.pathname).replaceAll(
+      '%2F',
+      '/',
+    );
+    navigate(`/entrar?next=${here}`);
+    return failure(401, SESSION_EXPIRED);
   }
 
   if (!response.ok) {

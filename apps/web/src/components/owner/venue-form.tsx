@@ -11,6 +11,7 @@ import {
   venueInputSchema,
   venueSchema,
   type Venue,
+  type VenueFormInput,
   type VenueInput,
 } from '@arenaz/contracts';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,16 +24,12 @@ import {
   Select,
   Textarea,
 } from '@arenaz/ui';
-import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState } from 'react';
 import { Controller, useForm, type DefaultValues } from 'react-hook-form';
 import { apiSend, type ApiResult } from '@/lib/api-client';
 import { formatCep, formatPhoneBr } from '@/lib/format-br';
 import { LocationPicker } from './location-picker';
-
-/** Form values before the schema's transforms (CEP and phone are free text). */
-type VenueFormValues = (typeof venueInputSchema)['_zod']['input'];
 
 const UF_OPTIONS = UF.map((uf) => ({ value: uf, label: uf }));
 const INVALID_MESSAGE = 'Corrija os campos destacados.';
@@ -44,7 +41,7 @@ const LOCATION_BLANK_MESSAGE = 'Informe a localização do espaço';
  */
 const UNSET_LOCATION = { lat: Number.NaN, lng: Number.NaN };
 
-const EMPTY_VALUES: DefaultValues<VenueFormValues> = {
+const EMPTY_VALUES: DefaultValues<VenueFormInput> = {
   name: '',
   description: '',
   phone: '',
@@ -60,7 +57,7 @@ const EMPTY_VALUES: DefaultValues<VenueFormValues> = {
   amenities: [],
 };
 
-function toFormValues(venue: Venue): VenueFormValues {
+function toFormValues(venue: Venue): VenueFormInput {
   return {
     name: venue.name,
     description: venue.description ?? '',
@@ -134,7 +131,7 @@ export function VenueForm({ venue }: VenueFormProps) {
     clearErrors,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<VenueFormValues, unknown, VenueInput>({
+  } = useForm<VenueFormInput, unknown, VenueInput>({
     resolver: zodResolver(venueInputSchema),
     defaultValues: venue ? toFormValues(venue) : EMPTY_VALUES,
   });
@@ -222,7 +219,7 @@ export function VenueForm({ venue }: VenueFormProps) {
     }
     if (!venue) {
       setRedirecting(true);
-      router.replace(`/painel/espacos/${result.data.id}` as Route);
+      router.replace(`/painel/espacos/${result.data.id}`);
       return;
     }
     reset(toFormValues(result.data));
@@ -291,6 +288,10 @@ export function VenueForm({ venue }: VenueFormProps) {
             autoComplete="postal-code"
             {...cep}
             onChange={(event) => {
+              // Whatever lookup is still in flight is about the old value.
+              lookupTicket.current += 1;
+              lastLookup.current = '';
+              setCepStatus('');
               if (errors.address?.cep?.type === 'lookup') {
                 clearErrors('address.cep');
               }
@@ -360,6 +361,7 @@ export function VenueForm({ venue }: VenueFormProps) {
             return (
               <LocationPicker
                 value={value}
+                latitudeRef={field.ref}
                 onChange={(next) => {
                   field.onChange(next ?? UNSET_LOCATION);
                 }}

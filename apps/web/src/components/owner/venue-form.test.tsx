@@ -1,5 +1,5 @@
 import type { Venue } from '@arenaz/contracts';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -201,6 +201,28 @@ describe('VenueForm (create)', () => {
     expect(cepCalls()).toHaveLength(1);
   });
 
+  it('ignores a lookup that comes back after the CEP was edited', async () => {
+    let answer: (value: unknown) => void = () => undefined;
+    mocks.apiSend.mockReturnValue(
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<VenueForm />);
+
+    await user.type(screen.getByLabelText('CEP'), '01310100');
+    await user.tab();
+    await user.type(screen.getByLabelText('CEP'), '9');
+    await act(async () => {
+      answer(CEP_OK);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText('Rua')).toHaveValue('');
+    expect(screen.getByLabelText('Latitude')).toHaveValue('');
+  });
+
   it('does not call the API when the form is invalid', async () => {
     const user = userEvent.setup();
     render(<VenueForm />);
@@ -337,6 +359,20 @@ describe('VenueForm (edit)', () => {
       screen.getByRole('checkbox', { name: 'Chuveiro' }),
     ).not.toBeChecked();
     expect(screen.getByRole('radio', { name: 'Moderada' })).toBeChecked();
+  });
+
+  it('focuses the latitude field when the location is the invalid part', async () => {
+    const user = userEvent.setup();
+    render(<VenueForm venue={VENUE} />);
+
+    await user.clear(screen.getByLabelText('Latitude'));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    expect(
+      await screen.findByText('Informe a localização do espaço'),
+    ).toBeVisible();
+    expect(screen.getByLabelText('Latitude')).toHaveFocus();
+    expect(mocks.apiSend).not.toHaveBeenCalled();
   });
 
   it('does not look the CEP up again when it was not changed', async () => {

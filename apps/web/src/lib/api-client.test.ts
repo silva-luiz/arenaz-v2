@@ -1,5 +1,8 @@
 import { venueSchema } from '@arenaz/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+const nav = vi.hoisted(() => ({ navigate: vi.fn() }));
+vi.mock('./navigate', () => ({ navigate: nav.navigate }));
+
 import { apiSend } from './api-client';
 
 const fetchMock = vi.fn();
@@ -144,5 +147,31 @@ describe('apiSend', () => {
     const result = await apiSend('GET', '/x');
 
     expect(result).toMatchObject({ ok: false, status: 0, fieldErrors: {} });
+  });
+
+  it('sends the user to the sign-in page, back to the current page, when the session expired', async () => {
+    window.history.pushState({}, '', '/painel/espacos/abc');
+    fetchMock.mockResolvedValue(
+      jsonResponse(401, { title: 'Não autenticado', status: 401 }),
+    );
+
+    const result = await apiSend('PATCH', '/owner/venues/abc', { name: 'x' });
+
+    expect(nav.navigate).toHaveBeenCalledWith(
+      '/entrar?next=/painel/espacos/abc',
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      status: 401,
+      message: 'Sua sessão expirou. Entre novamente.',
+    });
+  });
+
+  it('does not navigate on other failures', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(422, { status: 422 }));
+
+    await apiSend('GET', '/x');
+
+    expect(nav.navigate).not.toHaveBeenCalled();
   });
 });

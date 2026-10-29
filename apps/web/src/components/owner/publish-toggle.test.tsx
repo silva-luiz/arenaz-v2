@@ -41,6 +41,7 @@ describe('PublishToggle', () => {
     await waitFor(() => {
       expect(mocks.refresh).toHaveBeenCalled();
     });
+    expect(screen.getByRole('alert')).toHaveTextContent('Espaço publicado');
     const call = mocks.apiSend.mock.calls[0] as unknown[];
     expect(call[0]).toBe('POST');
     expect(call[1]).toBe(`/owner/venues/${VENUE_ID}/publish`);
@@ -60,6 +61,7 @@ describe('PublishToggle', () => {
     expect(mocks.apiSend.mock.calls[0]?.[1]).toBe(
       `/owner/venues/${VENUE_ID}/unpublish`,
     );
+    expect(screen.getByRole('alert')).toHaveTextContent('Espaço despublicado');
   });
 
   it('lists what is missing when publishing is refused with 422', async () => {

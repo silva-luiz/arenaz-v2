@@ -89,6 +89,9 @@ export default function LocationMap({ value, onChange }: LocationMapProps) {
       center={value ? [value.lat, value.lng] : BRAZIL_CENTER}
       zoom={value ? PIN_ZOOM : BRAZIL_ZOOM}
       scrollWheelZoom={false}
+      // A one-finger drag would otherwise trap the page scroll on phones; the
+      // pin itself stays draggable and a tap still places it.
+      dragging={!L.Browser.mobile}
       className="h-64 w-full"
     >
       <TileLayer

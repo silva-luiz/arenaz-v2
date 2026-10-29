@@ -102,6 +102,8 @@ export const venueSummarySchema = z.object({
 });
 
 export type VenueInput = z.infer<typeof venueInputSchema>;
+/** Form values before the schema's transforms (CEP and phone are free text). */
+export type VenueFormInput = z.input<typeof venueInputSchema>;
 export type VenueUpdate = z.infer<typeof venueUpdateSchema>;
 export type VenueHours = z.infer<typeof venueHoursSchema>;
 export type VenueStatus = z.infer<typeof venueStatusSchema>;

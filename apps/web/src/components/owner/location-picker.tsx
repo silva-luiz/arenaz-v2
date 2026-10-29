@@ -2,7 +2,7 @@
 
 import { Field, Input } from '@arenaz/ui';
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, type Ref } from 'react';
 
 // Leaflet touches `window` on import, so the map is client-only.
 const LocationMap = dynamic(() => import('./location-map'), {
@@ -25,6 +25,8 @@ export interface LocationPickerProps {
   value: LatLngValue | null;
   onChange: (value: LatLngValue | null) => void;
   errors?: { lat?: string | undefined; lng?: string | undefined } | undefined;
+  /** Ref of the latitude field, so a form can focus it on an invalid submit. */
+  latitudeRef?: Ref<HTMLInputElement> | undefined;
 }
 
 /** "-23,5" and "-23.5" are both fine; blank or garbage is `null`. */
@@ -51,6 +53,7 @@ export function LocationPicker({
   value,
   onChange,
   errors,
+  latitudeRef,
 }: LocationPickerProps) {
   // The inputs keep their own text so "-2" or "-23," survive while typing.
   const [texts, setTexts] = useState(() => toTexts(value));
@@ -82,6 +85,7 @@ export function LocationPicker({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Latitude" error={errors?.lat}>
           <Input
+            ref={latitudeRef}
             type="text"
             inputMode="decimal"
             value={texts.lat}

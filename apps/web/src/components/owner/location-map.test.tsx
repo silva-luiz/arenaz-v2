@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import type { LeafletMouseEvent } from 'leaflet';
+import L, { type LeafletMouseEvent } from 'leaflet';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,8 +25,16 @@ const captured = vi.hoisted(() => ({
 }));
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: ReactNode }) => (
-    <div data-testid="map-container">{children}</div>
+  MapContainer: ({
+    children,
+    dragging,
+  }: {
+    children: ReactNode;
+    dragging?: boolean;
+  }) => (
+    <div data-testid="map-container" data-dragging={String(dragging)}>
+      {children}
+    </div>
   ),
   TileLayer: ({ url, attribution }: { url: string; attribution: string }) => (
     <div data-testid="tiles" data-url={url} data-attribution={attribution} />
@@ -70,6 +78,25 @@ describe('LocationMap', () => {
     expect(tiles.getAttribute('data-attribution')).toContain(
       '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     );
+  });
+
+  it('does not capture touch drags on phones, so the page can still scroll', () => {
+    const { rerender } = render(
+      <LocationMap value={null} onChange={onChange} />,
+    );
+    // jsdom is not a mobile browser
+    expect(screen.getByTestId('map-container')).toHaveAttribute(
+      'data-dragging',
+      'true',
+    );
+
+    Object.assign(L.Browser, { mobile: true });
+    rerender(<LocationMap value={null} onChange={onChange} />);
+    expect(screen.getByTestId('map-container')).toHaveAttribute(
+      'data-dragging',
+      'false',
+    );
+    Object.assign(L.Browser, { mobile: false });
   });
 
   it('shows no pin until there is a location', () => {
