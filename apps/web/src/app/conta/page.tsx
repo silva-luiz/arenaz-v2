@@ -1,5 +1,6 @@
-import { Card } from '@arenaz/ui';
+import { Card, buttonClasses } from '@arenaz/ui';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { PageShell } from '@/components/ui/page-shell';
@@ -18,7 +19,15 @@ export default async function ContaPage() {
           {`Olá, ${session.name}`}
         </h1>
         <p className="mt-1 mb-6 text-muted">{session.email}</p>
-        <SignOutButton />
+        <div className="flex flex-col gap-3">
+          <Link
+            href="/painel"
+            className={buttonClasses({ variant: 'secondary' })}
+          >
+            Painel do dono
+          </Link>
+          <SignOutButton />
+        </div>
       </Card>
     </PageShell>
   );
