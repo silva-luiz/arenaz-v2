@@ -1,3 +1,4 @@
+import { request } from 'node:http';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
@@ -167,5 +168,79 @@ describe('auth e2e', () => {
       cookie.name.includes('session_token'),
     );
     expect(c).toMatchObject({ httpOnly: true, sameSite: 'Lax' });
+  });
+});
+
+// `app.inject` resolves dot segments before routing; only a real socket keeps
+// the raw request path, which is how a client could try to dodge validation.
+describe('auth e2e: caminhos com segmentos especiais', () => {
+  let port: number;
+
+  beforeAll(async () => {
+    await app.listen(0, '127.0.0.1');
+    port = Number(new URL(await app.getUrl()).port);
+  });
+
+  const raw = (path: string, body: object) =>
+    new Promise<{ status: number; body: string }>((resolve, reject) => {
+      const req = request(
+        {
+          host: '127.0.0.1',
+          port,
+          path,
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            origin: env.WEB_ORIGIN,
+          },
+        },
+        (res) => {
+          let data = '';
+          res.on('data', (chunk: Buffer) => {
+            data += chunk.toString();
+          });
+          res.on('end', () => {
+            resolve({ status: res.statusCode ?? 0, body: data });
+          });
+        },
+      );
+      req.on('error', reject);
+      req.end(JSON.stringify(body));
+    });
+
+  const SIGN_UP_SPELLINGS = [
+    '/api/auth/./sign-up/email',
+    '/api/auth/x/../sign-up/email',
+    '/api/auth/%2e/sign-up/email',
+    '/api/auth/sign-up/%65mail',
+    '/api/auth//sign-up/email/',
+  ];
+
+  it.each(SIGN_UP_SPELLINGS)('senha fraca em %s → 422', async (path) => {
+    const res = await raw(path, {
+      name: 'Dot',
+      email: 'dot-weak@mail.com',
+      password: 'aaaaaaaa',
+    });
+    expect(res.status).toBe(422);
+    expect(JSON.parse(res.body)).toMatchObject({ title: 'Dados inválidos' });
+  });
+
+  it('cadastro e login por caminho com ponto normalizam o e-mail', async () => {
+    const up = await raw('/api/auth/./sign-up/email', {
+      name: 'Dot',
+      email: '  Dot@Mail.COM ',
+      password: 'Senha@123',
+    });
+    expect(up.status).toBe(200);
+    expect(JSON.parse(up.body)).toMatchObject({
+      user: { email: 'dot@mail.com' },
+    });
+
+    const noTrim = await raw('/api/auth/x/../sign-in/email', {
+      email: '  Dot@Mail.COM ',
+      password: 'Senha@123',
+    });
+    expect(noTrim.status).toBe(200);
   });
 });

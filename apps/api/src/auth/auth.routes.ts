@@ -59,10 +59,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Path without query, repeated or trailing slashes, so matching is exact. */
-function routePath(url: string): string {
-  const path = url.split('?')[0] ?? '';
-  return path.replace(/\/{2,}/g, '/').replace(/(.)\/+$/, '$1');
+/**
+ * The path Better Auth will route, as a comparison key. It comes from the
+ * WHATWG-resolved URL (dot segments such as `/./` or `/x/../` and `%2e`
+ * already collapsed), then has percent-escapes decoded, repeated and trailing
+ * slashes removed and case folded, so every spelling Better Auth could accept
+ * for a route maps to the same key and cannot dodge validation.
+ */
+function routeKey(url: URL): string {
+  let path = url.pathname;
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    // Malformed escapes: keep the raw path; Better Auth will not route it.
+  }
+  return path
+    .replace(/\/{2,}/g, '/')
+    .replace(/(.)\/+$/, '$1')
+    .toLowerCase();
 }
 
 type Normalized = { body: unknown } | { problem: Problem };
@@ -71,15 +85,15 @@ type Normalized = { body: unknown } | { problem: Problem };
  * Validates and normalises the sign-up / sign-in payloads before Better Auth
  * sees them (lowercased, trimmed e-mail; strong password).
  */
-function normalizeBody(path: string, body: unknown): Normalized {
+function normalizeBody(key: string, body: unknown): Normalized {
   const input = isRecord(body) ? body : {};
-  if (path === SIGN_UP_PATH) {
+  if (key === SIGN_UP_PATH) {
     const result = signUpSchema.safeParse(input);
     if (!result.success) return { problem: invalidData(result.error) };
     // Only the known fields go through: no way to inject extra user fields.
     return { body: result.data };
   }
-  if (path === SIGN_IN_PATH) {
+  if (key === SIGN_IN_PATH) {
     const result = emailSchema.safeParse(input.email);
     if (!result.success) {
       return { problem: invalidData(result.error, 'email') };
@@ -102,7 +116,11 @@ function invalidData(error: z.ZodError, field?: string): Problem {
   };
 }
 
-function buildRequest(request: FastifyRequest, body: unknown): Request {
+function buildRequest(
+  request: FastifyRequest,
+  url: URL,
+  body: unknown,
+): Request {
   const headers = toFetchHeaders(request.headers);
   for (const name of SKIPPED_REQUEST_HEADERS) headers.delete(name);
 
@@ -113,7 +131,6 @@ function buildRequest(request: FastifyRequest, body: unknown): Request {
       headers.set('content-type', 'application/json');
     }
   }
-  const url = `${request.protocol}://${request.host}${request.url}`;
   return new Request(url, init);
 }
 
@@ -181,16 +198,21 @@ export function registerAuthRoutes(fastify: FastifyInstance, auth: Auth): void {
     method: ['GET', 'POST'],
     url: `${AUTH_PREFIX}/*`,
     handler: async (request, target) => {
+      // Resolve the URL first: Better Auth routes on exactly this pathname, so
+      // validation must key on it too (raw `request.url` can hide dot segments).
+      const url = new URL(
+        `${request.protocol}://${request.host}${request.url}`,
+      );
       let body: unknown = request.body;
       if (request.method === 'POST') {
-        const normalized = normalizeBody(routePath(request.url), body);
+        const normalized = normalizeBody(routeKey(url), body);
         if ('problem' in normalized) {
           sendProblem(target, normalized.problem);
           return target;
         }
         body = normalized.body;
       }
-      const response = await auth.handler(buildRequest(request, body));
+      const response = await auth.handler(buildRequest(request, url, body));
       return sendResponse(target, response);
     },
     // Fastify-level failures (malformed JSON, oversized body...) and anything
