@@ -11,7 +11,8 @@ const PHOTO = fileURLToPath(new URL('../fixtures/quadra.png', import.meta.url));
  */
 export const PRIVATE = {
   street: 'Rua Sigilosa dos Testes',
-  number: '7391',
+  /** Alphanumeric, so it cannot collide with a timestamp, hash or price. */
+  number: '7391-B',
   phone: '(11) 93456-7821',
   phoneDigits: '934567821',
   cep: '05435000',
@@ -31,6 +32,13 @@ export interface SeededVenue {
   id: string;
   slug: string;
   name: string;
+  /**
+   * Unique per venue ("Vila Madalena Seed <id>"). The public search matches
+   * city and neighborhood, so searching for it finds exactly this venue,
+   * whatever older runs left in the database, and gives every attempt its own
+   * 60 s data-cache key (a CI retry never reuses a stale listing).
+   */
+  neighborhood: string;
 }
 
 async function expectOk(
@@ -77,6 +85,7 @@ export class OwnerApi {
 
   /** A draft venue in Vila Madalena (CEP 05435000 in the fake geo). */
   async createDraftVenue(name: string): Promise<SeededVenue> {
+    const neighborhood = `Vila Madalena Seed ${unique()}`;
     const response = await this.request.post('/api/owner/venues', {
       headers: this.headers(),
       data: {
@@ -87,7 +96,7 @@ export class OwnerApi {
           cep: PRIVATE.cep,
           street: PRIVATE.street,
           number: PRIVATE.number,
-          neighborhood: 'Vila Madalena',
+          neighborhood,
           city: 'São Paulo',
           state: 'SP',
         },
@@ -100,7 +109,7 @@ export class OwnerApi {
       id: string;
       slug: string;
     };
-    return { id: body.id, slug: body.slug, name };
+    return { id: body.id, slug: body.slug, name, neighborhood };
   }
 
   async setHours(venueId: string): Promise<void> {
@@ -183,12 +192,11 @@ export class OwnerApi {
 
 /**
  * A complete published venue (hours, one active Society court, one photo),
- * owned by a brand-new owner. The name starts with "Aa" so it sorts first in a
- * name-ordered search whatever older data the database holds.
+ * owned by a brand-new owner.
  */
 export async function seedPublishedVenue(api: OwnerApi): Promise<SeededVenue> {
   await api.signUp('Dono Seed');
-  const venue = await api.createDraftVenue(`Aa Arena Seed ${unique()}`);
+  const venue = await api.createDraftVenue(`Arena Seed ${unique()}`);
   await api.setHours(venue.id);
   await api.createSocietyCourt(venue.id);
   await api.uploadPhoto(venue.id);

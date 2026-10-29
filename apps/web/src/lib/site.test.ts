@@ -33,6 +33,14 @@ describe('site url', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it('usa o endereço local quando a variável nem existe', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', undefined);
+    expect(process.env.NEXT_PUBLIC_SITE_URL).toBeUndefined();
+    const site = await loadSite();
+    expect(site.SITE_URL).toBe('http://localhost:3000');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('aceita uma URL válida', async () => {
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://arenaz.com.br');
     const site = await loadSite();

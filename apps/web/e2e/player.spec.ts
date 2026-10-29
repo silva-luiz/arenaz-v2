@@ -45,16 +45,20 @@ const test = base.extend<Fixtures>({
 const MAX_RESULT_PAGES = 5;
 
 /**
- * Clicks "Carregar mais" until the venue's card shows up. Older data in the
- * shared database may fill the first pages; the seeded name sorts first, so
- * this rarely loops, but it keeps the test deterministic either way.
+ * The venue's card. The search is for the venue's own unique neighborhood, so
+ * it is the only result and is on page 1; the bounded "Carregar mais" loop is
+ * a safety net that waits for each exact page before looking again.
  */
 async function findCard(page: Page, name: string) {
   const card = page.getByRole('link', { name: new RegExp(name) });
-  for (let attempt = 1; attempt < MAX_RESULT_PAGES; attempt += 1) {
+  for (let current = 1; current < MAX_RESULT_PAGES; current += 1) {
     if ((await card.count()) > 0) break;
+    const next = current + 1;
     await page.getByRole('link', { name: 'Carregar mais' }).click();
-    await page.waitForURL(/page=/);
+    await page.waitForURL(new RegExp(`[?&]page=${String(next)}(&|$)`));
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      `Página ${String(next)}`,
+    );
   }
   return card;
 }
@@ -81,7 +85,10 @@ test('jogador encontra e abre um espaço publicado', async ({
 }) => {
   // Anonymous visitor: the home's search bar.
   await page.goto('/');
-  await page.getByLabel('Onde').fill('vila madalena');
+  // Lower case on purpose: the search ignores case. The neighborhood is unique
+  // to this seed, so older data cannot crowd the card out of the first page.
+  const where = published.neighborhood.toLowerCase();
+  await page.getByLabel('Onde').fill(where);
   await page
     .getByRole('combobox', { name: 'Esporte' })
     .selectOption({ label: 'Society' });
@@ -89,7 +96,7 @@ test('jogador encontra e abre um espaço publicado', async ({
 
   await expect(page).toHaveURL(/\/buscar\?/);
   const url = new URL(page.url());
-  expect(url.searchParams.get('q')).toBe('vila madalena');
+  expect(url.searchParams.get('q')).toBe(where);
   expect(url.searchParams.get('sport')).toBe('futebol_society');
   await expect(page.getByText(/\d+ espaços?$/).first()).toBeVisible();
 
@@ -108,7 +115,7 @@ test('jogador encontra e abre um espaço publicado', async ({
   await expect(page.getByText(/R\$\s*180\b/).first()).toBeVisible();
   await expect(
     page.getByText(
-      'Vila Madalena, São Paulo. O endereço exato aparece depois da reserva.',
+      `${published.neighborhood}, São Paulo. O endereço exato aparece depois da reserva.`,
     ),
   ).toBeVisible();
   await expect(page.getByText('Reserva online chega em breve.')).toBeVisible();
@@ -147,16 +154,51 @@ test('rascunho dá 404', async ({ page, draft }) => {
   for (const content of robots) expect(content).toContain('noindex');
 });
 
-test('sem violações de acessibilidade graves', async ({ page, published }) => {
-  const paths = [
-    '/',
-    '/buscar?q=vila madalena',
-    `/espacos/${published.slug}`,
-  ] as const;
-  for (const path of paths) {
-    await page.goto(path);
+const VIEWPORTS = [
+  { label: 'desktop', width: 1280, height: 800 },
+  { label: 'mobile 375px', width: 375, height: 812 },
+] as const;
+
+for (const viewport of VIEWPORTS) {
+  test(`sem violações de acessibilidade graves (${viewport.label})`, async ({
+    page,
+    published,
+  }) => {
+    await page.setViewportSize({
+      width: viewport.width,
+      height: viewport.height,
+    });
+    const scan = async (what: string): Promise<void> => {
+      expect(await seriousViolations(page), `violações em ${what}`).toEqual([]);
+    };
+
+    await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await page.waitForLoadState('networkidle');
-    expect(await seriousViolations(page), `violações em ${path}`).toEqual([]);
-  }
-});
+    await scan('/');
+
+    await page.goto('/buscar?q=vila madalena');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // Wait for the map and a pin instead of guessing with network idle. Below
+    // lg the map is hidden until "Mapa" is chosen, so it is only attached.
+    await page
+      .locator('.leaflet-container')
+      .first()
+      .waitFor({ state: 'attached' });
+    await page.locator('.leaflet-marker-icon').first().waitFor({
+      state: 'attached',
+    });
+    await scan(`/buscar (${viewport.label}, lista)`);
+    if (viewport.width < 1024) {
+      await page.getByRole('button', { name: 'Mapa' }).click();
+      await expect(page.locator('.leaflet-container').first()).toBeVisible();
+      await scan(`/buscar (${viewport.label}, mapa)`);
+    }
+
+    await page.goto(`/espacos/${published.slug}`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: published.name }),
+    ).toBeVisible();
+    await page.locator('.leaflet-container').first().waitFor();
+    await scan(`/espacos/${published.slug}`);
+  });
+}
