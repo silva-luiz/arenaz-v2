@@ -9,6 +9,8 @@ export const PUBLIC_PAGE_SIZE = 20;
 export const PUBLIC_MAX_PAGE = 50;
 export const PUBLIC_MAX_RADIUS_KM = 50;
 export const PUBLIC_DEFAULT_RADIUS_KM = 10;
+/** What a venue slug can look like; anything else is a plain 404. */
+export const PUBLIC_SLUG_PATTERN = /^[a-z0-9-]{1,80}$/;
 
 const LAT_LNG_TOGETHER_MESSAGE = 'Informe a latitude e a longitude juntas';
 
@@ -25,9 +27,21 @@ function queryNumber(invalid: string, rules: z.ZodType<number, number>) {
     .pipe(rules);
 }
 
+/** C0/C1 control characters (NUL included): never valid in a search. */
+function hasControlCharacter(text: string): boolean {
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return true;
+  }
+  return false;
+}
+
 /** Free text: trimmed, inner whitespace collapsed to a single space. */
 const queryTextSchema = z
   .string({ error: 'Busca inválida' })
+  .refine((raw) => !hasControlCharacter(raw), {
+    error: 'A busca tem caracteres inválidos',
+  })
   .transform((raw) => raw.trim().replace(/\s+/g, ' '))
   .pipe(
     z
@@ -50,6 +64,7 @@ export const publicSearchQuerySchema = z
       'Raio inválido',
       z
         .number()
+        .int('O raio precisa ser um número inteiro de km')
         .min(1, 'O raio mínimo é 1 km')
         .max(
           PUBLIC_MAX_RADIUS_KM,
@@ -95,7 +110,10 @@ export const publicVenueCardSchema = z.object({
   minPriceCentsPerHour: z.number().int().positive(),
   /** Latitude and longitude rounded to 2 decimals (about 1 km). */
   approxLocation: locationSchema,
-  /** Km from the searched point, 1 decimal; `null` without `lat`/`lng`. */
+  /**
+   * Km from the searched point to the venue's APPROXIMATE point (1 decimal);
+   * `null` without `lat`/`lng`. Never derived from the exact location.
+   */
   distanceKm: z.number().nonnegative().nullable(),
 });
 

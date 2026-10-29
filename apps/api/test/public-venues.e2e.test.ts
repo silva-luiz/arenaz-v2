@@ -10,9 +10,10 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq } from 'drizzle-orm';
 import type { LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { createApp } from '../src/app.factory.js';
 import { DB, type DbHandle } from '../src/db/db.module.js';
 import { STORAGE, type StoragePort } from '../src/storage/storage.port.js';
-import { buildTestApp, signUpAs, uniqueToken } from './helpers.js';
+import { buildTestApp, signUpAs, testEnv, uniqueToken } from './helpers.js';
 
 const { venue, venueHours, venuePhoto, field, priceRule } = schema;
 
@@ -57,12 +58,12 @@ interface SeedVenue {
 }
 
 /** Inserts straight into the database; a venue gets one active field by default. */
-async function seed(input: SeedVenue = {}) {
+async function seed(input: SeedVenue = {}, owner: string = ownerId) {
   const token = uniqueToken();
   const [row] = await handle.db
     .insert(venue)
     .values({
-      ownerId,
+      ownerId: owner,
       slug: `arena-${token}-${randomUUID().slice(0, 4)}`,
       name: input.name ?? `Arena ${token}`,
       description: input.description ?? null,
@@ -263,24 +264,20 @@ describe('GET /api/venues', () => {
     expect(slugs.indexOf(newer.slug)).toBeLessThan(slugs.indexOf(older.slug));
   });
 
-  it('ordena por distância dentro do raio', async () => {
-    // ~0.009 deg of latitude is 1 km, ~0.072 deg is 8 km.
-    const center = { lat: -3.1, lng: -60.0 };
-    const near = await seed({
-      location: { lat: center.lat + 0.009, lng: center.lng },
-    });
-    const far = await seed({
-      location: { lat: center.lat + 0.072, lng: center.lng },
-    });
-    const here = `lat=${String(center.lat)}&lng=${String(center.lng)}`;
+  it('ordena por distância (do ponto aproximado) dentro do raio', async () => {
+    // The exact points are off the 0.01 degree grid on purpose: only the
+    // snapped points (-3.09, -60.00) and (-3.03, -60.00) count.
+    const near = await seed({ location: { lat: -3.0904, lng: -60.0003 } });
+    const far = await seed({ location: { lat: -3.0298, lng: -59.9996 } });
+    const here = 'lat=-3.1&lng=-60';
 
     const tight = await search(`${here}&radiusKm=5`);
     expect(tight.items.map((item) => item.slug)).toEqual([near.slug]);
-    expect(tight.items[0]?.distanceKm).toBeCloseTo(1, 1);
+    expect(tight.items[0]?.distanceKm).toBeCloseTo(1.1, 1);
 
     const wide = await search(`${here}&radiusKm=10`);
     expect(wide.items.map((item) => item.slug)).toEqual([near.slug, far.slug]);
-    expect(wide.items[1]?.distanceKm).toBeCloseTo(8, 0);
+    expect(wide.items[1]?.distanceKm).toBeCloseTo(7.7, 1);
     for (const item of wide.items) {
       // One decimal at most.
       expect(Math.round((item.distanceKm ?? NaN) * 10) / 10).toBe(
@@ -289,29 +286,59 @@ describe('GET /api/venues', () => {
     }
   });
 
+  it('pontos exatos diferentes na mesma célula têm a mesma distância e inclusão para todo raio', async () => {
+    // Both round to (-9.06, -40.01) but are ~0.5 km apart.
+    const a = await seed({ location: { lat: -9.0612, lng: -40.0121 } });
+    const b = await seed({ location: { lat: -9.0578, lng: -40.0089 } });
+    const here = 'lat=-9&lng=-40';
+
+    let seenIn = false;
+    let seenOut = false;
+    let sameDistance: number | null | undefined;
+    for (let radius = 1; radius <= 50; radius += 1) {
+      const body = await search(`${here}&radiusKm=${String(radius)}`);
+      const inA = body.items.find((item) => item.slug === a.slug);
+      const inB = body.items.find((item) => item.slug === b.slug);
+      expect(Boolean(inA)).toBe(Boolean(inB));
+      if (inA && inB) {
+        seenIn = true;
+        expect(inA.distanceKm).toBe(inB.distanceKm);
+        expect(inA.approxLocation).toEqual({ lat: -9.06, lng: -40.01 });
+        expect(inB.approxLocation).toEqual({ lat: -9.06, lng: -40.01 });
+        sameDistance ??= inA.distanceKm;
+        expect(inA.distanceKm).toBe(sameDistance);
+      } else {
+        seenOut = true;
+      }
+    }
+    // The sweep crosses the boundary, so "same inclusion" was really tested.
+    expect(seenIn).toBe(true);
+    expect(seenOut).toBe(true);
+  });
+
   it('raio usa 10 km por padrão e combina com esporte e texto', async () => {
-    const center = { lat: -1.4, lng: -48.5 };
-    const here = `lat=${String(center.lat)}&lng=${String(center.lng)}`;
+    const here = 'lat=-1.4&lng=-48.5';
     const token = uniqueToken();
+    // Snapped to (-1.35, -48.50): ~5.5 km; (-1.20, -48.50): ~22 km.
     const padel = await seed({
       neighborhood: `Raio ${token}`,
-      location: { lat: center.lat + 0.045, lng: center.lng },
+      location: { lat: -1.3504, lng: -48.5002 },
       fields: [{ sports: ['padel'] }],
     });
     await seed({
       neighborhood: `Raio ${token}`,
-      location: { lat: center.lat + 0.045, lng: center.lng },
+      location: { lat: -1.3504, lng: -48.5002 },
       fields: [{ sports: ['futsal'] }],
     });
     await seed({
       neighborhood: `Raio ${token}`,
-      location: { lat: center.lat + 0.2, lng: center.lng }, // ~22 km
+      location: { lat: -1.2, lng: -48.5 },
       fields: [{ sports: ['padel'] }],
     });
 
     const body = await search(`${here}&sport=padel&${q(token)}`);
     expect(body.items.map((item) => item.slug)).toEqual([padel.slug]);
-    expect(body.items[0]?.distanceKm).toBeCloseTo(5, 0);
+    expect(body.items[0]?.distanceKm).toBeCloseTo(5.5, 1);
   });
 
   it('minPrice e esportes ignoram quadra inativa e faixa de preço', async () => {
@@ -410,6 +437,9 @@ describe('GET /api/venues', () => {
     ['q=' + 'a'.repeat(500)],
     ['q=a'],
     ['lat=abc&lng=-46'],
+    ['radiusKm=5.5'],
+    ['q=ab%00'],
+    ['q=ab%0Acd'],
   ])('parâmetro inválido %s → 422', async (qs) => {
     const res = await get(`/api/venues?${qs}`);
     expect(res.statusCode).toBe(422);
@@ -512,12 +542,109 @@ describe('GET /api/venues/:slug', () => {
     }
   });
 
-  it('404 para rascunho e para slug inexistente', async () => {
+  it('404 para rascunho, slug inexistente e slug fora do padrão', async () => {
     const draft = await seed({ status: 'draft' });
-    for (const slug of [draft.slug, `nao-existe-${uniqueToken()}`]) {
+    for (const slug of [
+      draft.slug,
+      `nao-existe-${uniqueToken()}`,
+      '%00',
+      'ARENA',
+      'a'.repeat(81),
+      'arena%20x',
+    ]) {
       const res = await get(`/api/venues/${slug}`);
       expect(res.statusCode).toBe(404);
       expect(res.json<Problem>().detail).toBe('Espaço não encontrado');
+    }
+  });
+});
+
+describe('host.firstName', () => {
+  it.each([
+    ['Maria Silva', 'Maria'],
+    ['  joão   da Silva ', 'joão'],
+    ['maria@mail.com', 'Dono'],
+    ['Maria2 Silva', 'Dono'],
+    ['11999990000', 'Dono'],
+  ])('%j vira %j', async (fullName, expected) => {
+    const { userId } = await signUpAs(app, fullName);
+    const row = await seed({}, userId);
+    const res = await get(`/api/venues/${row.slug}`);
+    expect(res.statusCode).toBe(200);
+    expect(publicVenueSchema.parse(res.json()).host.firstName).toBe(expected);
+  });
+});
+
+describe('limite de requisições e token interno', () => {
+  const TOKEN = 'i'.repeat(40);
+
+  async function limitedApp(): Promise<NestFastifyApplication> {
+    // The limiter is off in NODE_ENV=test, so run this app as development.
+    const limited = await createApp({
+      ...testEnv,
+      NODE_ENV: 'development',
+      INTERNAL_API_TOKEN: TOKEN,
+    });
+    await limited.init();
+    await limited.getHttpAdapter().getInstance().ready();
+    return limited;
+  }
+
+  const statuses = async (
+    limited: NestFastifyApplication,
+    headers: Record<string, string>,
+    count: number,
+  ): Promise<number[]> => {
+    const out: number[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const res = await limited.inject({
+        method: 'GET',
+        url: `/api/venues?${q(`zz${uniqueToken()}`)}`,
+        headers,
+      });
+      out.push(res.statusCode);
+    }
+    return out;
+  };
+
+  it('60 por minuto por IP; o token interno isenta; token errado não', async () => {
+    const limited = await limitedApp();
+    try {
+      const anonymous = await statuses(limited, {}, 61);
+      expect(anonymous.slice(0, 60).every((code) => code === 200)).toBe(true);
+      expect(anonymous[60]).toBe(429);
+
+      // Same IP (already limited): the right token still goes through...
+      const internal = await statuses(
+        limited,
+        { 'x-internal-token': TOKEN },
+        65,
+      );
+      expect(internal.every((code) => code === 200)).toBe(true);
+
+      // ...a wrong one (same length or not) does not.
+      for (const wrong of ['x'.repeat(40), 'curto', `${TOKEN}x`]) {
+        expect(
+          (await statuses(limited, { 'x-internal-token': wrong }, 1))[0],
+        ).toBe(429);
+      }
+    } finally {
+      await limited.close();
+    }
+  });
+
+  it('sem INTERNAL_API_TOKEN configurado, o cabeçalho não isenta ninguém', async () => {
+    const limited = await createApp({
+      ...testEnv,
+      NODE_ENV: 'development',
+    });
+    await limited.init();
+    await limited.getHttpAdapter().getInstance().ready();
+    try {
+      const codes = await statuses(limited, { 'x-internal-token': '' }, 61);
+      expect(codes[60]).toBe(429);
+    } finally {
+      await limited.close();
     }
   });
 });

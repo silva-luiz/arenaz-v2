@@ -1,5 +1,6 @@
 import {
   PUBLIC_PAGE_SIZE,
+  PUBLIC_SLUG_PATTERN,
   publicSearchResponseSchema,
   publicVenueCardSchema,
   publicVenueSchema,
@@ -11,14 +12,14 @@ import {
 import { schema, selectLocation, type GeoPoint } from '@arenaz/db';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { STORAGE, type StoragePort } from '../storage/storage.port.js';
-import { VENUE_NOT_FOUND } from '../venues/owner.js';
 
 const { venue, venueHours, venuePhoto, field, priceRule, user } = schema;
 
 /** Fallback when the owner's account has no usable name. */
-const HOST_FALLBACK_NAME = 'Anfitrião';
+const HOST_FALLBACK_NAME = 'Dono';
 
 /** What a search card needs, straight from the (single) card query. */
 interface CardRow extends Record<string, unknown> {
@@ -35,7 +36,11 @@ interface CardRow extends Record<string, unknown> {
   distance_m: number | null;
 }
 
-/** About 1 km: the public map never shows the exact point. */
+/**
+ * Cleans float noise off a point of the 0.01 degree grid (`approx_location`
+ * is already snapped by the database; this only turns -23.560000000000002
+ * into -23.56). The exact point never reaches this module.
+ */
 export function approximate({ lat, lng }: GeoPoint): GeoPoint {
   const round = (value: number): number => Math.round(value * 100) / 100;
   return { lat: round(lat), lng: round(lng) };
@@ -46,17 +51,22 @@ export function escapeLike(term: string): string {
   return term.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
-/** First word of the owner's name; the rest of it stays private. */
+/**
+ * First word of the owner's name; the rest of it stays private. A first word
+ * that looks like an e-mail or has digits (a handle, not a name) is replaced.
+ */
 export function firstNameOf(fullName: string): string {
-  return fullName.trim().split(/\s+/)[0] || HOST_FALLBACK_NAME;
+  const first = fullName.trim().split(/\s+/)[0] ?? '';
+  return first === '' || /[@\d]/.test(first) ? HOST_FALLBACK_NAME : first;
 }
 
 /**
- * `f_unaccent(lower(column)) LIKE pattern`, accent and case insensitive on
- * both sides. Same expression as the trigram indexes of migration 0004.
+ * `lower(f_unaccent(column)) LIKE pattern`, accent and case insensitive on
+ * both sides (lower() after unaccent only sees ASCII, so it does not depend on
+ * the database locale). Same expression as the trigram indexes of migration 0005.
  */
 function likeSearch(column: SQL, pattern: string): SQL {
-  return sql`f_unaccent(lower(${column})) LIKE f_unaccent(lower(${pattern}::text)) ESCAPE '\\'`;
+  return sql`lower(f_unaccent(${column})) LIKE lower(f_unaccent(${pattern}::text)) ESCAPE '\\'`;
 }
 
 @Injectable()
@@ -70,6 +80,11 @@ export class PublicVenuesService {
    * One set-based query: the published venues with at least one active
    * field, each with its cheapest active field, the sports of its active
    * fields and its cover photo. Fetches one extra row to know `hasMore`.
+   *
+   * Privacy: everything geographic (radius filter, ordering, distance, the
+   * returned point) uses `approx_location`, never the exact `location`. Any
+   * function of the exact point (a free radius, 0.1 km distances) could be
+   * inverted to recover it.
    */
   async search(query: PublicSearchQuery): Promise<PublicSearchResponse> {
     const { q, sport, lat, lng, radiusKm, page } = query;
@@ -91,23 +106,23 @@ export class PublicVenuesService {
     }
     if (point) {
       where.push(
-        sql`ST_DWithin(v.location, ${point}, ${radiusKm * 1000}::float8)`,
+        sql`ST_DWithin(v.approx_location, ${point}, ${radiusKm * 1000}::float8)`,
       );
     }
 
     let order: SQL;
-    if (point) order = sql`ST_Distance(v.location, ${point}), v.id`;
+    if (point) order = sql`ST_Distance(v.approx_location, ${point}), v.id`;
     else if (q !== undefined) order = sql`v.name, v.id`;
     else order = sql`v.created_at DESC, v.id`;
 
     const distance = point
-      ? sql`ST_Distance(v.location, ${point})`
+      ? sql`ST_Distance(v.approx_location, ${point})`
       : sql`NULL::float8`;
 
     const { rows } = await this.handle.db.execute<CardRow>(sql`
       SELECT v.slug, v.name, v.neighborhood, v.city, v.state,
-             ST_Y(v.location::geometry) AS lat,
-             ST_X(v.location::geometry) AS lng,
+             ST_Y(v.approx_location::geometry) AS lat,
+             ST_X(v.approx_location::geometry) AS lng,
              fa.min_price,
              fa.sports,
              (SELECT p.storage_key FROM venue_photo p
@@ -157,6 +172,10 @@ export class PublicVenuesService {
 
   /** A published venue by slug; a draft or unknown slug is a plain 404. */
   async detail(slug: string): Promise<PublicVenue> {
+    // Nothing else can exist (and NUL would be a database error).
+    if (!PUBLIC_SLUG_PATTERN.test(slug)) {
+      throw new NotFoundException(VENUE_NOT_FOUND);
+    }
     const { db } = this.handle;
     const [row] = await db
       .select({
@@ -167,7 +186,7 @@ export class PublicVenuesService {
         neighborhood: venue.neighborhood,
         city: venue.city,
         state: venue.state,
-        location: selectLocation(venue.location),
+        location: selectLocation(venue.approxLocation),
         amenities: venue.amenities,
         cancellationPolicy: venue.cancellationPolicy,
         hostName: user.name,

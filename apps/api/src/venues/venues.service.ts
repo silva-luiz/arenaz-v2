@@ -26,6 +26,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
+import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import {
@@ -33,7 +34,7 @@ import {
   STORAGE,
   type StoragePort,
 } from '../storage/storage.port.js';
-import { findOwnedVenue, VENUE_NOT_FOUND } from './owner.js';
+import { findOwnedVenue } from './owner.js';
 import {
   assertPublishedStaysComplete,
   lockVenueStatus,

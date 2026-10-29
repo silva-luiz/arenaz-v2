@@ -27,7 +27,8 @@ import {
   STORAGE,
   type StoragePort,
 } from '../storage/storage.port.js';
-import { findOwnedVenue, isUuid, VENUE_NOT_FOUND } from '../venues/owner.js';
+import { VENUE_NOT_FOUND } from '../common/not-found.js';
+import { findOwnedVenue, isUuid } from '../venues/owner.js';
 import {
   assertPublishedStaysComplete,
   lockVenueStatus,

@@ -298,6 +298,44 @@ describe('domínio do dono', () => {
     expect(first(rows).overlap).toBe(true);
   });
 
+  it('approx_location é a localização em grade de 0.01 grau, mantida pelo banco', async () => {
+    const owner = await createOwner();
+    const insert = async (lat: number, lng: number): Promise<string> => {
+      const { rows } = await pool.query<{ id: string }>(
+        `insert into venue (owner_id, slug, name, phone, cep, street, number,
+           neighborhood, city, state, location, cancellation_policy)
+         values ($1, $2, 'Arena', '11999999999', '05422000', 'Rua A', '10',
+           'Pinheiros', 'São Paulo', 'SP',
+           ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, 'flexivel')
+         returning id`,
+        [owner, `arena-${randomUUID()}`, lng, lat],
+      );
+      return first(rows).id;
+    };
+    const approxOf = async (id: string) => {
+      const { rows } = await pool.query<{ lat: number; lng: number }>(
+        `select round(ST_Y(approx_location::geometry)::numeric, 4)::float8 as lat,
+                round(ST_X(approx_location::geometry)::numeric, 4)::float8 as lng
+           from venue where id = $1`,
+        [id],
+      );
+      return first(rows);
+    };
+
+    // Different exact points inside the same 0.01 cell share the point.
+    const a = await insert(-23.5612, -46.6911);
+    const b = await insert(-23.5578, -46.6949);
+    expect(await approxOf(a)).toEqual({ lat: -23.56, lng: -46.69 });
+    expect(await approxOf(b)).toEqual({ lat: -23.56, lng: -46.69 });
+
+    // It follows the exact point when that changes (generated column).
+    await pool.query(
+      'update venue set location = ST_SetSRID(ST_MakePoint(-46.6511, -23.5041), 4326)::geography where id = $1',
+      [a],
+    );
+    expect(await approxOf(a)).toEqual({ lat: -23.5, lng: -46.65 });
+  });
+
   it('parseEwkbPoint lê little e big endian, com e sem SRID', () => {
     const point = (littleEndian: boolean, withSrid: boolean): string => {
       const buf = Buffer.alloc(withSrid ? 25 : 21);

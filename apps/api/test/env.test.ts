@@ -107,6 +107,26 @@ describe('loadEnv', () => {
     ).toThrow(/S3_BUCKET[\s\S]*S3_ACCESS_KEY_ID/);
   });
 
+  it('INTERNAL_API_TOKEN é opcional e vazio vale como ausente', () => {
+    expect(loadEnv(valid).INTERNAL_API_TOKEN).toBeUndefined();
+    expect(
+      loadEnv({ ...valid, INTERNAL_API_TOKEN: '' }).INTERNAL_API_TOKEN,
+    ).toBeUndefined();
+  });
+
+  it('aceita INTERNAL_API_TOKEN com 32+ caracteres', () => {
+    const token = 't'.repeat(32);
+    expect(
+      loadEnv({ ...valid, INTERNAL_API_TOKEN: token }).INTERNAL_API_TOKEN,
+    ).toBe(token);
+  });
+
+  it('rejeita INTERNAL_API_TOKEN curto', () => {
+    expect(() => loadEnv({ ...valid, INTERNAL_API_TOKEN: 'curto' })).toThrow(
+      /INTERNAL_API_TOKEN/,
+    );
+  });
+
   it('GEO_PROVIDER padrão http', () => {
     expect(loadEnv(valid).GEO_PROVIDER).toBe('http');
   });

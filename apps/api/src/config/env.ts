@@ -52,6 +52,14 @@ const envSchema = z
     S3_FORCE_PATH_STYLE: booleanString().default(true),
     /** `fake` is a fixed table for tests and e2e; never allowed in production. */
     GEO_PROVIDER: z.enum(['http', 'fake']).default('http'),
+    /**
+     * Shared secret of server-to-server callers (the web's SSR). A request with
+     * the same `x-internal-token` skips the rate limits. Absent or empty = off.
+     */
+    INTERNAL_API_TOKEN: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(32, 'precisa ter ao menos 32 caracteres').optional(),
+    ),
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),

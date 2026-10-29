@@ -67,7 +67,7 @@ describe('migrations', () => {
       await client.query('set local enable_seqscan = off');
       const { rows } = await client.query<{ 'QUERY PLAN': string }>(
         `explain select 1 from venue
-          where f_unaccent(lower(city)) like f_unaccent(lower('%Paulo%')) escape '\\'`,
+          where lower(f_unaccent(city)) like lower(f_unaccent('%Paulo%')) escape '\\'`,
       );
       expect(rows.map((r) => r['QUERY PLAN']).join(' ')).toContain(
         'venue_city_search_idx',

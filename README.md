@@ -75,6 +75,19 @@ As fotos dos espaços vão direto do navegador para um storage compatível com S
   pré-assinado; num provedor sem esse recurso será preciso uma variante com
   PUT pré-assinado (e validar tipo e tamanho na confirmação).
 
+### Limite de requisições (rate limit)
+
+A API limita por IP: 100 requisições por minuto no total e 60 por minuto nas
+rotas públicas de busca (`GET /api/venues`, `GET /api/venues/:slug`). O
+servidor da web (Next SSR) chama a API sempre do mesmo IP, então ele envia o
+cabeçalho `x-internal-token` com o valor de `INTERNAL_API_TOKEN` (mínimo de 32
+caracteres; gere como no `.env.example`) e fica isento dos limites. A
+comparação é em tempo constante; sem `INTERNAL_API_TOKEN` o recurso fica
+desligado. O token é só de servidor para servidor e o navegador nunca o vê.
+
+> Pendente para o deploy (Plano 7): encaminhar o IP real do cliente (`trustProxy`
+> / `X-Forwarded-For`) para que o limite por IP funcione atrás de proxy.
+
 ## Testes
 
 ```bash

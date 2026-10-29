@@ -6,14 +6,12 @@ import {
 } from '@arenaz/db';
 import { NotFoundException } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
+import { FIELD_NOT_FOUND, VENUE_NOT_FOUND } from '../common/not-found.js';
 
 export type { FieldRow, VenueRow };
 
 /** A `Db` or a transaction handle: all the helpers need is `select`. */
 export type Reader = Pick<Db, 'select'>;
-
-export const VENUE_NOT_FOUND = 'Espaço não encontrado';
-export const FIELD_NOT_FOUND = 'Quadra não encontrada';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

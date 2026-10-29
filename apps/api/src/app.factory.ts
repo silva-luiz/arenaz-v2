@@ -10,6 +10,10 @@ import {
 import { AppModule } from './app.module.js';
 import { AUTH, type Auth } from './auth/auth.js';
 import { registerAuthRoutes } from './auth/auth.routes.js';
+import {
+  INTERNAL_TOKEN_HEADER,
+  isInternalRequest,
+} from './common/internal-token.js';
 import { PinoNestLogger } from './common/nest-logger.js';
 import { ProblemFilter } from './common/problem.filter.js';
 import type { Env } from './config/env.js';
@@ -56,7 +60,16 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
   app.useGlobalFilters(new ProblemFilter());
   await app.register(helmet);
   if (env.NODE_ENV !== 'test') {
-    await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
+    await app.register(rateLimit, {
+      max: 100,
+      timeWindow: '1 minute',
+      // Route-level limits inherit this: the web's SSR calls from one IP.
+      allowList: (request) =>
+        isInternalRequest(
+          request.headers[INTERNAL_TOKEN_HEADER],
+          env.INTERNAL_API_TOKEN,
+        ),
+    });
   }
   // After helmet and rate limiting so the route inherits both.
   registerAuthRoutes(fastify, app.get<Auth>(AUTH));
