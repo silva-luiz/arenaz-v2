@@ -11,5 +11,12 @@ export default [
   },
   nextPlugin.configs['core-web-vitals'],
   reactHooks.configs.flat.recommended,
-  { ignores: ['next-env.d.ts'] },
+  {
+    ignores: [
+      'next-env.d.ts',
+      // Playwright output (the HTML report ships bundled JS).
+      'e2e/playwright-report/**',
+      'e2e/test-results/**',
+    ],
+  },
 ];

@@ -89,7 +89,7 @@ export default defineConfig({
     },
     {
       command:
-        'pnpm --filter @arenaz/web build && pnpm --filter @arenaz/web start',
+        'node helpers/clear-data-cache.mjs && pnpm --filter @arenaz/web build && pnpm --filter @arenaz/web start',
       url: `${webOrigin}/entrar`,
       env: { ...sharedEnv, WEB_PORT: String(webPort) },
       reuseExistingServer: false,
