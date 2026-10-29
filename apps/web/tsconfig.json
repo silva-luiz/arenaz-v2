@@ -1,0 +1,20 @@
+{
+  "extends": "@arenaz/config/tsconfig.next.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": [
+    "next-env.d.ts",
+    "src",
+    "scripts",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
