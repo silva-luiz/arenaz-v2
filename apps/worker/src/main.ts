@@ -4,6 +4,7 @@ import { Redis } from 'ioredis';
 import pino from 'pino';
 import { loadEnv } from './env.js';
 import { redisConnection, startMaintenance } from './maintenance.js';
+import { S3PhotoStorage } from './storage.js';
 
 const REDIS_CHECK_TIMEOUT_MS = 5_000;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -49,6 +50,12 @@ async function bootstrap(): Promise<void> {
       logger.error({ err: error }, 'erro em conexão ociosa do Postgres');
     },
   });
+  const storage = new S3PhotoStorage(env);
+  /** Database pool and storage sockets, once nothing uses them anymore. */
+  const release = async (): Promise<void> => {
+    storage.destroy();
+    await pool.end();
+  };
 
   // Handlers go first, so a signal during startup is not lost.
   const state = { stopping: false };
@@ -68,7 +75,7 @@ async function bootstrap(): Promise<void> {
     // close() waits for the running job to finish before disconnecting.
     maintenance
       .close()
-      .then(() => pool.end())
+      .then(release)
       .then(
         () => process.exit(0),
         (error: unknown) => {
@@ -86,22 +93,23 @@ async function bootstrap(): Promise<void> {
   try {
     await assertRedisReachable(env.REDIS_URL);
     if (isStopping()) {
-      await pool.end();
+      await release();
       process.exit(0);
     }
     const started = await startMaintenance({
       db,
       redisUrl: env.REDIS_URL,
       logger,
+      storage,
     });
     if (isStopping()) {
       await started.close();
-      await pool.end();
+      await release();
       process.exit(0);
     }
     maintenance = started;
   } catch (error) {
-    await pool.end().catch(() => undefined);
+    await release().catch(() => undefined);
     throw error;
   }
 }

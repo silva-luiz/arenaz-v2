@@ -5,8 +5,12 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
-    globalSetup: ['@arenaz/db/test-setup'],
-    // The first run pulls/starts the PostGIS and Redis containers.
+    globalSetup: ['@arenaz/db/test-setup', './test/minio-setup.ts'],
+    // The maintenance test runs the real photo-variants job, which claims any
+    // pending photo of the shared database: one file at a time keeps it from
+    // processing the rows of photo-variants.test.ts.
+    fileParallelism: false,
+    // The first run pulls/starts the PostGIS, Redis and MinIO containers.
     hookTimeout: 120_000,
     testTimeout: 30_000,
   },

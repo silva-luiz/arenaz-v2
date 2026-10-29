@@ -20,14 +20,22 @@ pnpm dev
 
 Web em http://localhost:3000 e API em http://localhost:4000.
 
-### Worker (expiração de reservas)
+### Worker (expiração de reservas e variantes de fotos)
 
-`apps/worker` roda junto com `pnpm dev` (usa `DATABASE_URL` e `REDIS_URL`).
+`apps/worker` roda junto com `pnpm dev` (usa `DATABASE_URL`, `REDIS_URL` e as
+variáveis `S3_*` do storage, menos `S3_PUBLIC_URL`).
 A cada 30 s um job repetível do BullMQ (fila `maintenance`, job `expire-holds`)
 marca como `expired` as reservas `held` cujo prazo (`hold_expires_at`) já
 passou, em lotes de 500. O job é idempotente e reiniciar o worker não duplica o
 agendamento. A API também expira holds vencidos sob demanda, então o worker só
 limpa o que ninguém tocou; ele pula linhas travadas por um pagamento em curso.
+
+A cada 10 s o job `photo-variants` (mesma fila) gera cópias WebP de 400, 800 e
+1600 px de largura (só as menores que o original, sem metadados) das fotos
+pendentes (`venue_photo.variant_widths` nulo), 5 por vez, e grava as larguras
+geradas; a API passa a devolver `srcSet` com elas. Fotos antigas entram como
+pendentes e são processadas aos poucos. Uma foto que falhar 3 vezes fica só
+com o original.
 Produção: `pnpm --filter @arenaz/worker build` e `start`.
 
 `BETTER_AUTH_SECRET` precisa de ao menos 32 caracteres. Gere com

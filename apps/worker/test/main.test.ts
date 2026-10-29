@@ -22,6 +22,10 @@ describe('main', () => {
         PATH: process.env['PATH'],
         DATABASE_URL: 'postgres://u:p@127.0.0.1:1/db',
         REDIS_URL: 'redis://127.0.0.1:1',
+        S3_ENDPOINT: 'http://127.0.0.1:1',
+        S3_BUCKET: 'arenaz-photos',
+        S3_ACCESS_KEY_ID: 'x',
+        S3_SECRET_ACCESS_KEY: 'x',
         LOG_LEVEL: 'silent',
       },
     });
