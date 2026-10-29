@@ -145,6 +145,8 @@ export const publicVenueCardSchema = z.object({
   city: z.string(),
   state: z.string(),
   coverUrl: z.string().nullable(),
+  /** Variants of the cover (see `photoSchema.srcSet`). */
+  coverSrcSet: z.string().nullable(),
   sports: z.array(z.enum(SPORTS)),
   /**
    * Lowest price per hour among the ACTIVE fields: the base prices and every

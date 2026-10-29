@@ -148,6 +148,7 @@ describe('publicVenueCardSchema', () => {
     city: 'São Paulo',
     state: 'SP',
     coverUrl: null,
+    coverSrcSet: null,
     sports: ['padel'],
     minPriceCentsPerHour: 8000,
     approxLocation,
@@ -185,6 +186,19 @@ describe('publicVenueCardSchema', () => {
     const without: Partial<typeof card> = { ...card };
     delete without.nextFreeTime;
     expect(publicVenueCardSchema.safeParse(without).success).toBe(false);
+  });
+
+  it('exige coverSrcSet (string ou null)', () => {
+    const withoutSrcSet: Partial<typeof card> = { ...card };
+    delete withoutSrcSet.coverSrcSet;
+    expect(publicVenueCardSchema.safeParse(withoutSrcSet).success).toBe(false);
+    expect(
+      publicVenueCardSchema.safeParse({
+        ...card,
+        coverUrl: 'http://x/a.jpg',
+        coverSrcSet: 'http://x/a.w400.webp 400w',
+      }).success,
+    ).toBe(true);
   });
 
   it('descarta campos privados que sobrarem', () => {
@@ -231,7 +245,7 @@ describe('publicVenueSchema', () => {
     cancellationPolicy: 'flexivel',
     timezone: 'America/Sao_Paulo',
     hours: [{ weekday: 1, openMinute: 480, closeMinute: 1320 }],
-    photos: [{ id: ID, url: 'http://x/y.png', position: 0 }],
+    photos: [{ id: ID, url: 'http://x/y.png', srcSet: null, position: 0 }],
     host: { firstName: 'Maria' },
     fields: [
       {

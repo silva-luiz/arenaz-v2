@@ -193,7 +193,14 @@ describe('response schemas', () => {
       timezone: 'America/Manaus',
       status: 'draft',
       hours: [{ weekday: 1, openMinute: 480, closeMinute: 1380 }],
-      photos: [{ id: ID, url: 'https://cdn.example.com/a.png', position: 0 }],
+      photos: [
+        {
+          id: ID,
+          url: 'https://cdn.example.com/a.png',
+          srcSet: null,
+          position: 0,
+        },
+      ],
       fields: [field],
       createdAt: '2026-10-29T12:00:00.000Z',
       updatedAt: '2026-10-29T12:00:00.000Z',
@@ -218,7 +225,19 @@ describe('response schemas', () => {
         city: 'São Paulo',
         fieldsCount: 2,
         coverUrl: null,
+        coverSrcSet: null,
       }).success,
     ).toBe(true);
+    expect(
+      venueSummarySchema.safeParse({
+        id: ID,
+        slug: 'arena-central',
+        name: 'Arena Central',
+        status: 'published',
+        city: 'São Paulo',
+        fieldsCount: 2,
+        coverUrl: null,
+      }).success,
+    ).toBe(false);
   });
 });

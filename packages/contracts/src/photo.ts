@@ -35,9 +35,15 @@ export const photoOrderSchema = z.object({
   photoIds: z.array(z.uuid()),
 });
 
+/**
+ * `srcSet` lists the resized WebP variants (`"<url> 400w, <url> 800w"`);
+ * `null` while the worker has not made them (or the photo is too small), and
+ * then `url`, the original, is all there is.
+ */
 export const photoSchema = z.object({
   id: z.uuid(),
   url: z.string(),
+  srcSet: z.string().nullable(),
   position: z.number().int().nonnegative(),
 });
 

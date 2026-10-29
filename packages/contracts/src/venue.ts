@@ -124,6 +124,8 @@ export const venueSummarySchema = z.object({
   city: z.string(),
   fieldsCount: z.number().int().nonnegative(),
   coverUrl: z.string().nullable(),
+  /** Variants of the cover (see `photoSchema.srcSet`). */
+  coverSrcSet: z.string().nullable(),
 });
 
 export type VenueInput = z.infer<typeof venueInputSchema>;

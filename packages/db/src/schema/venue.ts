@@ -117,11 +117,23 @@ export const venuePhoto = pgTable(
     storageKey: text('storage_key').notNull().unique(),
     // Not unique: reordering would fight a unique constraint.
     position: smallint('position').notNull(),
+    // Widths of the resized WebP variants the worker made (PHOTO_VARIANT_WIDTHS
+    // in @arenaz/contracts, only those smaller than the original; `{}` for a
+    // small photo). NULL = still pending: the worker picks these rows up.
+    variantWidths: smallint('variant_widths').array(),
+    // Failed variant runs; the worker gives up at 3 and the original is served.
+    variantAttempts: smallint('variant_attempts').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [index('venue_photo_venue_id_idx').on(t.venueId)],
+  (t) => [
+    index('venue_photo_venue_id_idx').on(t.venueId),
+    // Only the pending rows, which the worker polls every few seconds.
+    index('venue_photo_variants_pending_idx')
+      .on(t.createdAt)
+      .where(sql`${t.variantWidths} is null`),
+  ],
 );
 
 export type Venue = typeof venue.$inferSelect;

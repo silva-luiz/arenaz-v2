@@ -162,6 +162,40 @@ describe('domínio do dono', () => {
     await expect(withMeasures('40', null)).resolves.toBeDefined();
   });
 
+  it('foto nova fica pendente de variantes, com índice parcial dos pendentes', async () => {
+    const ownerId = await createOwner();
+    const venueId = await createVenue(ownerId);
+    const key = `venues/${venueId}/${randomUUID()}.jpg`;
+    await pool.query(
+      `insert into venue_photo (venue_id, storage_key, position)
+       values ($1, $2, 0)`,
+      [venueId, key],
+    );
+    const { rows } = await pool.query<{
+      variant_widths: number[] | null;
+      variant_attempts: number;
+    }>(
+      'select variant_widths, variant_attempts from venue_photo where storage_key = $1',
+      [key],
+    );
+    expect(rows[0]).toEqual({ variant_widths: null, variant_attempts: 0 });
+
+    await pool.query(
+      `update venue_photo set variant_widths = '{400,800}' where storage_key = $1`,
+      [key],
+    );
+    const [done] = await db
+      .select({ variantWidths: venuePhoto.variantWidths })
+      .from(venuePhoto)
+      .where(eq(venuePhoto.storageKey, key));
+    expect(done?.variantWidths).toEqual([400, 800]);
+
+    const { rows: indexes } = await pool.query<{ indexdef: string }>(
+      "select indexdef from pg_indexes where indexname = 'venue_photo_variants_pending_idx'",
+    );
+    expect(indexes[0]?.indexdef).toMatch(/WHERE \(variant_widths IS NULL\)/);
+  });
+
   it('apagar o usuário apaga venues e quadras em cascata', async () => {
     const ownerId = await createOwner();
     const venueId = await createVenue(ownerId);

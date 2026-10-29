@@ -64,6 +64,13 @@
       "when": 1793299566316,
       "tag": "0008_booking_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793312658989,
+      "tag": "0009_photo_variants",
+      "breakpoints": true
     }
   ]
 }

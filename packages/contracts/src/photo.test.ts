@@ -55,8 +55,25 @@ describe('photo contracts', () => {
       photoSchema.safeParse({
         id: ID,
         url: 'https://cdn.example.com/a.png',
+        srcSet: null,
         position: 0,
       }).success,
     ).toBe(true);
+    expect(
+      photoSchema.safeParse({
+        id: ID,
+        url: 'https://cdn.example.com/a.png',
+        srcSet: 'https://cdn.example.com/a.w400.webp 400w',
+        position: 0,
+      }).success,
+    ).toBe(true);
+    // The variants are part of the contract: a response without them is a bug.
+    expect(
+      photoSchema.safeParse({
+        id: ID,
+        url: 'https://cdn.example.com/a.png',
+        position: 0,
+      }).success,
+    ).toBe(false);
   });
 });
