@@ -279,7 +279,10 @@ export class VenuesService {
   async remove(userId: string, venueId: string): Promise<void> {
     const owned = await findOwnedVenue(this.handle.db, venueId, userId);
     const keys = await this.handle.db.transaction(async (tx) => {
-      await lockVenueStatus(tx, owned.id);
+      // A concurrent delete already removed it: same 404 as the other mutations.
+      if ((await lockVenueStatus(tx, owned.id)) === undefined) {
+        throw new NotFoundException(VENUE_NOT_FOUND);
+      }
       const photos = await tx
         .select({ storageKey: venuePhoto.storageKey })
         .from(venuePhoto)

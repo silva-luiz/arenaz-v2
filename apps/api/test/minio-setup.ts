@@ -27,8 +27,10 @@ const COMPOSE_FILE = fileURLToPath(
 );
 
 /**
- * The image comes from the compose file, so local dev and tests always run the
- * very same MinIO build (one place to bump the pinned tag).
+ * The image comes from the compose file (tag AND digest), so local dev and
+ * tests always run the very same MinIO build: one place to bump the pin.
+ * Upstream minio/minio is gone from Docker Hub; alpine/minio is a community
+ * build used for dev/test/CI only, never production.
  */
 function minioImage(): string {
   const match = /^\s*image:\s*(alpine\/minio:\S+)\s*$/m.exec(

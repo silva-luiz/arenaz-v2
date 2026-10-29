@@ -107,7 +107,7 @@ export class PhotosService {
     const post = await this.storage.createUploadPost(
       key,
       input.contentType,
-      PHOTO_MAX_BYTES,
+      input.size,
     );
     return photoUploadResponseSchema.parse({
       url: post.url,

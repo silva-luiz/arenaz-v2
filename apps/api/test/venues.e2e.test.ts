@@ -206,6 +206,16 @@ describe('owner venues e2e', () => {
     }
   });
 
+  it('DELETE simultâneos: um apaga (204) e o outro recebe 404', async () => {
+    const { api } = await newOwner();
+    const venue = venueOf(await api.post('/api/owner/venues', venueBody()));
+    const results = await Promise.all([
+      api.del(`/api/owner/venues/${venue.id}`),
+      api.del(`/api/owner/venues/${venue.id}`),
+    ]);
+    expect(results.map((res) => res.statusCode).sort()).toEqual([204, 404]);
+  });
+
   it('outro dono recebe 404 em GET, PATCH, DELETE, hours, publish e unpublish', async () => {
     const { api: a } = await newOwner('Dono A');
     const { api: b } = await newOwner('Dono B');

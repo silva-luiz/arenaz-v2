@@ -277,6 +277,22 @@ describe('venue photos e2e', () => {
     },
   );
 
+  it('o storage recusa mais bytes do que o tamanho declarado (4xx)', async () => {
+    const { api } = await newOwner();
+    const venue = await newVenue(api);
+    const upload = await requestUpload(api, venue.id, 'image/png', png.length);
+
+    const tooBig = Buffer.concat([png, Buffer.from([0])]);
+    const res = await uploadToStorage(upload, tooBig, 'image/png');
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+    expect(await storage.head(upload.key)).toBeNull();
+
+    // Exactly the declared size still goes through.
+    const ok = await uploadToStorage(upload, png, 'image/png');
+    expect(ok.ok).toBe(true);
+  });
+
   it('chave já registrada → 409', async () => {
     const { api } = await newOwner();
     const venue = await newVenue(api);

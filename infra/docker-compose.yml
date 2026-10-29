@@ -32,9 +32,11 @@ services:
       retries: 10
 
   minio:
-    # MinIO stopped publishing its own images (minio/minio is gone from Docker
-    # Hub); alpine/minio is an automated build of the upstream release tag.
-    image: alpine/minio:RELEASE.2025-10-15T17-29-55Z
+    # Upstream minio/minio was removed from Docker Hub, so this uses the
+    # community build alpine/minio of the same release tag. Dev, test and CI
+    # only, never production. Pinned by digest (multi-arch index) so the tag
+    # cannot be repointed. The tests read this very line (test/minio-setup.ts).
+    image: alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb88279e431262282428c9e0bf3a7ef1a97e84b4
     # The image runs as an unprivileged user that cannot write to a fresh named
     # volume (root-owned); this stack is local-only, so run as root.
     user: '0:0'
@@ -59,7 +61,8 @@ services:
   # One-shot: creates the photo bucket (idempotent) and makes objects publicly
   # readable. Exits 0, which `docker compose up --wait` accepts.
   minio-init:
-    image: amazon/aws-cli:2.39.1
+    # Replaces minio/mc (also gone from Docker Hub). Pinned by digest.
+    image: amazon/aws-cli:2.39.1@sha256:3517c17b5f01637df3b6184a4280fbcc36e4ea38105954cade628ff17bb9a7b9
     depends_on:
       minio:
         condition: service_healthy
