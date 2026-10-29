@@ -111,6 +111,60 @@ describe('Gallery', () => {
     expect(second).toHaveFocus();
   });
 
+  it('offers the variants of each photo with the sizes of its slot', () => {
+    const list = photos(5).map((photo, i) => ({
+      ...photo,
+      srcSet: `/foto-${String(i + 1)}.w400.webp 400w, /foto-${String(i + 1)}.w800.webp 800w`,
+    }));
+    const { container } = render(<Gallery photos={list} />);
+    const imgs = container.querySelectorAll('img');
+    expect(imgs[0]).toHaveAttribute('srcset', list[0]?.srcSet);
+    expect(imgs[0]).toHaveAttribute('src', '/foto-1.jpg');
+    // The large photo: half the content width on desktop, 88% of the
+    // screen on the mobile strip.
+    expect(imgs[0]).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 636px, (min-width: 768px) calc(50vw - 44px), calc(88vw - 28px)',
+    );
+    // A small one: a quarter of it.
+    expect(imgs[3]).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 314px, (min-width: 768px) calc(25vw - 26px), calc(88vw - 28px)',
+    );
+  });
+
+  it('sizes the small photos that span two columns as halves', () => {
+    const list = photos(3).map((photo) => ({ ...photo, srcSet: 'x 400w' }));
+    const { container } = render(<Gallery photos={list} />);
+    for (const img of container.querySelectorAll('img')) {
+      expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 1360px\) 636px/);
+    }
+  });
+
+  it('gives a lone photo the full content width in its sizes', () => {
+    const { container } = render(
+      <Gallery
+        photos={[{ url: '/a.jpg', alt: 'A', srcSet: '/a.w400.webp 400w' }]}
+      />,
+    );
+    expect(container.querySelector('img')).toHaveAttribute(
+      'sizes',
+      '(min-width: 1360px) 1280px, (min-width: 768px) calc(100vw - 80px), calc(100vw - 32px)',
+    );
+  });
+
+  it('serves only the originals while the variants are pending', () => {
+    const { container } = render(
+      <Gallery
+        photos={photos(2).map((photo) => ({ ...photo, srcSet: null }))}
+      />,
+    );
+    for (const img of container.querySelectorAll('img')) {
+      expect(img).not.toHaveAttribute('srcset');
+      expect(img).not.toHaveAttribute('sizes');
+    }
+  });
+
   it('gives a lone photo the full width of the mobile row', () => {
     const { rerender } = render(<Gallery photos={photos(1)} />);
     const lone = screen.getByRole('button', { name: 'Abrir foto 1 de 1' });

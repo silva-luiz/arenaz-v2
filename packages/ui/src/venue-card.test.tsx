@@ -69,6 +69,44 @@ describe('VenueCard', () => {
     expect(frame?.className).toContain('rounded-photo');
   });
 
+  it('offers the cover variants with the sizes of its layout', () => {
+    const srcSet =
+      'https://cdn.example.com/capa.w400.webp 400w, https://cdn.example.com/capa.w800.webp 800w';
+    const { container } = render(
+      <VenueCard
+        {...BASE}
+        imageSrcSet={srcSet}
+        imageSizes="(min-width: 1024px) 300px, 100vw"
+      />,
+    );
+    const img = container.querySelector('img');
+    expect(img).toHaveAttribute('srcset', srcSet);
+    expect(img).toHaveAttribute('sizes', '(min-width: 1024px) 300px, 100vw');
+    // The original stays as the fallback.
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/capa.jpg');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
+  });
+
+  it('defaults the sizes to a card of a responsive grid', () => {
+    const { container } = render(
+      <VenueCard {...BASE} imageSrcSet="/capa.w400.webp 400w" />,
+    );
+    expect(container.querySelector('img')).toHaveAttribute(
+      'sizes',
+      '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw',
+    );
+  });
+
+  it('serves only the original while the variants are pending', () => {
+    const { container } = render(
+      <VenueCard {...BASE} imageSrcSet={null} imageSizes="100vw" />,
+    );
+    const img = container.querySelector('img');
+    expect(img).not.toHaveAttribute('srcset');
+    expect(img).not.toHaveAttribute('sizes');
+  });
+
   it('falls back to a neutral tile with the logo glyph without a photo', () => {
     const { container } = render(<VenueCard {...BASE} imageUrl={null} />);
     expect(container.querySelector('img')).toBeNull();

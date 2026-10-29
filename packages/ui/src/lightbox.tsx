@@ -14,6 +14,8 @@ import { cn } from './cn';
 export interface LightboxPhoto {
   url: string;
   alt: string;
+  /** `srcset` of the resized variants; `null` (or absent) while pending. */
+  srcSet?: string | null | undefined;
 }
 
 export interface LightboxProps {
@@ -181,6 +183,7 @@ export function Lightbox({
         <img
           key={current}
           src={photo.url}
+          {...(photo.srcSet ? { srcSet: photo.srcSet, sizes: '100vw' } : {})}
           alt={photo.alt}
           className="max-h-full max-w-full rounded-photo object-contain"
         />

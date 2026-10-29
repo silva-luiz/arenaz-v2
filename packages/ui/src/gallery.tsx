@@ -36,6 +36,34 @@ function photoClasses(position: number, visible: number): string {
   return '';
 }
 
+/*
+ * `sizes` of each photo, from the page container (max 1360px with 16px / 40px
+ * gutters from md, as in SiteHeader: 1280px of content at most) and the grid
+ * above (8px gaps). Mobile: a strip item is 88% of the content, or all of it
+ * for a lone photo.
+ */
+const FULL =
+  '(min-width: 1360px) 1280px, (min-width: 768px) calc(100vw - 80px)';
+const HALF = '(min-width: 1360px) 636px, (min-width: 768px) calc(50vw - 44px)';
+const QUARTER =
+  '(min-width: 1360px) 314px, (min-width: 768px) calc(25vw - 26px)';
+
+function photoSizes(position: number, visible: number, total: number): string {
+  const mobile = total > 1 ? 'calc(88vw - 28px)' : 'calc(100vw - 32px)';
+  // Same spans as gridClasses/photoClasses. Photos past the fifth are hidden
+  // on desktop (and lazy, so never fetched there).
+  let desktop = QUARTER;
+  if (visible <= 1) desktop = FULL;
+  else if (
+    visible <= 3 ||
+    position === 0 ||
+    (visible === 4 && position === 1)
+  ) {
+    desktop = HALF;
+  }
+  return `${desktop}, ${mobile}`;
+}
+
 /**
  * Photo grid of a venue page: one large photo plus up to four small ones on
  * desktop (20px radius on the whole), a swipeable scroll-snap row with every
@@ -81,6 +109,12 @@ export function Gallery({ photos, className }: GalleryProps) {
             >
               <img
                 src={photo.url}
+                {...(photo.srcSet
+                  ? {
+                      srcSet: photo.srcSet,
+                      sizes: photoSizes(position, visible, total),
+                    }
+                  : {})}
                 alt=""
                 {...(position === 0 ? {} : { loading: 'lazy' as const })}
                 decoding="async"

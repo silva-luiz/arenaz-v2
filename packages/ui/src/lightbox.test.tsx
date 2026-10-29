@@ -221,6 +221,43 @@ describe('Lightbox', () => {
     expect(screen.queryByRole('button', { name: 'Foto anterior' })).toBeNull();
   });
 
+  it('offers the variants sized to the whole screen', () => {
+    render(
+      <Lightbox
+        photos={[
+          {
+            url: '/1.jpg',
+            alt: 'Quadra',
+            srcSet: '/1.w400.webp 400w, /1.w1600.webp 1600w',
+          },
+          { url: '/2.jpg', alt: 'Vestiário', srcSet: null },
+        ]}
+        index={0}
+        onClose={() => undefined}
+      />,
+    );
+    const img = screen.getByRole('img', { name: 'Quadra' });
+    expect(img).toHaveAttribute('src', '/1.jpg');
+    expect(img).toHaveAttribute(
+      'srcset',
+      '/1.w400.webp 400w, /1.w1600.webp 1600w',
+    );
+    expect(img).toHaveAttribute('sizes', '100vw');
+  });
+
+  it('serves only the original while the variants are pending', () => {
+    render(
+      <Lightbox
+        photos={[{ url: '/2.jpg', alt: 'Vestiário', srcSet: null }]}
+        index={0}
+        onClose={() => undefined}
+      />,
+    );
+    const img = screen.getByRole('img', { name: 'Vestiário' });
+    expect(img).not.toHaveAttribute('srcset');
+    expect(img).not.toHaveAttribute('sizes');
+  });
+
   it('renders nothing without photos', () => {
     const { container } = render(
       <Lightbox photos={[]} index={0} onClose={vi.fn()} />,

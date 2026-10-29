@@ -16,6 +16,13 @@ export interface VenueCardProps {
   imageUrl: string | null;
   /** Describes the photo; pass "" when it adds nothing to the name. */
   imageAlt: string;
+  /** `srcset` of the photo's resized variants; `null` while pending. */
+  imageSrcSet?: string | null | undefined;
+  /**
+   * `sizes` of the photo for the layout the card sits in (the page knows its
+   * grid). Defaults to a card of a 1/2/4-column grid.
+   */
+  imageSizes?: string | undefined;
   /** One line under the name ("Society · Futsal · 1,2 km"). */
   meta: string;
   priceCents: number;
@@ -50,6 +57,9 @@ export function formatFreeTime(time: string): string {
   return mm === '00' ? `${hours}h` : `${hours}h${mm}`;
 }
 
+const DEFAULT_IMAGE_SIZES =
+  '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw';
+
 const PILL =
   'az-glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold text-ink shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)]';
 
@@ -63,6 +73,8 @@ export function VenueCard({
   name,
   imageUrl,
   imageAlt,
+  imageSrcSet,
+  imageSizes = DEFAULT_IMAGE_SIZES,
   meta,
   priceCents,
   priceFrom = false,
@@ -104,6 +116,9 @@ export function VenueCard({
           {imageUrl ? (
             <img
               src={imageUrl}
+              {...(imageSrcSet
+                ? { srcSet: imageSrcSet, sizes: imageSizes }
+                : {})}
               alt={imageAlt}
               loading="lazy"
               decoding="async"
