@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -58,10 +59,23 @@ export const booking = pgTable(
   },
   (t) => [
     index('booking_venue_period_idx').on(t.venueId, sql`lower(${t.period})`),
-    index('booking_user_created_idx').on(t.userId, t.createdAt.desc()),
+    index('booking_user_created_idx').on(
+      t.userId,
+      t.createdAt.desc().nullsFirst(),
+    ),
     index('booking_hold_expires_idx')
       .on(t.holdExpiresAt)
       .where(sql`${t.status} = 'held'`),
+    // The denormalized venue_id must be the field's own venue.
+    foreignKey({
+      name: 'booking_field_venue_fk',
+      columns: [t.fieldId, t.venueId],
+      foreignColumns: [field.id, field.venueId],
+    }).onDelete('restrict'),
+    check(
+      'booking_manual_customer_check',
+      sql`${t.origin} <> 'manual' or (${t.customerName} is not null and btrim(${t.customerName}) <> '')`,
+    ),
     check('booking_origin_check', sql`${t.origin} in ('app', 'manual')`),
     check(
       'booking_status_check',

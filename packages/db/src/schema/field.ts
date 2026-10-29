@@ -9,6 +9,7 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { tstzrange } from './geography.js';
@@ -41,6 +42,8 @@ export const field = pgTable(
   },
   (t) => [
     index('field_venue_id_idx').on(t.venueId),
+    // Target of booking's composite FK (keeps booking.venue_id honest).
+    unique('field_id_venue_id_unique').on(t.id, t.venueId),
     check('field_sports_not_empty_check', sql`cardinality(${t.sports}) > 0`),
     check(
       'field_min_slot_minutes_check',
