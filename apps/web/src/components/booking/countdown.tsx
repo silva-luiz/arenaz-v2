@@ -28,8 +28,8 @@ export interface CountdownProps {
    * expire the hold early or late.
    */
   serverNow?: string | undefined;
-  /** Called once, when the deadline is reached. */
-  onExpire?: (() => void) | undefined;
+  /** Called once, when the deadline is reached (`live`: seen running out). */
+  onExpire?: ((live: boolean) => void) | undefined;
 }
 
 /**
@@ -53,13 +53,19 @@ export function Countdown({ expiresAt, serverNow, onExpire }: CountdownProps) {
   );
   const expired = seconds === 0;
 
+  // `live` tells the parent whether the hold ran out while this was mounted.
+  // One that is already over when it appears (the page was rendered after the
+  // deadline, or the clocks disagree) is reported as not live: the parent shows
+  // the expired view but must not refresh, which would remount this and loop.
+  const wasLive = useRef(false);
   const notified = useRef(false);
   useEffect(() => {
+    if (seconds !== null && seconds > 0) wasLive.current = true;
     if (expired && !notified.current) {
       notified.current = true;
-      onExpire?.();
+      onExpire?.(wasLive.current);
     }
-  }, [expired, onExpire]);
+  }, [seconds, expired, onExpire]);
 
   if (seconds === null) return <div className="min-h-12" />;
 

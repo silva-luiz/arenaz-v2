@@ -80,11 +80,16 @@ export function PixPayment({
     void load();
   }, [load]);
 
-  const onExpire = useCallback(() => {
-    setExpiredStamp(stamp);
-    // The server tells whether it really expired.
-    router.refresh();
-  }, [router, stamp]);
+  const onExpire = useCallback(
+    (live: boolean) => {
+      setExpiredStamp(stamp);
+      // The server tells whether it really expired. Only when it ran out
+      // while watching: a page that arrives already expired would refresh
+      // forever if the API clock lags this one.
+      if (live) router.refresh();
+    },
+    [router, stamp],
+  );
 
   async function copy(code: string) {
     // Clear first, so repeating the copy is announced again.

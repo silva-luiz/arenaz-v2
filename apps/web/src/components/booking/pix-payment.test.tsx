@@ -165,6 +165,75 @@ describe('PixPayment', () => {
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
+  it('a hold already past its deadline shows the expired view without refreshing', () => {
+    mockCharge();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(NOW.getTime() + 11 * 60_000));
+    const view = render(
+      <PixPayment
+        bookingId={ID}
+        holdExpiresAt={holdExpiresAt}
+        venueSlug="arena"
+        serverNow={new Date(NOW.getTime() + 11 * 60_000).toISOString()}
+      />,
+    );
+    expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Escolher outro horário' }),
+    ).toBeVisible();
+    // A refreshed page remounts it with a new server clock: still no loop.
+    view.rerender(
+      <PixPayment
+        bookingId={ID}
+        holdExpiresAt={holdExpiresAt}
+        venueSlug="arena"
+        serverNow={new Date(NOW.getTime() + 11 * 60_000 + 500).toISOString()}
+      />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it('does not reload the page when the charge fails with a 500', async () => {
+    mocks.apiSend.mockResolvedValue({
+      ok: false,
+      status: 500,
+      fieldErrors: {},
+      message: 'Não foi possível concluir. Tente novamente.',
+    });
+    renderPix();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível concluir',
+    );
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it('reloads the page when "Simular pagamento" answers 404', async () => {
+    mocks.apiSend.mockImplementation((_method: string, path: string) =>
+      Promise.resolve(
+        path.endsWith('/payment')
+          ? { ok: true, data: charge() }
+          : {
+              ok: false,
+              status: 404,
+              fieldErrors: {},
+              message: 'Cobrança não encontrada',
+            },
+      ),
+    );
+    const user = userEvent.setup();
+    renderPix();
+    await user.click(
+      await screen.findByRole('button', { name: 'Simular pagamento' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cobrança não encontrada',
+    );
+    expect(mocks.refresh).toHaveBeenCalled();
+  });
+
   it.each([404, 409])(
     'reloads the page when the charge answers %i',
     async (status) => {

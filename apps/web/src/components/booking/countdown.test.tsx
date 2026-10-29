@@ -37,11 +37,19 @@ describe('Countdown', () => {
       vi.advanceTimersByTime(5000);
     });
     expect(onExpire).toHaveBeenCalledTimes(1);
+    expect(onExpire).toHaveBeenCalledWith(true);
   });
 
   it('is already expired when the deadline has passed', () => {
-    render(<Countdown expiresAt={inSeconds(-10)} />);
+    const onExpire = vi.fn();
+    render(<Countdown expiresAt={inSeconds(-10)} onExpire={onExpire} />);
     expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    // Reported once, as "not live": nothing ran out while mounted.
+    expect(onExpire).toHaveBeenCalledTimes(1);
+    expect(onExpire).toHaveBeenCalledWith(false);
   });
 
   it('announces only once per minute and at the end', () => {

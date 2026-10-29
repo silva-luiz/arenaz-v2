@@ -1,6 +1,6 @@
 import type { Booking } from '@arenaz/contracts';
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   apiGet: vi.fn(),
@@ -63,6 +63,13 @@ async function renderPage(booking: Booking, id = ID) {
 describe('/reservas/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Fixed "now" before the booking, so "already started" never depends on
+    // the real date.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-01T12:00:00.000Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('reads the booking with the session and 404s on a malformed id', async () => {
