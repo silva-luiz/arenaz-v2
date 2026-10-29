@@ -1,6 +1,6 @@
+import { Card, buttonClasses } from '@arenaz/ui';
 import Link from 'next/link';
-import { primaryButton, secondaryButton } from '@/components/ui/button-styles';
-import { Card, PageShell } from '@/components/ui/page-shell';
+import { PageShell } from '@/components/ui/page-shell';
 
 export default function HomePage() {
   return (
@@ -13,10 +13,19 @@ export default function HomePage() {
           Em breve: encontre quadras perto de você e reserve em poucos toques.
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Link href="/entrar" className={`${secondaryButton} flex-1`}>
+          <Link
+            href="/entrar"
+            className={buttonClasses({
+              variant: 'secondary',
+              className: 'flex-1',
+            })}
+          >
             Entrar
           </Link>
-          <Link href="/cadastro" className={`${primaryButton} flex-1`}>
+          <Link
+            href="/cadastro"
+            className={buttonClasses({ className: 'flex-1' })}
+          >
             Criar conta
           </Link>
         </div>

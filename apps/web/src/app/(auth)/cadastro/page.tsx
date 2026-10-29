@@ -1,7 +1,8 @@
+import { Card } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SignUpForm } from '@/components/auth/sign-up-form';
-import { Card, PageShell } from '@/components/ui/page-shell';
+import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata: Metadata = { title: 'Criar conta' };
 

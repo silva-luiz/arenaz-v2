@@ -1,7 +1,8 @@
+import { Card } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { SignOutButton } from '@/components/auth/sign-out-button';
-import { Card, PageShell } from '@/components/ui/page-shell';
+import { PageShell } from '@/components/ui/page-shell';
 import { getSession } from '@/lib/session';
 
 export const metadata: Metadata = { title: 'Minha conta' };

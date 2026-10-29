@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/brand/logo';
 
-/** Centered column with the logo on top; every page of the foundation uses it. */
+/** Centered column with the logo on top; pages put a ui `Card` inside it. */
 export function PageShell({ children }: { children: ReactNode }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-8 px-4 py-10">
@@ -15,14 +15,5 @@ export function PageShell({ children }: { children: ReactNode }) {
       </Link>
       {children}
     </main>
-  );
-}
-
-/** White card on `--shadow-2`. */
-export function Card({ children }: { children: ReactNode }) {
-  return (
-    <section className="w-full rounded-3xl border border-line bg-bg p-6 shadow-2 sm:p-8">
-      {children}
-    </section>
   );
 }

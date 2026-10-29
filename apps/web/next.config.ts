@@ -7,6 +7,8 @@ const API_URL = process.env.API_URL || 'http://localhost:4000';
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // @arenaz/ui ships TypeScript source (no build step).
+  transpilePackages: ['@arenaz/ui'],
   // `next dev` otherwise writes an AGENTS.md when it detects an AI agent.
   agentRules: false,
   rewrites() {

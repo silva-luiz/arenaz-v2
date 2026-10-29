@@ -7,11 +7,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Alert, Button, Field, Input } from '@arenaz/ui';
 import { GENERIC_ERROR, authClient, parseAuthError } from '@/lib/auth-client';
 import { safeNext } from '@/lib/safe-next';
-import { primaryButton } from '@/components/ui/button-styles';
-import { Field } from './field';
-import { FormAlert } from './form-alert';
 
 const FIELDS = ['name', 'email', 'password'] as const;
 
@@ -59,33 +57,23 @@ export function SignUpForm() {
       }}
       className="flex flex-col gap-5"
     >
-      <FormAlert message={formError} />
-      <Field
-        id="name"
-        label="Nome"
-        autoComplete="name"
-        registration={register('name')}
-        error={errors.name?.message}
-      />
-      <Field
-        id="email"
-        label="E-mail"
-        type="email"
-        autoComplete="email"
-        registration={register('email')}
-        error={errors.email?.message}
-      />
-      <Field
-        id="password"
-        label="Senha"
-        type="password"
-        autoComplete="new-password"
-        registration={register('password')}
-        error={errors.password?.message}
-      />
-      <button type="submit" disabled={isSubmitting} className={primaryButton}>
+      <Alert tone="error">{formError}</Alert>
+      <Field label="Nome" error={errors.name?.message}>
+        <Input autoComplete="name" {...register('name')} />
+      </Field>
+      <Field label="E-mail" error={errors.email?.message}>
+        <Input type="email" autoComplete="email" {...register('email')} />
+      </Field>
+      <Field label="Senha" error={errors.password?.message}>
+        <Input
+          type="password"
+          autoComplete="new-password"
+          {...register('password')}
+        />
+      </Field>
+      <Button type="submit" loading={isSubmitting}>
         Criar conta
-      </button>
+      </Button>
       <p className="text-center text-sm text-muted">
         Já tem conta?{' '}
         <Link

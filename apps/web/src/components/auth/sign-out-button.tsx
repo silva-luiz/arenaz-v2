@@ -2,9 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Alert, Button } from '@arenaz/ui';
 import { GENERIC_ERROR, authClient } from '@/lib/auth-client';
-import { secondaryButton } from '@/components/ui/button-styles';
-import { FormAlert } from './form-alert';
 
 export function SignOutButton() {
   const router = useRouter();
@@ -31,17 +30,16 @@ export function SignOutButton() {
 
   return (
     <div className="flex flex-col gap-3">
-      <FormAlert message={error} />
-      <button
-        type="button"
-        disabled={pending}
+      <Alert tone="error">{error}</Alert>
+      <Button
+        variant="secondary"
+        loading={pending}
         onClick={() => {
           void signOut();
         }}
-        className={secondaryButton}
       >
         Sair
-      </button>
+      </Button>
     </div>
   );
 }
