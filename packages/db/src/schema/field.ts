@@ -81,7 +81,8 @@ export const availabilityBlock = pgTable(
     fieldId: uuid('field_id')
       .notNull()
       .references(() => field.id, { onDelete: 'cascade' }),
-    // Half-open [start, end): build with tstzrangeSql().
+    // Half-open [start, end). Reads and writes as `{ startsAt, endsAt }` (Dates);
+    // overlap checks build the range with tstzrangeSql().
     period: tstzrange('period').notNull(),
     reason: text('reason'),
     createdAt: timestamp('created_at', { withTimezone: true })

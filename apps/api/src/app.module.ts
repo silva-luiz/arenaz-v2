@@ -3,6 +3,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { AuthModule } from './auth/auth.module.js';
 import type { Env } from './config/env.js';
 import { DbModule, type DbModuleOptions } from './db/db.module.js';
+import { FieldsModule } from './fields/fields.module.js';
 import { HealthModule } from './health/health.module.js';
 import { VenuesModule } from './venues/venues.module.js';
 
@@ -20,6 +21,7 @@ export class AppModule {
         AuthModule.forRoot(env, logger),
         HealthModule,
         VenuesModule,
+        FieldsModule,
       ],
     };
   }

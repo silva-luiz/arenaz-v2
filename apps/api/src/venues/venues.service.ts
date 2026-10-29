@@ -58,6 +58,11 @@ export function photoUrl(key: string, baseUrl = ''): string {
   return `${baseUrl.replace(/\/+$/, '')}/${key}`;
 }
 
+/** `numeric(5,1)` comes back from the driver as a string: number, or null. */
+export function toMeters(value: string | null): number | null {
+  return value === null ? null : Number(value);
+}
+
 /** DB field row (+ its price rule count) → the contract's `FieldSummary`. */
 export function toFieldSummary(
   row: Field,
@@ -69,9 +74,8 @@ export function toFieldSummary(
     sports: row.sports,
     surface: row.surface,
     format: row.format,
-    // numeric(5,1) comes back from the driver as a string.
-    lengthM: row.lengthM === null ? null : Number(row.lengthM),
-    widthM: row.widthM === null ? null : Number(row.widthM),
+    lengthM: toMeters(row.lengthM),
+    widthM: toMeters(row.widthM),
     minSlotMinutes: row.minSlotMinutes,
     basePriceCentsPerHour: row.basePriceCentsPerHour,
     isActive: row.isActive,

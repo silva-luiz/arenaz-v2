@@ -4,8 +4,10 @@ export * as schema from './schema/index.js';
 export {
   pointSql,
   selectLocation,
+  selectPeriod,
   tstzrangeSql,
   type GeoPoint,
+  type TimeRange,
 } from './schema/geography.js';
 export type {
   Venue,
