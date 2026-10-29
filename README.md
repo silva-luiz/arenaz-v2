@@ -20,6 +20,16 @@ pnpm dev
 
 Web em http://localhost:3000 e API em http://localhost:4000.
 
+### Worker (expiração de reservas)
+
+`apps/worker` roda junto com `pnpm dev` (usa `DATABASE_URL` e `REDIS_URL`).
+A cada 30 s um job repetível do BullMQ (fila `maintenance`, job `expire-holds`)
+marca como `expired` as reservas `held` cujo prazo (`hold_expires_at`) já
+passou, em lotes de 500. O job é idempotente e reiniciar o worker não duplica o
+agendamento. A API também expira holds vencidos sob demanda, então o worker só
+limpa o que ninguém tocou; ele pula linhas travadas por um pagamento em curso.
+Produção: `pnpm --filter @arenaz/worker build` e `start`.
+
 `BETTER_AUTH_SECRET` precisa de ao menos 32 caracteres. Gere com
 `openssl rand -base64 32` ou, no Windows (sem openssl):
 
@@ -91,7 +101,7 @@ desligado. O token é só de servidor para servidor e o navegador nunca o vê.
 ## Testes
 
 ```bash
-pnpm test    # unitários e integração; precisa do Docker rodando (Testcontainers)
+pnpm test    # unitários e integração; precisa do Docker rodando (Testcontainers: Postgres, MinIO e Redis)
 ```
 
 E2E (Playwright, sobe API e web em 3100/4100):

@@ -1,0 +1,32 @@
+{
+  "name": "@arenaz/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "node scripts/dev.mjs",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@arenaz/db": "workspace:*",
+    "bullmq": "6.5.1",
+    "ioredis": "6.0.0",
+    "pino": "10.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@arenaz/config": "workspace:*",
+    "@testcontainers/redis": "12.2.1",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
+    "drizzle-orm": "^0.45.4",
+    "eslint": "^10.13.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

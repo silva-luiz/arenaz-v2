@@ -37,7 +37,7 @@ jobs:
     # signs sessions of the e2e servers started below.
     env:
       DATABASE_URL: postgres://arenaz:arenaz@localhost:5432/arenaz
-      REDIS_URL: redis://localhost:6379 # validated by the API, not used yet
+      REDIS_URL: redis://localhost:6379 # validated by the API; the worker tests start their own Redis (Testcontainers)
       BETTER_AUTH_SECRET: ci-test-value-not-a-secret-0123456789abcdef
       BETTER_AUTH_URL: http://localhost:3100
       WEB_ORIGIN: http://localhost:3100
