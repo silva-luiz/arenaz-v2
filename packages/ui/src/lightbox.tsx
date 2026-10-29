@@ -116,6 +116,9 @@ export function Lightbox({
   // moves focus to the body, and a handler on the dialog would stop hearing
   // the keys. The modal's inert background means nothing else needs them.
   const onKey = useEffectEvent((event: KeyboardEvent) => {
+    // A handler closer to the target already took the key, and a dialog that
+    // was closed from outside (still mounted for a moment) has nothing to do.
+    if (event.defaultPrevented || !dialogRef.current?.open) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'Escape') {
       event.preventDefault();

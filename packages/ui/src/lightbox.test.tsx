@@ -114,6 +114,38 @@ describe('Lightbox', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('ignores keys another handler already handled', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<Lightbox photos={PHOTOS} index={0} onClose={onClose} />);
+    // A handler closer to the target (a nested control) claimed the key.
+    const claim = (event: KeyboardEvent) => {
+      event.preventDefault();
+    };
+    document.body.addEventListener('keydown', claim);
+
+    await user.keyboard('{ArrowRight}{Escape}');
+    document.body.removeEventListener('keydown', claim);
+
+    expect(screen.getByText('1 de 3')).toBeVisible();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('ignores keys once the dialog is no longer open', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<Lightbox photos={PHOTOS} index={0} onClose={onClose} />);
+
+    // Closed from outside (for example the Android back gesture) while the
+    // component is still mounted.
+    screen.getByRole<HTMLDialogElement>('dialog', { hidden: true }).close();
+    onClose.mockClear();
+    await user.keyboard('{ArrowRight}{Escape}');
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByText('2 de 3')).toBeNull();
+  });
+
   it('returns focus to returnFocusRef even if the opener never had focus', () => {
     const trigger = document.createElement('button');
     document.body.append(trigger);

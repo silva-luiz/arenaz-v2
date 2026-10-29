@@ -170,7 +170,9 @@ export function SearchBar({
           />
         </label>
         <Divider />
-        <label className={SEGMENT}>
+        {/* md:flex-none: as wide as the longest option ("Qualquer esporte"),
+            not squeezed by the text field next to it. */}
+        <label className={cn(SEGMENT, 'md:flex-none')}>
           <span className={SEGMENT_LABEL}>Esporte</span>
           <select
             name="sport"
