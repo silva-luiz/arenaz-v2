@@ -15,6 +15,20 @@ export type SearchKey = (typeof KEYS)[number];
 /** The search filters as the user typed them: trimmed, never empty. */
 export type SearchParams = Partial<Record<SearchKey, string>>;
 
+const COORDINATES = new Set<SearchKey>(['lat', 'lng']);
+const COORDINATE_DECIMALS = 3;
+
+/**
+ * Rounds a coordinate to 3 decimals (about 110 m), so a crawler cannot create
+ * one cache entry per distinct position. Text that is not a finite number is
+ * left alone for the schema to reject.
+ */
+function roundCoordinate(text: string): string {
+  const value = Number(text);
+  if (!Number.isFinite(value)) return text;
+  return String(Number(value.toFixed(COORDINATE_DECIMALS)));
+}
+
 /**
  * Keeps the first value of each known key, trimmed, and drops empty ones. A
  * form submitted without JavaScript sends `?q=&sport=`; that is "no filter",
@@ -26,7 +40,7 @@ export function normalizeSearchParams(raw: RawSearchParams): SearchParams {
     const value = raw[key];
     const first = Array.isArray(value) ? value[0] : value;
     const text = first?.trim();
-    if (text) params[key] = text;
+    if (text) params[key] = COORDINATES.has(key) ? roundCoordinate(text) : text;
   }
   return params;
 }

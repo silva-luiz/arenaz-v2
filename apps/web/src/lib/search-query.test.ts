@@ -19,6 +19,34 @@ describe('normalizeSearchParams', () => {
   });
 });
 
+describe('normalizeSearchParams coordinates', () => {
+  it('rounds lat and lng to 3 decimals so cache keys stay bounded', () => {
+    expect(
+      normalizeSearchParams({ lat: '-23.5505199', lng: '-46.6333094' }),
+    ).toEqual({ lat: '-23.551', lng: '-46.633' });
+    expect(normalizeSearchParams({ lat: '-23.5', lng: '-46' })).toEqual({
+      lat: '-23.5',
+      lng: '-46',
+    });
+  });
+
+  it('leaves a non-numeric coordinate for the schema to reject', () => {
+    expect(normalizeSearchParams({ lat: 'abc', lng: '1e999' })).toEqual({
+      lat: 'abc',
+      lng: '1e999',
+    });
+  });
+
+  it('feeds the rounded value to validation', () => {
+    const result = parseSearch({ lat: '-23.5505199', lng: '-46.6333094' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.params).toEqual({ lat: '-23.551', lng: '-46.633' });
+      expect(result.query.lat).toBe(-23.551);
+    }
+  });
+});
+
 describe('parseSearch', () => {
   it('accepts a form submitted without JavaScript as the default search', () => {
     const result = parseSearch({ q: '', sport: '' });
