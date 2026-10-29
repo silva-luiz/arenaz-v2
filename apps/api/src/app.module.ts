@@ -1,5 +1,6 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 import type { FastifyBaseLogger } from 'fastify';
+import { AvailabilityModule } from './availability/availability.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import type { Env } from './config/env.js';
 import { DbModule, type DbModuleOptions } from './db/db.module.js';
@@ -30,6 +31,7 @@ export class AppModule {
         FieldsModule,
         PhotosModule,
         PublicVenuesModule,
+        AvailabilityModule,
       ],
     };
   }
