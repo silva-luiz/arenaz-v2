@@ -72,3 +72,31 @@ html:has([data-booking-bar]) {
     scroll-padding-bottom: 0;
   }
 }
+
+/*
+ * Maps. Leaflet's zoom buttons are 30px (34 on touch): too small for a thumb,
+ * so they are 44px, white, with the prototype's rounded block and shadow.
+ * The (focusable) price pins have no box of their own: the label inside them
+ * draws the focus ring (map-pin.tsx), not the 0x0 element.
+ */
+.leaflet-container .leaflet-bar {
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+.leaflet-container .leaflet-bar a[role='button'] {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
+  color: var(--color-ink);
+  border-bottom-color: var(--color-line);
+}
+.leaflet-container .leaflet-bar a[role='button']:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: -4px;
+}
+.leaflet-marker-icon:focus-visible {
+  outline: none;
+}

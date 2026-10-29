@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ publicGet: vi.fn() }));
 // `connection()` only works inside a real request.
 vi.mock('next/server', () => ({ connection: () => Promise.resolve() }));
+// The filter pills use the router; the rest of the module stays real.
+vi.mock('next/navigation', async (importActual) => ({
+  ...(await importActual<typeof import('next/navigation')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 // Leaflet needs a real browser; the map has its own tests.
 vi.mock('next/dynamic', () => ({
   default: () =>
@@ -33,7 +38,7 @@ function card(index: number, distanceKm: number | null = null) {
     minPriceCentsPerHour: 18000,
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm,
-    nextFreeTime: null,
+    nextFreeTime: null as string | null,
   };
 }
 
@@ -274,6 +279,166 @@ describe('search page', () => {
       ).toHaveAttribute('href', '/buscar');
       expect(screen.queryByTestId('map-stub')).not.toBeInTheDocument();
       expect(screen.queryByText(/^\d+ espaços?$/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('filters, date and players', () => {
+    it('forwards amenities and maxPrice to the API', async () => {
+      await renderPage({ amenities: 'coberta,vestiario', maxPrice: '200' });
+
+      const path = mocks.publicGet.mock.calls[0]?.[0] as string;
+      const query = new URLSearchParams(path.split('?')[1]);
+      expect(query.get('amenities')).toBe('coberta,vestiario');
+      expect(query.get('maxPrice')).toBe('200');
+    });
+
+    it('does not send date and players to the API (it cannot filter by them)', async () => {
+      await renderPage({
+        q: 'vila',
+        data: '2026-10-30',
+        jogadores: '14',
+      });
+
+      const path = mocks.publicGet.mock.calls[0]?.[0] as string;
+      expect(path).toBe('/venues?q=vila');
+    });
+
+    it('shows the pills with what the URL filters pressed', async () => {
+      await renderPage({ amenities: 'coberta', maxPrice: '200' });
+
+      expect(screen.getByRole('button', { name: 'Coberta' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByRole('button', { name: 'Vestiário' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      expect(
+        screen.getByRole('button', { name: 'Até R$ 200/h' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('shows date and players in the search bar', async () => {
+      const day = new Date(Date.now() + 2 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      await renderPage({ data: day, jogadores: '10' });
+
+      expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveValue(day);
+      expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
+        '10',
+      );
+    });
+
+    it('ignores a date in the past and a player count out of range, without an error', async () => {
+      await renderPage({ data: '2020-01-01', jogadores: '99' });
+
+      expect(messages()).toEqual([]);
+      expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveValue('');
+      expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
+        '',
+      );
+    });
+
+    it('carries date and players on every venue link', async () => {
+      const day = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      await renderPage({ data: day, jogadores: '14' });
+
+      const list = screen.getByRole('list', { name: 'Espaços encontrados' });
+      expect(
+        within(list).getByRole('link', { name: 'Arena 2' }),
+      ).toHaveAttribute('href', `/espacos/arena-2?data=${day}&jogadores=14`);
+    });
+
+    it('keeps date, players and filters on "Carregar mais"', async () => {
+      const day = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      mocks.publicGet.mockResolvedValue(response(20, true));
+      await renderPage({
+        data: day,
+        jogadores: '14',
+        amenities: 'coberta',
+        maxPrice: '200',
+      });
+
+      const href = screen
+        .getByRole('link', { name: 'Carregar mais' })
+        .getAttribute('href');
+      const query = new URLSearchParams(href?.split('?')[1]);
+      expect(query.get('data')).toBe(day);
+      expect(query.get('jogadores')).toBe('14');
+      expect(query.get('amenities')).toBe('coberta');
+      expect(query.get('maxPrice')).toBe('200');
+      expect(query.get('page')).toBe('2');
+    });
+
+    it('a new search from the bar keeps the pills (hidden fields)', async () => {
+      const { container } = render(
+        await SearchPage(props({ amenities: 'coberta', maxPrice: '200' })),
+      );
+
+      const form = container.querySelector('form');
+      expect(form?.querySelector('input[name="amenities"]')).toHaveValue(
+        'coberta',
+      );
+      expect(form?.querySelector('input[name="maxPrice"]')).toHaveValue('200');
+    });
+
+    it('refuses an unknown amenity with the schema message', async () => {
+      await renderPage({ amenities: 'piscina' });
+
+      expect(messages()).toEqual(['Comodidade inválida']);
+      expect(mocks.publicGet).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('free today counter', () => {
+    it('counts the venues with a nextFreeTime', async () => {
+      mocks.publicGet.mockResolvedValue({
+        ...response(3),
+        items: [
+          { ...card(1), nextFreeTime: '20:00' },
+          { ...card(2), nextFreeTime: '21:30' },
+          card(3),
+        ],
+      });
+      await renderPage();
+
+      expect(
+        screen.getByText('2 quadras com horário livre hoje'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('3 espaços')).toBeInTheDocument();
+    });
+
+    it('uses the singular for one', async () => {
+      mocks.publicGet.mockResolvedValue({
+        ...response(2),
+        items: [{ ...card(1), nextFreeTime: '20:00' }, card(2)],
+      });
+      await renderPage();
+
+      expect(
+        screen.getByText('1 quadra com horário livre hoje'),
+      ).toBeInTheDocument();
+    });
+
+    it('says nothing about free times when none is free (no made-up zero)', async () => {
+      await renderPage();
+
+      expect(screen.queryByText(/horário livre/)).not.toBeInTheDocument();
+      expect(screen.getByText('3 espaços')).toBeInTheDocument();
+    });
+  });
+
+  describe('empty results with filters', () => {
+    it('keeps the pills, so the user can take the filter off', async () => {
+      mocks.publicGet.mockResolvedValue(response(0));
+      await renderPage({ amenities: 'coberta' });
+
+      expect(screen.getByRole('button', { name: 'Coberta' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
   });
 

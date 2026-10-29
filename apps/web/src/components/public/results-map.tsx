@@ -1,10 +1,9 @@
 'use client';
 
 import type { PublicVenueCard } from '@arenaz/contracts';
-import { LogoMark, PriceTag } from '@arenaz/ui';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   MapContainer,
   Marker,
@@ -13,8 +12,8 @@ import {
   useMapEvents,
 } from 'react-leaflet';
 import { MapZoomControl } from '@/components/ui/map-zoom-control';
-import { AppLink } from '@/components/ui/next-link';
-import { priceIcon } from './map-pin';
+import { MapPreview } from './map-preview';
+import { pinLabel, priceIcon } from './map-pin';
 
 /** São Paulo, only until the results are fitted (there is always one). */
 const FALLBACK_CENTER: [number, number] = [-23.55, -46.64];
@@ -75,10 +74,11 @@ function FitResults({ points }: { points: L.LatLngTuple[] }) {
 }
 
 // Room the preview card needs at the bottom, so a pin never ends up hidden
-// behind its own preview: on a phone the card sits above the view switch
-// (80px + about 90px of card + the pin and a gap), from `lg` up it is lower.
-const PREVIEW_CLEARANCE_PHONE = 240;
-const PREVIEW_CLEARANCE_DESKTOP = 140;
+// behind its own preview: the card is about 270px tall (120px photo on a
+// phone, 180px from `lg`) and sits 80px above the map's bottom on a phone (over
+// the view switch) and 28px from `lg`; the pin needs a gap on top of that.
+const PREVIEW_CLEARANCE_PHONE = 300;
+const PREVIEW_CLEARANCE_DESKTOP = 340;
 
 function previewClearance(): number {
   return typeof window.matchMedia === 'function' &&
@@ -114,15 +114,23 @@ function RevealClicked({ request }: { request: RevealRequest | null }) {
 }
 
 /**
- * The pins are not an accessible path (the list is), so assistive technology
- * skips the marker pane instead of reading unnamed boxes.
+ * Brings the selected pin into view when the selection changes, whoever made
+ * it (a click on the pin is handled by `RevealClicked`; this covers the "show
+ * on the map" button of a card). Closing the preview does not move the map.
  */
-function HidePinsFromAssistiveTech() {
+function RevealSelected({ point }: { point: L.LatLngTuple | null }) {
   const map = useMap();
+  const lat = point?.[0];
+  const lng = point?.[1];
 
   useEffect(() => {
-    map.getPane('markerPane')?.setAttribute('aria-hidden', 'true');
-  }, [map]);
+    if (lat === undefined || lng === undefined) return;
+    map.panInside([lat, lng], {
+      paddingTopLeft: [56, 56],
+      paddingBottomRight: [56, previewClearance()],
+      animate: !prefersReducedMotion(),
+    });
+  }, [map, lat, lng]);
 
   return null;
 }
@@ -147,70 +155,57 @@ function ClearOnMapClick({ onClear }: { onClear: () => void }) {
   return null;
 }
 
-function Preview({
-  venue,
-  onClose,
-}: {
+interface PricePinProps {
   venue: PublicVenueCard;
-  onClose: () => void;
-}) {
+  /** Dark pin: hovered card or selected venue. */
+  highlighted: boolean;
+  /** The selected venue (`aria-pressed`). */
+  selected: boolean;
+  onSelect: (venue: PublicVenueCard) => void;
+}
+
+/**
+ * One price pin. Leaflet makes the marker's icon element a focusable
+ * `role="button"` (`keyboard`); this gives that element its name ("Arena Vila
+ * Madalena, R$ 180 por hora", the label only shows the price) and its pressed
+ * state. The element is kept when the icon changes (a divIcon reuses its
+ * container), so focus survives selecting the pin.
+ */
+function PricePin({ venue, highlighted, selected, onSelect }: PricePinProps) {
+  const markerRef = useRef<L.Marker | null>(null);
+  const label = pinLabel(venue.name, venue.minPriceCentsPerHour);
+
+  useEffect(() => {
+    const element = markerRef.current?.getElement();
+    if (!element) return;
+    element.setAttribute('aria-label', label);
+    element.setAttribute('aria-pressed', String(selected));
+  }, [label, selected]);
+
   return (
-    <div className="absolute inset-x-4 bottom-20 z-[1000] mx-auto flex max-w-sm lg:bottom-6">
-      <AppLink
-        href={`/espacos/${venue.slug}`}
-        className="flex min-w-0 flex-1 items-stretch overflow-hidden rounded-photo bg-bg shadow-3 transition-transform duration-200 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-      >
-        <span className="relative block w-28 shrink-0 bg-surface">
-          {venue.coverUrl ? (
-            // Photos come from the storage host, not a configured Next image
-            // domain (same as VenueCard in @arenaz/ui).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={venue.coverUrl}
-              // The thumbnail is w-28 (112px) wide.
-              {...(venue.coverSrcSet
-                ? { srcSet: venue.coverSrcSet, sizes: '112px' }
-                : {})}
-              alt=""
-              className="absolute inset-0 size-full object-cover"
-            />
-          ) : (
-            <span className="absolute inset-0 grid place-items-center">
-              <LogoMark size={40} />
-            </span>
-          )}
-        </span>
-        <span className="flex min-w-0 flex-col justify-center gap-0.5 py-3 pr-12 pl-4 text-sm">
-          <strong className="truncate font-semibold text-ink">
-            {venue.name}
-          </strong>
-          <span className="truncate text-muted">
-            {venue.neighborhood}, {venue.city}
-          </span>
-          <PriceTag cents={venue.minPriceCentsPerHour} from />
-        </span>
-      </AppLink>
-      <button
-        type="button"
-        aria-label="Fechar prévia"
-        onClick={onClose}
-        className="absolute top-2 right-2 grid size-9 place-items-center rounded-full bg-bg text-ink shadow-1 hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          aria-hidden="true"
-        >
-          <line x1="5" y1="5" x2="19" y2="19" />
-          <line x1="19" y1="5" x2="5" y2="19" />
-        </svg>
-      </button>
-    </div>
+    <Marker
+      ref={markerRef}
+      position={[venue.approxLocation.lat, venue.approxLocation.lng]}
+      icon={priceIcon(venue.minPriceCentsPerHour, highlighted)}
+      keyboard
+      zIndexOffset={highlighted ? 1000 : 0}
+      eventHandlers={{
+        click: () => {
+          onSelect(venue);
+        },
+        // Leaflet turns no key into a click (only for popups), so the two
+        // keys of a button are handled here.
+        keydown: (event) => {
+          if (
+            event.originalEvent.key !== 'Enter' &&
+            event.originalEvent.key !== ' '
+          )
+            return;
+          event.originalEvent.preventDefault();
+          onSelect(venue);
+        },
+      }}
+    />
   );
 }
 
@@ -218,9 +213,11 @@ export interface ResultsMapProps {
   items: PublicVenueCard[];
   /** Pin highlighted because its card is hovered or focused. No preview. */
   hoveredSlug: string | null;
-  /** Pin whose preview is open: only set by clicking the pin. */
+  /** The selected venue: dark pin, open preview. Set from a pin or from a card. */
   previewSlug: string | null;
   onPreview: (slug: string | null) => void;
+  /** Venue page of a result, with the date and players of the search. */
+  hrefFor: (slug: string) => string;
 }
 
 /**
@@ -229,17 +226,17 @@ export interface ResultsMapProps {
  *
  * Accessibility: the labelled region is the map's accessible name (Leaflet's
  * own container, which takes focus for arrow-key panning, adds no second
- * label), and its controls (zoom, attribution) stay as they are. The pins are
- * deliberately NOT focusable and are hidden from assistive technology
- * (`aria-hidden` on the marker pane): the list next to the map has the same
- * venues, in the same order, as real links, so it is the accessible
- * equivalent and 20 extra tab stops on the map would only be noise.
+ * label), and its controls (zoom, attribution) stay as they are. Every pin is
+ * a button in the tab order, in the order of the list, named with the venue
+ * and the price; Enter or Space selects it (dark pin + preview), Esc closes
+ * the preview.
  */
 export default function ResultsMap({
   items,
   hoveredSlug,
   previewSlug,
   onPreview,
+  hrefFor,
 }: ResultsMapProps) {
   const points = useMemo<L.LatLngTuple[]>(
     () =>
@@ -269,37 +266,35 @@ export default function ResultsMap({
           attribution={OSM_ATTRIBUTION}
           maxZoom={19}
         />
-        <MapZoomControl />
+        <MapZoomControl position="topright" />
         <FitResults points={points} />
-        <HidePinsFromAssistiveTech />
         <RevealClicked request={revealRequest} />
+        <RevealSelected
+          point={
+            previewed
+              ? [previewed.approxLocation.lat, previewed.approxLocation.lng]
+              : null
+          }
+        />
         <ClearOnMapClick
           onClear={() => {
             onPreview(null);
           }}
         />
-        {items.map((item) => {
-          const isSelected =
-            item.slug === previewSlug || item.slug === hoveredSlug;
-          return (
-            <Marker
-              key={item.slug}
-              position={[item.approxLocation.lat, item.approxLocation.lng]}
-              icon={priceIcon(item.minPriceCentsPerHour, isSelected)}
-              keyboard={false}
-              title={item.name}
-              zIndexOffset={isSelected ? 1000 : 0}
-              eventHandlers={{
-                click: () => {
-                  setRevealRequest({
-                    point: [item.approxLocation.lat, item.approxLocation.lng],
-                  });
-                  onPreview(item.slug);
-                },
-              }}
-            />
-          );
-        })}
+        {items.map((item) => (
+          <PricePin
+            key={item.slug}
+            venue={item}
+            highlighted={item.slug === previewSlug || item.slug === hoveredSlug}
+            selected={item.slug === previewSlug}
+            onSelect={(venue) => {
+              setRevealRequest({
+                point: [venue.approxLocation.lat, venue.approxLocation.lng],
+              });
+              onPreview(venue.slug);
+            }}
+          />
+        ))}
       </MapContainer>
       {previewed ? (
         <>
@@ -308,8 +303,9 @@ export default function ResultsMap({
               onPreview(null);
             }}
           />
-          <Preview
+          <MapPreview
             venue={previewed}
+            href={hrefFor(previewed.slug)}
             onClose={() => {
               onPreview(null);
             }}

@@ -10,7 +10,11 @@ interface MarkerProps {
   title?: string;
   zIndexOffset?: number;
   icon: { options: { html?: string | HTMLElement } };
-  eventHandlers: { click: () => void };
+  eventHandlers: {
+    click: () => void;
+    keydown: (event: { originalEvent: KeyboardEvent }) => void;
+  };
+  ref?: { current: { getElement: () => HTMLElement | undefined } | null };
 }
 
 const captured = vi.hoisted(() => ({
@@ -20,7 +24,7 @@ const captured = vi.hoisted(() => ({
   panInside: vi.fn(),
   invalidateSize: vi.fn(),
   size: { x: 800, y: 600 },
-  pane: { setAttribute: vi.fn() },
+  elements: [] as HTMLElement[],
 }));
 
 vi.mock('react-leaflet', () => ({
@@ -53,6 +57,11 @@ vi.mock('react-leaflet', () => ({
   ),
   Marker: (props: MarkerProps) => {
     captured.markers.push(props);
+    // What react-leaflet gives the ref: the Leaflet marker, whose element is
+    // the (focusable) icon container.
+    const element = document.createElement('div');
+    captured.elements.push(element);
+    if (props.ref) props.ref.current = { getElement: () => element };
     return <div data-testid="marker" />;
   },
   useMap: () => ({
@@ -62,7 +71,6 @@ vi.mock('react-leaflet', () => ({
     invalidateSize: captured.invalidateSize,
     getSize: () => captured.size,
     getContainer: () => document.createElement('div'),
-    getPane: () => captured.pane,
   }),
   useMapEvents: (handlers: { click: () => void }) => {
     captured.events = handlers;
@@ -105,6 +113,8 @@ function html(marker: MarkerProps | undefined): string {
   return typeof value === 'string' ? value : '';
 }
 
+const hrefFor = (slug: string) => `/espacos/${slug}?data=2026-10-30`;
+
 describe('ResultsMap', () => {
   const onPreview = vi.fn();
 
@@ -112,6 +122,7 @@ describe('ResultsMap', () => {
     vi.clearAllMocks();
     captured.markers = [];
     captured.events = null;
+    captured.elements = [];
     captured.size = { x: 800, y: 600 };
   });
 
@@ -122,6 +133,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -137,6 +149,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -156,6 +169,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -174,6 +188,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -192,6 +207,7 @@ describe('ResultsMap', () => {
         hoveredSlug="arena-b"
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -207,6 +223,7 @@ describe('ResultsMap', () => {
         hoveredSlug="arena-b"
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -223,6 +240,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug="arena-a"
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -245,44 +263,122 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug="arena-a"
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
     const img = document.querySelector('img');
     expect(img).toHaveAttribute('src', 'http://img.test/a.jpg');
     expect(img).toHaveAttribute('srcset', 'http://img.test/a.w400.webp 400w');
-    expect(img).toHaveAttribute('sizes', '112px');
+    expect(img).toHaveAttribute('sizes', '340px');
   });
 
-  it('hides the pins from assistive technology: the list is the accessible equivalent', () => {
+  it('puts every pin in the tab order, in the order of the list', () => {
     render(
       <ResultsMap
         items={ITEMS}
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
-    expect(captured.pane.setAttribute).toHaveBeenCalledWith(
-      'aria-hidden',
-      'true',
-    );
-  });
-
-  it('keeps the pins out of the tab order: the list is the keyboard path', () => {
-    render(
-      <ResultsMap
-        items={ITEMS}
-        hoveredSlug={null}
-        previewSlug={null}
-        onPreview={onPreview}
-      />,
-    );
-
-    expect(captured.markers.every((marker) => marker.keyboard === false)).toBe(
+    expect(captured.markers).toHaveLength(2);
+    expect(captured.markers.every((marker) => marker.keyboard === true)).toBe(
       true,
     );
+  });
+
+  it('names each pin with the venue and the price, as a button that is not pressed', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+        hrefFor={hrefFor}
+      />,
+    );
+
+    expect(captured.elements[0]).toHaveAttribute(
+      'aria-label',
+      'Arena A, R$ 180 por hora',
+    );
+    expect(captured.elements[1]).toHaveAttribute(
+      'aria-label',
+      'Arena B, R$ 120,50 por hora',
+    );
+    expect(captured.elements[0]).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('marks the selected pin as pressed, and only that one', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug="arena-b"
+        onPreview={onPreview}
+        hrefFor={hrefFor}
+      />,
+    );
+
+    expect(captured.elements[0]).toHaveAttribute('aria-pressed', 'false');
+    expect(captured.elements[1]).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('a hovered pin is dark but not pressed (hover is not a selection)', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug="arena-a"
+        previewSlug={null}
+        onPreview={onPreview}
+        hrefFor={hrefFor}
+      />,
+    );
+
+    expect(html(captured.markers[0])).toContain('bg-ink');
+    expect(captured.elements[0]).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it.each([' ', 'Enter'])('opens the preview with the %j key', (key) => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+        hrefFor={hrefFor}
+      />,
+    );
+    const originalEvent = new KeyboardEvent('keydown', {
+      key,
+      cancelable: true,
+    });
+
+    captured.markers[1]?.eventHandlers.keydown({ originalEvent });
+
+    expect(originalEvent.defaultPrevented).toBe(true);
+    expect(onPreview).toHaveBeenCalledWith('arena-b');
+  });
+
+  it('ignores other keys', () => {
+    render(
+      <ResultsMap
+        items={ITEMS}
+        hoveredSlug={null}
+        previewSlug={null}
+        onPreview={onPreview}
+        hrefFor={hrefFor}
+      />,
+    );
+
+    captured.markers[0]?.eventHandlers.keydown({
+      originalEvent: new KeyboardEvent('keydown', { key: 'a' }),
+    });
+
+    expect(onPreview).not.toHaveBeenCalled();
   });
 
   it('opens the preview of a result when its pin is clicked', () => {
@@ -292,6 +388,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -307,6 +404,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug="arena-a"
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -322,6 +420,7 @@ describe('ResultsMap', () => {
         hoveredSlug={null}
         previewSlug={null}
         onPreview={onPreview}
+        hrefFor={hrefFor}
       />,
     );
 
@@ -342,6 +441,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -360,6 +460,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -380,6 +481,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -389,6 +491,60 @@ describe('ResultsMap', () => {
           hoveredSlug="arena-b"
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
+        />,
+      );
+
+      expect(captured.panInside).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('revealing a pin selected from its card', () => {
+    it('pans the pin clear of the preview when the selection changes', () => {
+      const { rerender } = render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+          hrefFor={hrefFor}
+        />,
+      );
+      expect(captured.panInside).not.toHaveBeenCalled();
+
+      rerender(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-b"
+          onPreview={onPreview}
+          hrefFor={hrefFor}
+        />,
+      );
+
+      expect(captured.panInside).toHaveBeenCalledTimes(1);
+      expect(captured.panInside.mock.calls[0]?.[0]).toEqual([-23.56, -46.7]);
+    });
+
+    it('does not pan when the preview closes', () => {
+      const { rerender } = render(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug="arena-a"
+          onPreview={onPreview}
+          hrefFor={hrefFor}
+        />,
+      );
+      captured.panInside.mockClear();
+
+      rerender(
+        <ResultsMap
+          items={ITEMS}
+          hoveredSlug={null}
+          previewSlug={null}
+          onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -429,6 +585,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -449,6 +606,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
       captured.invalidateSize.mockClear();
@@ -468,6 +626,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -477,6 +636,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -493,6 +653,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -508,13 +669,14 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug="arena-b"
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
       const link = screen.getByRole('link', { name: /Arena B/ });
-      expect(link).toHaveAttribute('href', '/espacos/arena-b');
+      expect(link).toHaveAttribute('href', '/espacos/arena-b?data=2026-10-30');
       expect(within(link).getByText(/R\$\s120,50/)).toBeInTheDocument();
-      expect(within(link).getByText(/Vila Madalena, São Paulo/)).toBeVisible();
+      expect(within(link).getByText(/Vila Madalena/)).toBeVisible();
     });
 
     it('can be closed', async () => {
@@ -524,6 +686,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug="arena-a"
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -541,6 +704,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug="arena-a"
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -556,6 +720,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug="arena-a"
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -577,6 +742,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug={null}
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 
@@ -592,6 +758,7 @@ describe('ResultsMap', () => {
           hoveredSlug={null}
           previewSlug="outra"
           onPreview={onPreview}
+          hrefFor={hrefFor}
         />,
       );
 

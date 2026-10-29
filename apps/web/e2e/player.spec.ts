@@ -169,6 +169,98 @@ test('jogador encontra e abre um espaço publicado', async ({
   expect(nextUrl.searchParams.get('data')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 });
 
+/** Tomorrow in São Paulo, "YYYY-MM-DD". */
+function tomorrow(): string {
+  const day = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date(Date.now() + 86_400_000));
+  return day;
+}
+
+test('busca: filtros, pinos e prévia do mapa', async ({ page, published }) => {
+  const where = published.neighborhood.toLowerCase();
+  const data = tomorrow();
+  await page.goto(
+    `/buscar?q=${encodeURIComponent(where)}&data=${data}&jogadores=12`,
+  );
+
+  // Date and players show in the bar and ride on the venue link.
+  await expect(page.getByRole('combobox', { name: 'Quando' })).toHaveValue(
+    data,
+  );
+  await expect(page.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
+    '12',
+  );
+  const card = page.getByRole('link', { name: new RegExp(published.name) });
+  await expect(card).toHaveAttribute(
+    'href',
+    `/espacos/${published.slug}?data=${data}&jogadores=12`,
+  );
+
+  // Not demo mode: no fictional filters, no rating.
+  await expect(page.getByRole('button', { name: /mensalista/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /instantânea/ })).toHaveCount(
+    0,
+  );
+
+  // The seed has vestiário and estacionamento, not coberta.
+  const covered = page.getByRole('button', { name: 'Coberta' });
+  await expect(covered).toHaveAttribute('aria-pressed', 'false');
+  await covered.click();
+  await expect(page).toHaveURL(/[?&]amenities=coberta(&|$)/);
+  await expect(covered).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByRole('heading', { name: 'Nenhum espaço encontrado' }),
+  ).toBeVisible();
+  // The search keeps the day and players, and the way back is still there.
+  expect(new URL(page.url()).searchParams.get('data')).toBe(data);
+  await covered.click();
+  await expect(page).not.toHaveURL(/amenities=/);
+  await expect(card).toBeVisible();
+
+  await page.getByRole('button', { name: 'Vestiário' }).click();
+  await expect(page).toHaveURL(/[?&]amenities=vestiario(&|$)/);
+  await expect(card).toBeVisible();
+  const price = page.getByRole('button', { name: 'Até R$ 200/h' });
+  await price.click();
+  await expect(page).toHaveURL(/[?&]maxPrice=200(&|$)/);
+  await expect(price).toHaveAttribute('aria-pressed', 'true');
+  await expect(card).toBeVisible();
+
+  // The pin is a keyboard-reachable button named with venue and price.
+  const pin = page.getByRole('button', {
+    name: `${published.name}, R$ 180 por hora`,
+  });
+  // Leaflet's icon container has no size (the label inside draws the pin), so
+  // Playwright cannot call it "visible"; it is attached and focusable.
+  await expect(pin).toBeAttached();
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  await pin.focus();
+  await page.keyboard.press('Enter');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await expect(pin).toBeFocused();
+  const preview = page
+    .getByRole('region', { name: 'Mapa dos resultados' })
+    .getByRole('link', { name: new RegExp(published.name) });
+  await expect(preview).toHaveAttribute(
+    'href',
+    `/espacos/${published.slug}?data=${data}&jogadores=12`,
+  );
+  await page.keyboard.press('Escape');
+  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+
+  // Selecting from the card does the same.
+  const show = page.getByRole('button', {
+    name: `Mostrar ${published.name} no mapa`,
+  });
+  await show.click();
+  await expect(show).toHaveAttribute('aria-pressed', 'true');
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByRole('button', { name: 'Fechar prévia' }),
+  ).toBeVisible();
+});
+
 test('rascunho dá 404', async ({ page, draft }) => {
   const response: Response | null = await page.goto(`/espacos/${draft.slug}`);
   expect(response?.status()).toBe(404);
@@ -220,7 +312,7 @@ for (const viewport of VIEWPORTS) {
     });
     await scan(`/buscar (${viewport.label}, lista)`);
     if (viewport.width < 1024) {
-      await page.getByRole('button', { name: 'Mapa' }).click();
+      await page.getByRole('button', { name: 'Mapa', exact: true }).click();
       await expect(page.locator('.leaflet-container').first()).toBeVisible();
       await scan(`/buscar (${viewport.label}, mapa)`);
     }

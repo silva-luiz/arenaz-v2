@@ -1,11 +1,11 @@
 'use client';
 
 import type { PublicVenueCard } from '@arenaz/contracts';
-import { FOCUS_RING, VenueCard, cn } from '@arenaz/ui';
+import { FOCUS_RING, cn } from '@arenaz/ui';
 import dynamic from 'next/dynamic';
-import { useState, type ReactNode } from 'react';
-import { AppLink } from '@/components/ui/next-link';
-import { venueCardMeta } from '@/lib/venue-card-meta';
+import { useRef, useState, type ReactNode, type Ref } from 'react';
+import { venueHref, type SearchParams } from '@/lib/search-query';
+import { SearchVenueCard } from './search-venue-card';
 
 // Leaflet touches `window` on import, so the map is client-only.
 const ResultsMap = dynamic(() => import('./results-map'), {
@@ -26,14 +26,17 @@ const TOGGLE_BUTTON =
 function ToggleButton({
   pressed,
   onClick,
+  buttonRef,
   children,
 }: {
   pressed: boolean;
   onClick: () => void;
+  buttonRef?: Ref<HTMLButtonElement>;
   children: ReactNode;
 }) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
@@ -53,14 +56,17 @@ function ToggleButton({
 
 /*
  * Cover `sizes` of the result cards: 1 column, 2 from sm; from lg the list is
- * the 3fr of a 3fr/2fr split with the map (32px gap) inside the page content
- * (1360px max, 16px / 40px gutters from md). 20px between cards.
+ * the 1fr beside a 34% map column inside the page content (1360px max, 16px /
+ * 40px gutters from md, 32px gap), with auto-filled columns of at least 230px
+ * (2 up to about 1235px, then 3) and 20px between cards.
  */
 const CARD_SIZES =
-  '(min-width: 1360px) 364px, (min-width: 1024px) calc(30vw - 44px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)';
+  '(min-width: 1360px) 257px, (min-width: 1235px) calc(22vw - 42px), (min-width: 1024px) calc(33vw - 52px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)';
 
 export interface ResultsListProps {
   items: PublicVenueCard[];
+  /** Day and players of the search: carried on every link to a venue. */
+  intent?: Pick<SearchParams, 'data' | 'jogadores'> | undefined;
   /**
    * Search bar and title. They sit above the cards, in the left column, so
    * the map can start at the top of the page; on a phone they leave with the
@@ -81,18 +87,43 @@ export interface ResultsListProps {
  * order and the accessibility tree.
  *
  * Two separate pieces of state: hovering or focusing a card only highlights
- * its pin (and lets go on leave or blur); the preview opens only when a pin
- * is clicked, and closes with its button, a click on the map or Esc.
+ * its pin (and lets go on leave or blur); the selection (dark pin, preview,
+ * ringed card) is made on purpose, with the pin or the card's "Mostrar no
+ * mapa" button, and cleared with the preview's button, a click on the map,
+ * Esc or the same card button again.
  */
-export function ResultsList({ items, header, footer }: ResultsListProps) {
+export function ResultsList({
+  items,
+  intent = {},
+  header,
+  footer,
+}: ResultsListProps) {
   const [view, setView] = useState<View>('list');
+  const mapToggleRef = useRef<HTMLButtonElement>(null);
   const [hoverSlug, setHoverSlug] = useState<string | null>(null);
   const [focusSlug, setFocusSlug] = useState<string | null>(null);
+  // One selection for both ways in: the pin, or the card's "show on the map".
   const [previewSlug, setPreviewSlug] = useState<string | null>(null);
+
+  function hrefFor(slug: string): string {
+    return venueHref(slug, intent);
+  }
+
+  function toggleFromCard(slug: string) {
+    if (previewSlug === slug) {
+      setPreviewSlug(null);
+      return;
+    }
+    setPreviewSlug(slug);
+    // On a phone the card's button is in the list, which the map replaces:
+    // follow the user there, and keep focus on a control that still exists.
+    setView('map');
+    mapToggleRef.current?.focus();
+  }
 
   return (
     <>
-      <div className="lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-x-8">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_34%] lg:grid-rows-[auto_1fr] lg:gap-x-8">
         {header ? (
           <div
             data-testid="results-header"
@@ -111,7 +142,7 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
           <ul
             role="list"
             aria-label="Espaços encontrados"
-            className="grid gap-x-5 gap-y-9 sm:grid-cols-2"
+            className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,230px),1fr))] gap-x-5 gap-y-9"
           >
             {items.map((venue) => (
               <li
@@ -129,17 +160,14 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
                   setFocusSlug(null);
                 }}
               >
-                <VenueCard
-                  href={`/espacos/${venue.slug}`}
-                  name={venue.name}
-                  imageUrl={venue.coverUrl}
-                  imageAlt=""
-                  imageSrcSet={venue.coverSrcSet}
+                <SearchVenueCard
+                  venue={venue}
+                  href={hrefFor(venue.slug)}
                   imageSizes={CARD_SIZES}
-                  meta={venueCardMeta(venue)}
-                  priceCents={venue.minPriceCentsPerHour}
-                  priceFrom
-                  linkComponent={AppLink}
+                  selected={previewSlug === venue.slug}
+                  onToggleSelected={() => {
+                    toggleFromCard(venue.slug);
+                  }}
                 />
               </li>
             ))}
@@ -151,7 +179,7 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
           data-testid="results-map-view"
           className={cn(
             // Phone: the screen minus header (65px), tab bar (57px) and gaps.
-            'h-[calc(100dvh-9.5rem)] min-h-80 lg:sticky lg:top-[97px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh-8rem)] lg:self-start',
+            'h-[calc(100dvh-9.5rem)] min-h-80 lg:sticky lg:top-[108px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh-132px)] lg:self-start',
             view === 'list' && 'hidden lg:block',
           )}
         >
@@ -160,6 +188,7 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
             hoveredSlug={hoverSlug ?? focusSlug}
             previewSlug={previewSlug}
             onPreview={setPreviewSlug}
+            hrefFor={hrefFor}
           />
         </div>
       </div>
@@ -178,6 +207,7 @@ export function ResultsList({ items, header, footer }: ResultsListProps) {
           Lista
         </ToggleButton>
         <ToggleButton
+          buttonRef={mapToggleRef}
           pressed={view === 'map'}
           onClick={() => {
             setView('map');

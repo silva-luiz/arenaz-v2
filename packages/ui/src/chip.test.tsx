@@ -69,4 +69,41 @@ describe('Chip', () => {
       'yes',
     );
   });
+
+  it('has a soft selected look for filters: light fill, ink outline, no dark pill', () => {
+    render(
+      <Chip tone="soft" pressed onClick={vi.fn()}>
+        Coberta
+      </Chip>,
+    );
+    const chip = screen.getByRole('button', { name: 'Coberta' });
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(chip.className).toContain('bg-[#f2f2f2]');
+    expect(chip.className).not.toContain('bg-ink');
+  });
+
+  it('is solid (dark when selected) by default', () => {
+    render(
+      <Chip pressed onClick={vi.fn()}>
+        Hoje
+      </Chip>,
+    );
+    expect(screen.getByRole('button', { name: 'Hoje' }).className).toContain(
+      'bg-ink',
+    );
+  });
+
+  it('can be disabled with a hint, and does not react to clicks', async () => {
+    const onClick = vi.fn();
+    render(
+      <Chip disabled title="Em breve" onClick={onClick}>
+        Aceita mensalista
+      </Chip>,
+    );
+    const chip = screen.getByRole('button', { name: 'Aceita mensalista' });
+    expect(chip).toBeDisabled();
+    expect(chip).toHaveAttribute('title', 'Em breve');
+    await userEvent.setup().click(chip);
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });

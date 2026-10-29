@@ -114,14 +114,17 @@ export function SiteHeader({
             href="/"
             aria-label="ArenaZ, início"
             className={cn(
-              'flex shrink-0 items-center gap-2 rounded-button',
+              // 44px target on a phone, where the mark is all there is.
+              'flex shrink-0 items-center gap-2 rounded-button max-md:min-h-11 max-md:min-w-11 max-md:justify-center',
               FOCUS_RING,
             )}
           >
             <LogoMark />
+            {/* Gone on a phone, as in the prototype's search page: with the
+                account pill and "Anuncie" it pushed the header past 375px. */}
             <span
               aria-hidden="true"
-              className="font-wordmark text-[25px] font-extrabold tracking-[-0.045em] text-brand"
+              className="font-wordmark text-[25px] font-extrabold tracking-[-0.045em] text-brand max-md:hidden"
             >
               arenaz
             </span>

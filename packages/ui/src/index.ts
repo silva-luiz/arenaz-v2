@@ -43,4 +43,5 @@ export {
   formatFreeTime,
   type VenueCardFavorite,
   type VenueCardProps,
+  type VenueCardShowOnMap,
 } from './venue-card';

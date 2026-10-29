@@ -213,6 +213,54 @@ describe('SearchBar', () => {
     );
   });
 
+  it('offers a date beyond the next week when it comes from the URL', () => {
+    render(<SearchBar today="2026-10-29" defaultDate="2026-11-20" />);
+
+    const select = screen.getByRole('combobox', { name: 'Quando' });
+    expect(select).toHaveValue('2026-11-20');
+    expect(
+      within(select).getByRole('option', { name: 'Sex, 20/11' }),
+    ).toBeInTheDocument();
+  });
+
+  it('adds nothing for a date that is already an option', () => {
+    render(<SearchBar today="2026-10-29" defaultDate="2026-10-31" />);
+
+    expect(
+      within(screen.getByRole('combobox', { name: 'Quando' })).getAllByRole(
+        'option',
+      ),
+    ).toHaveLength(8);
+  });
+
+  it('submits the extra fields it was given, so a new search keeps the filters', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <SearchBar
+        today="2026-10-29"
+        extraFields={{ amenities: 'coberta,vestiario', maxPrice: '200' }}
+      />,
+    );
+    const form = container.querySelector('form');
+    expect(form).not.toBeNull();
+    const submitted: string[] = [];
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitted.push(
+        new URLSearchParams(
+          new FormData(event.target as HTMLFormElement) as unknown as Record<
+            string,
+            string
+          >,
+        ).toString(),
+      );
+    });
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(submitted[0]).toContain('amenities=coberta%2Cvestiario');
+    expect(submitted[0]).toContain('maxPrice=200');
+  });
+
   it('submits q, sport, data and jogadores', async () => {
     const user = userEvent.setup();
     render(<SearchBar today="2026-10-29" />);

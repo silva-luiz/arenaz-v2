@@ -5,15 +5,17 @@ import {
   publicSearchResponseSchema,
   type PublicSearchResponse,
 } from '@arenaz/contracts';
-import { Alert, EmptyState, SearchBar, buttonClasses } from '@arenaz/ui';
+import { Alert, EmptyState, SearchBar, buttonClasses, cn } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { unstable_rethrow } from 'next/navigation';
 import { connection } from 'next/server';
 import { ResultsList } from '@/components/public/results-list';
+import { SearchFilters } from '@/components/public/search-filters';
 import { AppLink } from '@/components/ui/next-link';
 import { publicGet, toSearchParams } from '@/lib/public-api';
 import {
   SEARCH_PATH,
+  apiQuery,
   parseSearch,
   searchHref,
   type RawSearchParams,
@@ -46,7 +48,9 @@ export async function generateMetadata({
 async function loadResults(
   params: SearchParams,
 ): Promise<PublicSearchResponse | null> {
-  const query = toSearchParams(params).toString();
+  // Date and players are only intent for the venue page: the API does not
+  // know them, and they must not split its cache.
+  const query = toSearchParams(apiQuery(params)).toString();
   try {
     return await publicGet(
       query ? `/venues?${query}` : '/venues',
@@ -68,9 +72,30 @@ function countLabel(shown: number, hasMore: boolean): string {
   return shown === 1 ? '1 espaço' : `${String(shown)} espaços`;
 }
 
-function Heading({ title, page = 1 }: { title: string; page?: number }) {
+/** Venues of this page with a free time left today (`nextFreeTime`). */
+function freeTodayLabel(count: number): string {
+  return count === 1
+    ? '1 quadra com horário livre hoje'
+    : `${String(count)} quadras com horário livre hoje`;
+}
+
+function Heading({
+  title,
+  page = 1,
+  hidden = false,
+}: {
+  title: string;
+  page?: number;
+  /** Visible only to assistive technology (the prototype has no title). */
+  hidden?: boolean;
+}) {
   return (
-    <h1 className="font-wordmark text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl">
+    <h1
+      className={cn(
+        'font-wordmark text-3xl leading-tight font-extrabold tracking-[-0.04em] md:text-4xl',
+        hidden && 'sr-only',
+      )}
+    >
       {title}
       {page > 1 ? (
         <span className="font-semibold text-muted">
@@ -90,10 +115,19 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { params } = parsed;
   const sport = SPORTS.find((candidate) => candidate === params.sport);
 
+  // Filters the bar has no field for ride along as hidden inputs, so a new
+  // search keeps the pills the user turned on.
+  const carried: Record<string, string> = {};
+  if (params.amenities) carried.amenities = params.amenities;
+  if (params.maxPrice) carried.maxPrice = params.maxPrice;
+
   const search = (
     <SearchBar
       defaultQuery={params.q}
       defaultSport={sport}
+      defaultDate={params.data}
+      defaultPlayers={params.jogadores}
+      extraFields={carried}
       className="mx-auto max-w-4xl"
     />
   );
@@ -126,11 +160,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const results = await loadResults(params);
 
   const heading = <Heading title={titleFor(q)} page={page} />;
+  const filters = <SearchFilters params={params} />;
 
   if (results === null) {
     return (
       <div className="flex flex-col gap-6 pb-12">
         {search}
+        {filters}
         {heading}
         <Alert tone="error">Não foi possível carregar os espaços agora.</Alert>
       </div>
@@ -141,10 +177,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     return (
       <div className="flex flex-col gap-6 pb-12">
         {search}
+        {/* Kept: a filter that empties the results must be easy to undo. */}
+        {filters}
         {heading}
         <EmptyState
           title="Nenhum espaço encontrado"
-          description="Tente outro bairro ou esporte, ou veja todos os espaços."
+          description="Tente outro bairro ou esporte, tire algum filtro ou veja todos os espaços."
           action={
             <AppLink
               href={SEARCH_PATH}
@@ -159,6 +197,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const shown = (page - 1) * PUBLIC_PAGE_SIZE + results.items.length;
+  const freeToday = results.items.filter(
+    (venue) => venue.nextFreeTime !== null,
+  ).length;
   // The API refuses pages past the maximum, so the last one has no next link.
   const canLoadMore = results.hasMore && page < PUBLIC_MAX_PAGE;
 
@@ -166,15 +207,29 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     <div className="pb-12">
       <ResultsList
         items={results.items}
+        intent={{ data: params.data, jogadores: params.jogadores }}
         header={
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             {search}
-            <div>
-              {heading}
-              <p className="mt-1 text-sm font-semibold">
-                {countLabel(shown, results.hasMore)}
-              </p>
-            </div>
+            {filters}
+            <Heading title={titleFor(q)} page={page} hidden />
+            <p className="text-sm">
+              {freeToday > 0 ? (
+                <>
+                  <span className="font-semibold">
+                    {freeTodayLabel(freeToday)}
+                  </span>
+                  {' · '}
+                  <span className="text-muted">
+                    {countLabel(shown, results.hasMore)}
+                  </span>
+                </>
+              ) : (
+                <span className="font-semibold">
+                  {countLabel(shown, results.hasMore)}
+                </span>
+              )}
+            </p>
           </div>
         }
         footer={

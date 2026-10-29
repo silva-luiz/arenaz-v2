@@ -9,6 +9,14 @@ export interface VenueCardFavorite {
   onToggle: () => void;
 }
 
+export interface VenueCardShowOnMap {
+  /** This venue is the selected one on the map. */
+  pressed: boolean;
+  /** Accessible name ("Mostrar Arena Vila Madalena no mapa"). */
+  label: string;
+  onToggle: () => void;
+}
+
 export interface VenueCardProps {
   href: string;
   name: string;
@@ -38,6 +46,11 @@ export interface VenueCardProps {
   square?: boolean | undefined;
   /** The heart; absent means the card has no button at all. */
   favorite?: VenueCardFavorite | undefined;
+  /**
+   * The search results' pin button, in the heart's corner (it takes its
+   * place): selects the venue on the map, and rings the photo while it is.
+   */
+  showOnMap?: VenueCardShowOnMap | undefined;
   linkComponent?: LinkComponent | undefined;
   className?: string | undefined;
 }
@@ -62,6 +75,13 @@ export function formatFreeTime(time: string): string {
 const DEFAULT_IMAGE_SIZES =
   '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw';
 
+// White gap, then ink ring, then the card shadow: the prototype's selected card.
+const SELECTED_RING =
+  'shadow-[0_0_0_3px_#fff,0_0_0_5px_#161616,0_2px_6px_rgba(8,36,24,0.1),0_26px_48px_-20px_rgba(8,36,24,0.48)]';
+
+const CORNER_BUTTON =
+  'absolute top-1.5 right-1.5 grid size-11 cursor-pointer place-items-center rounded-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] focus-visible:bg-black/35 focus-visible:outline-2 focus-visible:outline-white';
+
 const PILL =
   'az-glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold text-ink shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)]';
 
@@ -85,6 +105,7 @@ export function VenueCard({
   badge,
   square = false,
   favorite,
+  showOnMap,
   linkComponent,
   className,
 }: VenueCardProps) {
@@ -116,8 +137,12 @@ export function VenueCard({
         className={cn('block rounded-photo', FOCUS_RING)}
       >
         <div
+          data-testid="venue-card-photo"
           className={cn(
-            'relative overflow-hidden rounded-photo bg-surface shadow-1 transition-shadow duration-300 ease-out group-hover:shadow-2 motion-reduce:transition-none',
+            'relative overflow-hidden rounded-photo bg-surface transition-shadow duration-300 ease-out motion-reduce:transition-none',
+            showOnMap?.pressed
+              ? SELECTED_RING
+              : 'shadow-1 group-hover:shadow-2',
             square ? 'aspect-square' : 'aspect-[20/19]',
           )}
         >
@@ -202,7 +227,30 @@ export function VenueCard({
         </div>
       </Link>
 
-      {favorite ? (
+      {showOnMap ? (
+        <button
+          type="button"
+          aria-pressed={showOnMap.pressed}
+          aria-label={showOnMap.label}
+          onClick={showOnMap.onToggle}
+          className={CORNER_BUTTON}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            stroke="#FFFFFF"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={showOnMap.pressed ? 'fill-brand' : 'fill-black/45'}
+          >
+            <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+            <circle cx="12" cy="9.5" r="2.5" fill="#FFFFFF" />
+          </svg>
+        </button>
+      ) : favorite ? (
         <button
           type="button"
           aria-pressed={favorite.pressed}
@@ -210,7 +258,7 @@ export function VenueCard({
             favorite.pressed ? 'Remover dos favoritos' : 'Salvar nos favoritos'
           }
           onClick={favorite.onToggle}
-          className="absolute top-1.5 right-1.5 grid size-11 cursor-pointer place-items-center rounded-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] focus-visible:bg-black/35 focus-visible:outline-2 focus-visible:outline-white"
+          className={CORNER_BUTTON}
         >
           <svg
             width="24"

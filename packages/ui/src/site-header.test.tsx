@@ -63,6 +63,15 @@ describe('SiteHeader', () => {
     expect(link.textContent).toBe('Anuncie sua quadra');
   });
 
+  it('drops the wordmark on a phone (the logo mark stays), so the header fits 375px', () => {
+    render(<SiteHeader user={null} />);
+
+    const home = screen.getByRole('link', { name: 'ArenaZ, início' });
+    expect(within(home).getByText('arenaz')).toHaveClass('max-md:hidden');
+    expect(home.querySelector('svg')).not.toBeNull();
+    expect(home).toHaveClass('max-md:min-h-11', 'max-md:min-w-11');
+  });
+
   it('names the account link without initials when the name is empty', () => {
     render(<SiteHeader user={{ name: '  ' }} />);
     expect(screen.getByRole('link', { name: 'Minha conta' })).toBeVisible();

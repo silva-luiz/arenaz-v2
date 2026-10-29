@@ -246,6 +246,67 @@ describe('VenueCard', () => {
     });
   });
 
+  describe('show on map button (search results)', () => {
+    const showOnMap = (pressed: boolean, onToggle = vi.fn()) => ({
+      pressed,
+      label: 'Mostrar Arena Vila Madalena no mapa',
+      onToggle,
+    });
+
+    it('is a pressed-state button outside the link, with the given name', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      const button = screen.getByRole('button', {
+        name: 'Mostrar Arena Vila Madalena no mapa',
+      });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('link')).not.toContainElement(button);
+    });
+
+    it('is pressed when the venue is the selected one, and rings the photo', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(true)} />);
+      expect(screen.getByRole('button', { name: /no mapa/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByTestId('venue-card-photo').className).toContain(
+        '0_0_0_5px_#161616',
+      );
+    });
+
+    it('does not ring the photo while not selected', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      expect(screen.getByTestId('venue-card-photo').className).not.toContain(
+        '0_0_0_5px_#161616',
+      );
+    });
+
+    it('calls onToggle on click without following the link', async () => {
+      const onToggle = vi.fn();
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false, onToggle)} />);
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /no mapa/ }));
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a 44 px target', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      const { className } = screen.getByRole('button', { name: /no mapa/ });
+      expect(className).toContain('size-11');
+    });
+
+    it('takes the corner of the heart: with both, only the map button shows', () => {
+      render(
+        <VenueCard
+          {...BASE}
+          showOnMap={showOnMap(false)}
+          favorite={{ pressed: false, onToggle: vi.fn() }}
+        />,
+      );
+      expect(screen.getAllByRole('button')).toHaveLength(1);
+    });
+  });
+
   it('lifts on hover and scales the photo, all disabled under reduced motion', () => {
     const { container } = render(<VenueCard {...BASE} />);
     const wrapper = screen.getByRole('link').parentElement;

@@ -15,6 +15,12 @@ export interface SearchBarProps {
   defaultPlayers?: string | undefined;
   /** "YYYY-MM-DD" of today. Default: today in São Paulo. */
   today?: string | undefined;
+  /**
+   * Filters of the page the bar sits on that the bar has no field for
+   * (amenities, price ceiling): sent as hidden inputs, so a new search keeps
+   * them. Empty values are left out.
+   */
+  extraFields?: Readonly<Record<string, string>> | undefined;
   /** Search page. Must not carry a query string of its own. */
   action?: string;
   /** Called with the URL "Perto de mim" resolves to. Default: full navigation. */
@@ -52,21 +58,36 @@ const WEEKDAY = new Intl.DateTimeFormat('pt-BR', {
  * "Qualquer dia", "Hoje", "Amanhã", then "Sáb, 31/10" for the next five
  * days. Calendar arithmetic in UTC, so no zone can shift a day.
  */
-function dateOptions(today: string): { value: string; label: string }[] {
+function dateOptions(
+  today: string,
+  selected?: string,
+): { value: string; label: string }[] {
   const [year = 0, month = 1, day = 1] = today.split('-').map(Number);
   const options = [{ value: '', label: 'Qualquer dia' }];
+  const label = (date: Date, offset: number): string => {
+    const [, mm = '', dd = ''] = date.toISOString().slice(0, 10).split('-');
+    const weekday = WEEKDAY.format(date).replace('.', '');
+    return offset === 0
+      ? 'Hoje'
+      : offset === 1
+        ? 'Amanhã'
+        : `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dd}/${mm}`;
+  };
   for (let offset = 0; offset < DATE_DAYS; offset += 1) {
     const date = new Date(Date.UTC(year, month - 1, day + offset));
-    const value = date.toISOString().slice(0, 10);
-    const [, mm = '', dd = ''] = value.split('-');
-    const weekday = WEEKDAY.format(date).replace('.', '');
-    const label =
-      offset === 0
-        ? 'Hoje'
-        : offset === 1
-          ? 'Amanhã'
-          : `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dd}/${mm}`;
-    options.push({ value, label });
+    options.push({
+      value: date.toISOString().slice(0, 10),
+      label: label(date, offset),
+    });
+  }
+  // A day from the URL beyond the week still has to be selectable, or the
+  // select would silently fall back to "Qualquer dia".
+  if (selected && !options.some((option) => option.value === selected)) {
+    const [y = 0, m = 1, d = 1] = selected.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    if (!Number.isNaN(date.getTime())) {
+      options.push({ value: selected, label: label(date, DATE_DAYS) });
+    }
   }
   return options;
 }
@@ -124,6 +145,7 @@ export function SearchBar({
   defaultDate,
   defaultPlayers,
   today,
+  extraFields,
   action = '/buscar',
   onNavigate = navigateTo,
   className,
@@ -223,6 +245,11 @@ export function SearchBar({
         onSubmit={onSubmit}
         className="flex flex-col gap-3 rounded-card border border-line bg-bg p-4 shadow-3 md:flex-row md:items-center md:gap-0 md:rounded-full md:border-0 md:p-2"
       >
+        {Object.entries(extraFields ?? {}).map(([name, value]) =>
+          value ? (
+            <input key={name} type="hidden" name={name} value={value} />
+          ) : null,
+        )}
         <label className={cn(SEGMENT, 'md:flex-[1.3] md:pl-[26px]')}>
           <span className={SEGMENT_LABEL}>Onde</span>
           <input
@@ -274,11 +301,13 @@ export function SearchBar({
             defaultValue={defaultDate ?? ''}
             className={SEGMENT_SELECT}
           >
-            {dateOptions(today ?? todayInSaoPaulo()).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {dateOptions(today ?? todayInSaoPaulo(), defaultDate).map(
+              (option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ),
+            )}
           </select>
         </label>
         <Divider />
