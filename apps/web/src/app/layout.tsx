@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Geist } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
 const geist = Geist({
@@ -19,9 +20,7 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   // Absolute URLs for OpenGraph and canonical links.
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  ),
+  metadataBase: new URL(SITE_URL),
   title: { default: 'arenaz', template: '%s · arenaz' },
   description: 'Reserve quadras esportivas e monte o seu jogo.',
 };

@@ -1,0 +1,80 @@
+import {
+  SPORT_LABELS,
+  SURFACE_LABELS,
+  type PublicField,
+} from '@arenaz/contracts';
+import { PriceTag } from '@arenaz/ui';
+import { summarizePriceRule } from '@/lib/price-rule-summary';
+
+const MINUTES_PER_HOUR = 60;
+
+const decimalFormat = new Intl.NumberFormat('pt-BR', {
+  maximumFractionDigits: 1,
+});
+
+/** "40 × 20 m" (decimal comma: "40,5 × 20 m"); `null` unless both are known. */
+export function formatMeasures(
+  lengthM: number | null,
+  widthM: number | null,
+): string | null {
+  if (lengthM === null || widthM === null) return null;
+  return `${decimalFormat.format(lengthM)} × ${decimalFormat.format(widthM)} m`;
+}
+
+/** "Mínimo de 1 hora", "Mínimo de 2 horas", "Mínimo de 30 min". */
+export function formatMinSlot(minutes: number): string {
+  if (minutes % MINUTES_PER_HOUR === 0) {
+    const hours = minutes / MINUTES_PER_HOUR;
+    return `Mínimo de ${String(hours)} ${hours === 1 ? 'hora' : 'horas'}`;
+  }
+  return `Mínimo de ${String(minutes)} min`;
+}
+
+/** What describes a court, in reading order; unknown parts are left out. */
+export function courtFacts(field: PublicField): string[] {
+  const measures = formatMeasures(field.lengthM, field.widthM);
+  return [
+    field.sports.map((sport) => SPORT_LABELS[sport]).join(', '),
+    SURFACE_LABELS[field.surface],
+    field.format,
+    measures,
+    formatMinSlot(field.minSlotMinutes),
+  ].filter((fact): fact is string => fact !== null && fact !== '');
+}
+
+/**
+ * The courts of a venue: facts, base price and the price rules in words.
+ * "a partir de" only shows when a court has rules (its price then varies).
+ */
+export function CourtList({ fields }: { fields: PublicField[] }) {
+  if (fields.length === 0) return null;
+
+  return (
+    <ul role="list" className="flex flex-col gap-4">
+      {fields.map((field) => (
+        <li
+          key={field.id}
+          className="rounded-photo border border-line bg-bg p-5 shadow-1"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+            <h3 className="text-lg font-semibold">{field.name}</h3>
+            <PriceTag
+              cents={field.basePriceCentsPerHour}
+              from={field.priceRules.length > 0}
+            />
+          </div>
+          <p className="mt-1 text-sm text-muted">
+            {courtFacts(field).join(' · ')}
+          </p>
+          {field.priceRules.length > 0 ? (
+            <ul role="list" className="mt-3 flex flex-col gap-1 text-sm">
+              {field.priceRules.map((rule, index) => (
+                <li key={index}>{summarizePriceRule(rule)}</li>
+              ))}
+            </ul>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
