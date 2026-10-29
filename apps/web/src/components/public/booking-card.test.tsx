@@ -3,13 +3,22 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // The picker has its own tests; here it only needs to be findable.
-vi.mock('@/components/booking/slot-picker', () => ({
-  SlotPicker: (props: { slug: string; signedIn: boolean }) => (
-    <div data-testid="picker" data-slug={props.slug}>
-      <button type="button">Dentro do seletor</button>
-    </div>
-  ),
-}));
+const mocks = vi.hoisted(() => ({ pickerMounts: vi.fn() }));
+vi.mock('@/components/booking/slot-picker', async () => {
+  const { useEffect } = await import('react');
+  return {
+    SlotPicker: (props: { slug: string; signedIn: boolean }) => {
+      useEffect(() => {
+        mocks.pickerMounts();
+      }, []);
+      return (
+        <div data-testid="picker" data-slug={props.slug}>
+          <button type="button">Dentro do seletor</button>
+        </div>
+      );
+    },
+  };
+});
 
 import { BookingCard } from './booking-card';
 
@@ -50,6 +59,7 @@ function renderCard(
 
 describe('BookingCard', () => {
   beforeEach(() => {
+    mocks.pickerMounts.mockClear();
     stubViewport(false);
   });
 
@@ -138,7 +148,7 @@ describe('BookingCard', () => {
       expect(trigger).toHaveFocus();
     });
 
-    it('opens by itself when the person comes back from sign in with a choice', () => {
+    it('opens by itself when the person comes back from sign in with a choice', async () => {
       renderCard({
         signedIn: true,
         initial: {
@@ -150,7 +160,7 @@ describe('BookingCard', () => {
       });
 
       expect(
-        screen.getByRole('dialog', { name: 'Escolha o horário' }),
+        await screen.findByRole('dialog', { name: 'Escolha o horário' }),
       ).toBeInTheDocument();
     });
   });
@@ -158,6 +168,22 @@ describe('BookingCard', () => {
   describe('from lg up', () => {
     beforeEach(() => {
       stubViewport(true);
+    });
+
+    it('mounts a single picker and no dialog even with a saved choice', () => {
+      renderCard({
+        signedIn: true,
+        initial: {
+          date: '2026-11-06',
+          fieldId: FIELDS[0]?.id ?? '',
+          startsAt: '2026-11-06T18:00:00.000-03:00',
+          durationMinutes: 60,
+        },
+      });
+
+      expect(screen.getAllByTestId('picker')).toHaveLength(1);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(mocks.pickerMounts).toHaveBeenCalledTimes(1);
     });
 
     it('keeps the picker in the card, with no button and no dialog', () => {

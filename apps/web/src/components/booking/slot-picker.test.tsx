@@ -1,5 +1,5 @@
 import type { Availability } from '@arenaz/contracts';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -128,6 +128,28 @@ describe('SlotPicker', () => {
     expect(chips[1]).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('names each date chip with its full date', async () => {
+    renderPicker();
+    await loaded();
+
+    const chips = within(
+      screen.getByRole('group', { name: 'Data' }),
+    ).getAllByRole('button');
+    expect(chips[0]).toHaveAccessibleName('Hoje, quinta-feira, 5 de novembro');
+    expect(chips[1]).toHaveAccessibleName('Amanhã, sexta-feira, 6 de novembro');
+    expect(chips[2]).toHaveAccessibleName('Sáb 7, sábado, 7 de novembro');
+  });
+
+  it('leaves room above the chips for their focus ring', async () => {
+    renderPicker();
+    await loaded();
+
+    expect(screen.getByRole('group', { name: 'Data' })).toHaveClass(
+      'pt-1',
+      '-mt-1',
+    );
+  });
+
   it('asks for the availability of the chosen day and shows its times', async () => {
     const user = userEvent.setup();
     renderPicker();
@@ -139,7 +161,7 @@ describe('SlotPicker', () => {
       expect.anything(),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Amanhã' }));
+    await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
 
     await waitFor(() => {
       expect(mocks.fetchAvailability).toHaveBeenCalledWith(
@@ -148,7 +170,7 @@ describe('SlotPicker', () => {
         expect.anything(),
       );
     });
-    expect(screen.getByRole('button', { name: 'Amanhã' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^Amanhã/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -265,7 +287,7 @@ describe('SlotPicker', () => {
     await loaded();
     await user.click(screen.getByRole('button', { name: '18:00' }));
 
-    await user.click(screen.getByRole('button', { name: 'Amanhã' }));
+    await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
 
     await waitFor(() => {
       expect(
@@ -324,6 +346,20 @@ describe('SlotPicker', () => {
     await loaded();
   });
 
+  it('keeps the rate limit text when the availability is refused for too many requests', async () => {
+    mocks.fetchAvailability.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      fieldErrors: {},
+      message: 'Muitas tentativas. Aguarde um instante e tente de novo.',
+    });
+    renderPicker();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Muitas tentativas. Aguarde um instante e tente de novo.',
+    );
+  });
+
   it('shows the venue time zone only when it is not Brasília time', async () => {
     const { unmount } = renderPicker();
     await loaded();
@@ -367,6 +403,53 @@ describe('SlotPicker', () => {
         iso('2026-11-05', '18:00'),
       );
       expect(nextUrl.searchParams.get('duracao')).toBe('120');
+    });
+
+    it('keeps the choice in the sign in link when the session expired on the POST', async () => {
+      mocks.createBooking.mockResolvedValue({
+        ok: false,
+        status: 401,
+        fieldErrors: {},
+        message: 'Sua sessão expirou. Entre novamente.',
+      });
+      const user = userEvent.setup();
+      renderPicker({ signedIn: true });
+      await loaded();
+      await user.click(screen.getByRole('button', { name: '19:00' }));
+
+      await user.click(screen.getByRole('button', { name: 'Reservar' }));
+
+      await waitFor(() => {
+        expect(mocks.navigate).toHaveBeenCalled();
+      });
+      const target = String(mocks.navigate.mock.lastCall?.[0]);
+      const next = new URL(target, 'http://x').searchParams.get('next') ?? '';
+      const nextUrl = new URL(next, 'http://x');
+      expect(nextUrl.pathname).toBe('/espacos/arena-x');
+      expect(nextUrl.searchParams.get('quadra')).toBe(FIELD_1);
+      expect(nextUrl.searchParams.get('inicio')).toBe(
+        iso('2026-11-05', '19:00'),
+      );
+    });
+
+    it('can try again after coming back from the browser cache', async () => {
+      mocks.createBooking.mockReturnValue(new Promise(() => undefined));
+      const user = userEvent.setup();
+      renderPicker({ signedIn: true });
+      await loaded();
+      await user.click(screen.getByRole('button', { name: '18:00' }));
+      await user.click(screen.getByRole('button', { name: 'Reservar' }));
+      expect(
+        screen.getByRole('button', { name: /^Reservar, Aguarde/ }),
+      ).toBeDisabled();
+
+      act(() => {
+        const event = new Event('pageshow');
+        Object.defineProperty(event, 'persisted', { value: true });
+        window.dispatchEvent(event);
+      });
+
+      expect(screen.getByRole('button', { name: 'Reservar' })).toBeEnabled();
     });
 
     it('is disabled until a time is picked', async () => {
@@ -491,10 +574,33 @@ describe('SlotPicker', () => {
           screen.getByRole('status', { name: 'Resumo da reserva' }),
         ).toHaveTextContent('19:00–21:00');
       });
-      expect(screen.getByRole('button', { name: 'Amanhã' })).toHaveAttribute(
+      expect(screen.getByRole('button', { name: /^Amanhã/ })).toHaveAttribute(
         'aria-pressed',
         'true',
       );
+    });
+
+    it('forgets the saved choice once the person acts on the page', async () => {
+      const user = userEvent.setup();
+      renderPicker({
+        signedIn: true,
+        initial: {
+          date: '2026-11-06',
+          fieldId: FIELD_1,
+          startsAt: iso('2026-11-06', '19:00'),
+          durationMinutes: 120,
+        },
+      });
+      await loaded();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Sáb 7, sábado, 7 de novembro' }),
+      );
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
+      await loaded();
+
+      expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
     });
 
     it('drops the choice when it is no longer free', async () => {

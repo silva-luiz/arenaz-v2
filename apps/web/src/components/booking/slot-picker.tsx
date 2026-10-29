@@ -25,6 +25,7 @@ import {
   type BookingIntent,
 } from '@/lib/booking-client';
 import { navigate } from '@/lib/navigate';
+import { GENERIC_ERROR } from '@/lib/problem';
 import {
   selectionTotalCents,
   selectSlot,
@@ -60,7 +61,8 @@ interface GridSlot extends PickerSlot {
 }
 
 type Loaded =
-  { key: string; ok: true; data: Availability } | { key: string; ok: false };
+  | { key: string; ok: true; data: Availability }
+  | { key: string; ok: false; message: string };
 
 const SLOT_TAKEN = 'Esse horário acabou de ser reservado. Escolha outro.';
 const LOAD_ERROR = 'Não foi possível carregar os horários.';
@@ -69,6 +71,11 @@ const TIME_BUTTON = cn(
   'h-11 rounded-button border px-2 font-mono text-sm font-semibold transition-colors duration-150 motion-reduce:transition-none',
   FOCUS_RING,
 );
+
+/** The API's own text for a refusal worth telling (429...), else ours. */
+function loadErrorText(message: string): string {
+  return message === GENERIC_ERROR ? LOAD_ERROR : message;
+}
 
 function toGridSlots(
   data: Availability | undefined,
@@ -139,6 +146,18 @@ export function SlotPicker({
 
   const requestKey = `${date}#${String(reload)}`;
 
+  // Coming back with the browser's back button can restore this page from the
+  // back/forward cache with the "busy" state frozen in.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setSubmitting(false);
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.removeEventListener('pageshow', onPageShow);
+    };
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     void fetchAvailability(slug, date, controller.signal).then((result) => {
@@ -146,7 +165,7 @@ export function SlotPicker({
       setLoaded(
         result.ok
           ? { key: requestKey, ok: true, data: result.data }
-          : { key: requestKey, ok: false },
+          : { key: requestKey, ok: false, message: result.message },
       );
       const intent = pendingInitial.current;
       if (intent && result.ok && intent.date === date) {
@@ -184,6 +203,7 @@ export function SlotPicker({
       : null;
 
   function chooseDate(next: string) {
+    pendingInitial.current = undefined;
     if (next === date) return;
     setDate(next);
     setSelection(null);
@@ -192,6 +212,7 @@ export function SlotPicker({
   }
 
   function chooseField(next: string) {
+    pendingInitial.current = undefined;
     setFieldId(next);
     setSelection(null);
     setNotice('');
@@ -199,6 +220,7 @@ export function SlotPicker({
   }
 
   function tap(startMs: number) {
+    pendingInitial.current = undefined;
     const result = selectSlot(slots, selection, startMs);
     setSelection(result.selection);
     setNotice(result.message ?? '');
@@ -238,6 +260,12 @@ export function SlotPicker({
       return;
     }
     setSubmitting(false);
+    if (result.status === 401) {
+      // The API client already sent the person to sign in, but only back to
+      // this path; this link also brings the choice back.
+      navigate(signInPathFor(slug, intent));
+      return;
+    }
     if (result.status === 409) {
       setSubmitError(SLOT_TAKEN);
       setSelection(null);
@@ -256,12 +284,13 @@ export function SlotPicker({
       <div
         role="group"
         aria-label="Data"
-        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        className="-mx-1 -mt-1 flex gap-2 overflow-x-auto px-1 pt-1 pb-1"
       >
         {chips.map((chip) => (
           <Chip
             key={chip.date}
             pressed={chip.date === date}
+            aria-label={chip.ariaLabel}
             onClick={() => {
               chooseDate(chip.date);
             }}
@@ -367,7 +396,7 @@ export function SlotPicker({
         <BookingSummary selection={summary} />
 
         <Alert tone="error">
-          {current?.ok === false ? LOAD_ERROR : submitError}
+          {current?.ok === false ? loadErrorText(current.message) : submitError}
         </Alert>
 
         <Button

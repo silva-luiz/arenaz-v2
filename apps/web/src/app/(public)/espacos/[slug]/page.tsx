@@ -11,9 +11,9 @@ import { ShareButton } from '@/components/public/share-button';
 import { VenueDetails } from '@/components/public/venue-details';
 import type { BookingIntent } from '@/lib/booking-client';
 import { publicGet } from '@/lib/public-api';
-import { getSession } from '@/lib/session';
 import { lowestPriceCents } from '@/lib/price-rule-summary';
 import { absoluteUrl } from '@/lib/site';
+import { isSignedIn } from '@/lib/venue-session';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
 
 // How long the Next data cache may serve the public API data (see
@@ -66,19 +66,6 @@ function parseIntent(
     return undefined;
   }
   return { date, fieldId, startsAt, durationMinutes };
-}
-
-/**
- * Whether a session exists. The page is public: if the check fails the visitor
- * is treated as signed out, and a booking attempt that finds the session
- * missing is sent to sign in by the API client.
- */
-async function isSignedIn(): Promise<boolean> {
-  try {
-    return (await getSession()) !== null;
-  } catch {
-    return false;
-  }
 }
 
 /**

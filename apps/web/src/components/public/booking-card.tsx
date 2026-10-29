@@ -41,6 +41,19 @@ function useIsDesktop(): boolean {
   return useSyncExternalStore(subscribeDesktop, desktopSnapshot, () => false);
 }
 
+function subscribeNever(): () => void {
+  return () => undefined;
+}
+
+/** `false` on the server and during hydration, `true` after. */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
+}
+
 /**
  * Bottom sheet on the native `<dialog>` (`showModal()`): the browser gives
  * the top layer, the inert page behind and the focus trap. Mount it to open,
@@ -147,12 +160,17 @@ export function BookingCard({
   initial?: BookingIntent | undefined;
 }) {
   const desktop = useIsDesktop();
-  const [sheetOpen, setSheetOpen] = useState(
-    () => signedIn && initial !== undefined,
-  );
+  // `null`: the person has not touched the sheet yet. Back from sign in with a
+  // choice it then opens by itself, but only once the viewport is known (the
+  // server and the first render are always the phone one), so a desktop never
+  // mounts the dialog and its picker for a moment.
+  const [chosenOpen, setChosenOpen] = useState<boolean | null>(null);
+  const hydrated = useHydrated();
+  const sheetOpen =
+    chosenOpen ?? (hydrated && signedIn && initial !== undefined);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeSheet = useCallback(() => {
-    setSheetOpen(false);
+    setChosenOpen(false);
   }, []);
 
   const bookable = fields.length > 0;
@@ -196,7 +214,7 @@ export function BookingCard({
             size="sm"
             aria-haspopup="dialog"
             onClick={() => {
-              setSheetOpen(true);
+              setChosenOpen(true);
             }}
             className="shrink-0"
           >

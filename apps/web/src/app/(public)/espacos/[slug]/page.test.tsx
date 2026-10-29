@@ -4,7 +4,7 @@ import { makeField, makeVenue } from '@/test/venue-fixture';
 
 const mocks = vi.hoisted(() => ({
   publicGet: vi.fn(),
-  getSession: vi.fn(),
+  isSignedIn: vi.fn(),
   slotPicker: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND');
@@ -19,7 +19,7 @@ vi.mock('next/dynamic', () => ({
     },
 }));
 vi.mock('next/navigation', () => ({ notFound: mocks.notFound }));
-vi.mock('@/lib/session', () => ({ getSession: mocks.getSession }));
+vi.mock('@/lib/venue-session', () => ({ isSignedIn: mocks.isSignedIn }));
 // The picker has its own tests; here only what the page hands it matters.
 vi.mock('@/components/booking/slot-picker', () => ({
   SlotPicker: (props: unknown) => {
@@ -61,7 +61,7 @@ describe('venue page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.publicGet.mockResolvedValue(makeVenue());
-    mocks.getSession.mockResolvedValue(null);
+    mocks.isSignedIn.mockResolvedValue(false);
   });
 
   it('does not export a route-segment revalidate (the route is dynamic)', () => {
@@ -243,12 +243,12 @@ describe('venue page', () => {
     async function renderOpen(
       searchParams?: Record<string, string | string[] | undefined>,
     ) {
-      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      mocks.isSignedIn.mockResolvedValue(true);
       await renderPage(undefined, searchParams);
     }
 
     it('hands the card the slug, the venue time zone and the courts', async () => {
-      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      mocks.isSignedIn.mockResolvedValue(true);
       mocks.publicGet.mockResolvedValue(
         makeVenue({ timezone: 'America/Manaus' }),
       );
@@ -268,7 +268,7 @@ describe('venue page', () => {
     });
 
     it('knows an anonymous visitor', async () => {
-      mocks.getSession.mockResolvedValue(null);
+      mocks.isSignedIn.mockResolvedValue(false);
       await renderPage(undefined, {
         data: '2026-11-06',
         quadra: FIELD_ID,
@@ -277,21 +277,6 @@ describe('venue page', () => {
       });
 
       expect(pickerProps()).toMatchObject({ signedIn: false });
-    });
-
-    it('still shows the venue when the session check fails', async () => {
-      mocks.getSession.mockRejectedValue(new Error('api down'));
-      await renderPage(undefined, {
-        data: '2026-11-06',
-        quadra: FIELD_ID,
-        inicio: '2026-11-06T18:00:00.000-03:00',
-        duracao: '60',
-      });
-
-      expect(pickerProps()).toMatchObject({ signedIn: false });
-      expect(
-        screen.getByRole('heading', { level: 1, name: 'Arena Vila Madalena' }),
-      ).toBeInTheDocument();
     });
 
     it('passes a choice made before signing in', async () => {
@@ -320,7 +305,7 @@ describe('venue page', () => {
       ['a duration off the half hour', { duracao: '45' }],
       ['repeated parameters', { data: ['2026-11-06', '2026-11-07'] }],
     ])('ignores %s', async (_name, override) => {
-      mocks.getSession.mockResolvedValue({ user: { id: 'u1' } });
+      mocks.isSignedIn.mockResolvedValue(true);
       await renderPage(undefined, {
         data: '2026-11-06',
         quadra: FIELD_ID,

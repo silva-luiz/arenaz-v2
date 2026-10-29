@@ -81,6 +81,17 @@ describe('fetchAvailability', () => {
     });
   });
 
+  it.each([
+    [429, 'Muitas tentativas. Aguarde um instante e tente de novo.'],
+    [503, 'Não foi possível concluir. Tente novamente.'],
+  ])('gives a usable message for a %i answer', async (status, message) => {
+    stubFetch(new Response('{}', { status }));
+
+    const result = await fetchAvailability('arena-x', '2026-11-06');
+
+    expect(result).toMatchObject({ ok: false, status, message });
+  });
+
   it('fails without throwing when the network is down', async () => {
     stubFetch(new TypeError('network'));
 
@@ -145,10 +156,18 @@ describe('dates', () => {
     const chips = dateChips('2026-11-05');
 
     expect(chips).toHaveLength(14);
-    expect(chips[0]).toEqual({ date: '2026-11-05', label: 'Hoje' });
-    expect(chips[1]).toEqual({ date: '2026-11-06', label: 'Amanhã' });
-    expect(chips[2]).toEqual({ date: '2026-11-07', label: 'Sáb 7' });
-    expect(chips[3]).toEqual({ date: '2026-11-08', label: 'Dom 8' });
-    expect(chips[13]).toEqual({ date: '2026-11-18', label: 'Qua 18' });
+    expect(chips[0]).toMatchObject({ date: '2026-11-05', label: 'Hoje' });
+    expect(chips[1]).toMatchObject({ date: '2026-11-06', label: 'Amanhã' });
+    expect(chips[2]).toMatchObject({ date: '2026-11-07', label: 'Sáb 7' });
+    expect(chips[3]).toMatchObject({ date: '2026-11-08', label: 'Dom 8' });
+    expect(chips[13]).toMatchObject({ date: '2026-11-18', label: 'Qua 18' });
+  });
+
+  it('names every chip with its own text first and the full date after', () => {
+    const chips = dateChips('2026-11-05');
+
+    expect(chips[0]?.ariaLabel).toBe('Hoje, quinta-feira, 5 de novembro');
+    expect(chips[1]?.ariaLabel).toBe('Amanhã, sexta-feira, 6 de novembro');
+    expect(chips[2]?.ariaLabel).toBe('Sáb 7, sábado, 7 de novembro');
   });
 });

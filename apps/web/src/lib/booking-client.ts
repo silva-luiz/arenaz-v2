@@ -129,7 +129,16 @@ export interface DateChip {
   date: string;
   /** "Hoje", "Amanhã" or "Sex 6". */
   label: string;
+  /** Accessible name: the label first, then "sexta-feira, 6 de novembro". */
+  ariaLabel: string;
 }
+
+const LONG_DATE = new Intl.DateTimeFormat('pt-BR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
 
 /** Today (in the venue's zone, passed in) and the days after it. */
 export function dateChips(today: string): DateChip[] {
@@ -137,6 +146,10 @@ export function dateChips(today: string): DateChip[] {
     const date = addDaysToDateKey(today, index);
     const label =
       index === 0 ? 'Hoje' : index === 1 ? 'Amanhã' : shortDateLabel(date);
-    return { date, label };
+    return {
+      date,
+      label,
+      ariaLabel: `${label}, ${LONG_DATE.format(parseKey(date))}`,
+    };
   });
 }

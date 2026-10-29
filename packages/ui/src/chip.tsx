@@ -13,6 +13,8 @@ export interface ChipProps {
   href?: string | undefined;
   linkComponent?: LinkComponent | undefined;
   className?: string | undefined;
+  /** Longer accessible name; it must start with the visible text. */
+  'aria-label'?: string | undefined;
   children: ReactNode;
 }
 
@@ -37,6 +39,7 @@ export function Chip({
   href,
   linkComponent,
   className,
+  'aria-label': ariaLabel,
   children,
 }: ChipProps) {
   const classes = cn(BASE, FOCUS_RING, pressed ? SELECTED : IDLE, className);
@@ -48,6 +51,7 @@ export function Chip({
         href={href}
         onClick={onClick}
         aria-current={pressed ? 'true' : undefined}
+        aria-label={ariaLabel}
         className={classes}
       >
         {children}
@@ -60,6 +64,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={pressed}
+      aria-label={ariaLabel}
       className={classes}
     >
       {children}

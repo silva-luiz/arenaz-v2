@@ -232,9 +232,12 @@ for (const viewport of VIEWPORTS) {
     await page.locator('.leaflet-container').first().waitFor();
     await scan(`/espacos/${published.slug}`);
 
-    // The time picker: in the card from lg up, in the sheet below it. Colour
-    // transitions off, so axe never reads a contrast halfway through one.
-    await page.emulateMedia({ reducedMotion: 'reduce' });
+    // The time picker: in the card from lg up, in the sheet below it. Scans
+    // run with the default motion, after every animation and transition has
+    // ended, so axe never reads a colour halfway through one.
+    const settled = async (): Promise<void> => {
+      await page.waitForFunction(() => document.getAnimations().length === 0);
+    };
     if (viewport.width < 1024) {
       await page.getByRole('button', { name: 'Escolher horário' }).click();
       await expect(
@@ -243,6 +246,7 @@ for (const viewport of VIEWPORTS) {
     }
     const times = page.getByRole('group', { name: 'Horários' });
     await expect(times.getByText('Carregando horários')).toHaveCount(0);
+    await settled();
     await scan(`seletor de horário (${viewport.label})`);
     const chips = page.getByRole('group', { name: 'Data' }).getByRole('button');
     for (let index = 0; index < (await chips.count()); index += 1) {
@@ -254,6 +258,7 @@ for (const viewport of VIEWPORTS) {
     await expect(
       page.getByRole('status', { name: 'Resumo da reserva' }),
     ).toContainText('R$');
+    await settled();
     await scan(`seletor com horário escolhido (${viewport.label})`);
   });
 }
