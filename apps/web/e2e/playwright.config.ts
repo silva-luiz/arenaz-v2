@@ -23,16 +23,33 @@ const sharedEnv: Record<string, string> = {
   BETTER_AUTH_URL: webOrigin,
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? TEST_AUTH_SECRET,
   REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
-  // The API validates these at boot; the e2e flows never touch the storage
-  // (the client connects lazily), so placeholders are fine.
-  S3_ENDPOINT: 'http://localhost:9000',
-  S3_BUCKET: 'arenaz-photos-e2e',
-  S3_ACCESS_KEY_ID: 'e2e-only-not-a-secret',
-  S3_SECRET_ACCESS_KEY: 'e2e-only-not-a-secret',
-  S3_PUBLIC_URL: 'http://localhost:9000/arenaz-photos-e2e',
   ...(process.env.DATABASE_URL === undefined
     ? {}
     : { DATABASE_URL: process.env.DATABASE_URL }),
+};
+
+// The owner flow uploads real photos: the browser PUTs straight to object
+// storage through a presigned URL. Taken from the environment when set (CI),
+// else the local compose MinIO. These are dev/test values, not secrets.
+const storageEnv: Record<string, string> = {
+  S3_ENDPOINT: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+  S3_REGION: process.env.S3_REGION ?? 'us-east-1',
+  S3_BUCKET: process.env.S3_BUCKET ?? 'arenaz-photos',
+  S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID ?? 'minioadmin',
+  S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY ?? 'minioadmin',
+  S3_PUBLIC_URL:
+    process.env.S3_PUBLIC_URL ?? 'http://localhost:9000/arenaz-photos',
+  S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE ?? 'true',
+};
+
+// Only the API runs with NODE_ENV=test: that is what allows the fake CEP
+// provider (refused in production), which keeps the suite off the network.
+// The web app stays in production mode (`next build` / `next start`).
+const apiEnv: Record<string, string> = {
+  ...sharedEnv,
+  ...storageEnv,
+  NODE_ENV: 'test',
+  GEO_PROVIDER: 'fake',
 };
 
 // Shared packages (contracts, db) and the API are built once, before
@@ -64,7 +81,7 @@ export default defineConfig({
       command:
         'pnpm --filter @arenaz/db migrate && pnpm --filter @arenaz/api start',
       url: `${apiOrigin}/api/health`,
-      env: sharedEnv,
+      env: apiEnv,
       reuseExistingServer: false,
       timeout: SERVER_TIMEOUT_MS,
       stdout: 'ignore',
