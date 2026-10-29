@@ -1,4 +1,10 @@
 export * from './auth.js';
+export * from './catalog.js';
 export * from './common.js';
+export * from './field.js';
+export * from './geo.js';
 export * from './health.js';
+export * from './money.js';
+export * from './photo.js';
 export type * from './problem.js';
+export * from './venue.js';
