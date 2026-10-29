@@ -232,6 +232,24 @@ describe('owner venues e2e', () => {
     expect((await b.get('/api/owner/venues')).json()).toEqual([]);
   });
 
+  it('corpo inválido de outro dono responde igual a um espaço inexistente', async () => {
+    const { api: a } = await newOwner('Dono A');
+    const { api: b } = await newOwner('Dono B');
+    const venue = venueOf(await a.post('/api/owner/venues', venueBody()));
+    const ghost = randomUUID();
+
+    const cases: [string, (id: string) => Promise<LightMyRequestResponse>][] = [
+      ['PATCH', (id) => b.patch(`/api/owner/venues/${id}`, { name: 'ab' })],
+      ['PUT hours', (id) => b.put(`/api/owner/venues/${id}/hours`, [{}])],
+    ];
+    for (const [, send] of cases) {
+      const real = await send(venue.id);
+      const missing = await send(ghost);
+      expect(real.statusCode).toBe(missing.statusCode);
+      expect(real.json()).toEqual(missing.json());
+    }
+  });
+
   it('sem login → 401', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/owner/venues' });
     expect(res.statusCode).toBe(401);
@@ -318,6 +336,34 @@ describe('owner venues e2e', () => {
     const draft = await api.post(`${base}/unpublish`);
     expect(draft.statusCode).toBe(200);
     expect(venueOf(draft).status).toBe('draft');
+  });
+
+  it('espaço publicado não pode perder o horário', async () => {
+    const { api } = await newOwner();
+    const venue = venueOf(await api.post('/api/owner/venues', venueBody()));
+    const base = `/api/owner/venues/${venue.id}`;
+    await api.put(`${base}/hours`, HOURS);
+    await addField(venue.id);
+    await addPhoto(venue.id);
+    expect((await api.post(`${base}/publish`)).statusCode).toBe(200);
+
+    const res = await api.put(`${base}/hours`, []);
+    expect(res.statusCode).toBe(422);
+    expect(problemOf(res)).toMatchObject({
+      detail: 'Despublique o espaço antes de deixá-lo incompleto',
+      errors: { hours: ['Defina o horário de funcionamento'] },
+    });
+    const after = venueOf(await api.get(base));
+    expect(after.status).toBe('published');
+    expect(after.hours).toEqual(HOURS);
+
+    // Replacing with other (non-empty) hours is fine.
+    const other = [{ weekday: 3, openMinute: 480, closeMinute: 720 }];
+    expect(venueOf(await api.put(`${base}/hours`, other)).hours).toEqual(other);
+
+    // A draft may be emptied.
+    await api.post(`${base}/unpublish`);
+    expect(venueOf(await api.put(`${base}/hours`, [])).hours).toEqual([]);
   });
 
   it('horário substitui o anterior e valida', async () => {

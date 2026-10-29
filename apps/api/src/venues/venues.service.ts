@@ -21,11 +21,18 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, like, or, sql } from 'drizzle-orm';
+import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
 import { DB, type DbHandle } from '../db/db.module.js';
-import { findOwnedVenue } from './owner.js';
+import { findOwnedVenue, VENUE_NOT_FOUND } from './owner.js';
+import {
+  assertPublishedStaysComplete,
+  lockVenueStatus,
+  missingForPublish,
+  PUBLISH_INCOMPLETE_MESSAGE,
+} from './publishing.js';
 import { slugify } from './slug.js';
 
 const { venue, venueHours, venuePhoto, field, priceRule } = schema;
@@ -39,13 +46,6 @@ const OUTER_VENUE_ID = sql.raw('"venue"."id"');
 
 /** Attempts at a unique slug when concurrent creates keep colliding. */
 const SLUG_ATTEMPTS = 10;
-
-export const PUBLISH_INCOMPLETE_MESSAGE = 'Complete o espaço antes de publicar';
-export const PUBLISH_MISSING = {
-  hours: 'Defina o horário de funcionamento',
-  fields: 'Cadastre ao menos uma quadra ativa',
-  photos: 'Envie ao menos uma foto',
-} as const;
 
 // --------------------------------------------------------------- mapping ----
 
@@ -293,6 +293,8 @@ export class VenuesService {
           })),
         );
       }
+      // Clearing the hours of a published venue is rejected (rolls back).
+      await assertPublishedStaysComplete(tx, owned.id);
     });
     return this.load(owned.id);
   }
@@ -300,33 +302,21 @@ export class VenuesService {
   /** Needs opening hours, an active field and a photo; says what is missing. */
   async publish(userId: string, venueId: string): Promise<Venue> {
     const owned = await findOwnedVenue(this.handle.db, venueId, userId);
-    const { db } = this.handle;
-    const [[hours], [activeFields], [photos]] = await Promise.all([
-      db
-        .select({ total: count() })
-        .from(venueHours)
-        .where(eq(venueHours.venueId, owned.id)),
-      db
-        .select({ total: count() })
-        .from(field)
-        .where(and(eq(field.venueId, owned.id), eq(field.isActive, true))),
-      db
-        .select({ total: count() })
-        .from(venuePhoto)
-        .where(eq(venuePhoto.venueId, owned.id)),
-    ]);
-
-    const errors: Record<string, string[]> = {};
-    if (!hours?.total) errors.hours = [PUBLISH_MISSING.hours];
-    if (!activeFields?.total) errors.fields = [PUBLISH_MISSING.fields];
-    if (!photos?.total) errors.photos = [PUBLISH_MISSING.photos];
-    if (Object.keys(errors).length > 0) {
-      throw new UnprocessableEntityException({
-        message: PUBLISH_INCOMPLETE_MESSAGE,
-        errors,
-      });
-    }
-    return this.setStatus(owned.id, 'published');
+    await this.handle.db.transaction(async (tx) => {
+      await lockVenueStatus(tx, owned.id);
+      const errors = await missingForPublish(tx, owned.id);
+      if (Object.keys(errors).length > 0) {
+        throw new UnprocessableEntityException({
+          message: PUBLISH_INCOMPLETE_MESSAGE,
+          errors,
+        });
+      }
+      await tx
+        .update(venue)
+        .set({ status: 'published', updatedAt: sql`now()` })
+        .where(eq(venue.id, owned.id));
+    });
+    return this.load(owned.id);
   }
 
   async unpublish(userId: string, venueId: string): Promise<Venue> {
@@ -344,7 +334,10 @@ export class VenuesService {
     const rows = await this.handle.db
       .select({ slug: venue.slug })
       .from(venue)
-      .where(or(eq(venue.slug, base), like(venue.slug, `${base}-%`)));
+      .where(
+        // `base` only has [a-z0-9-], so it is safe inside a regex.
+        or(eq(venue.slug, base), sql`${venue.slug} ~ ${`^${base}-[0-9]+$`}`),
+      );
     const taken = new Set(rows.map((row) => row.slug));
     if (!taken.has(base)) return base;
     for (let suffix = 2; ; suffix += 1) {
@@ -360,7 +353,7 @@ export class VenuesService {
   async load(venueId: string): Promise<Venue> {
     const { db } = this.handle;
     const [row] = await db.select().from(venue).where(eq(venue.id, venueId));
-    if (!row) throw new Error(`espaço ${venueId} não encontrado ao carregar`);
+    if (!row) throw new NotFoundException(VENUE_NOT_FOUND);
     const [hours, photos, fields] = await Promise.all([
       db.select().from(venueHours).where(eq(venueHours.venueId, venueId)),
       db.select().from(venuePhoto).where(eq(venuePhoto.venueId, venueId)),
