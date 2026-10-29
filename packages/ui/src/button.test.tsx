@@ -31,8 +31,8 @@ describe('Button', () => {
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button).toHaveTextContent('Salvar');
-    expect(button).toHaveAccessibleName(/^Salvar\s*Aguarde…$/);
-    expect(screen.getByText('Aguarde…')).toHaveClass('sr-only');
+    expect(button).toHaveAccessibleName('Salvar, Aguarde…');
+    expect(screen.getByText(/Aguarde…/)).toHaveClass('sr-only');
 
     await user.click(button);
     expect(onClick).not.toHaveBeenCalled();
@@ -42,7 +42,39 @@ describe('Button', () => {
     render(<Button disabled>Salvar</Button>);
 
     expect(screen.getByRole('button')).toBeDisabled();
-    expect(screen.queryByText('Aguarde…')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Aguarde…/)).not.toBeInTheDocument();
+  });
+
+  it('submits the surrounding form when type is submit', async () => {
+    const onSubmit = vi.fn((event: React.SyntheticEvent) => {
+      event.preventDefault();
+    });
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit">Enviar</Button>
+      </form>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Enviar' }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not submit the surrounding form by default', async () => {
+    const onSubmit = vi.fn((event: React.SyntheticEvent) => {
+      event.preventDefault();
+    });
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={onSubmit}>
+        <Button>Cancelar</Button>
+      </form>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('can submit forms and accepts a custom className', () => {

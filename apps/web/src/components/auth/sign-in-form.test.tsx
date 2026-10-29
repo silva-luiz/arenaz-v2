@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,9 +51,12 @@ describe('SignInForm', () => {
     await user.type(screen.getByLabelText('Senha'), 'Errada@123');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'E-mail ou senha inválidos',
-    );
+    // The alert region is always mounted, so wait for the text itself.
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'E-mail ou senha inválidos',
+      );
+    });
   });
 
   it('signs in and follows ?next when it is a local path', async () => {

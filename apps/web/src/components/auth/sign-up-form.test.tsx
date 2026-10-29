@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -64,9 +64,12 @@ describe('SignUpForm', () => {
     await fill(user);
     await user.click(screen.getByRole('button', { name: 'Criar conta' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Já existe uma conta com este e-mail',
-    );
+    // The alert region is always mounted, so wait for the text itself.
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Já existe uma conta com este e-mail',
+      );
+    });
   });
 
   it('puts server field errors under the fields', async () => {
@@ -148,9 +151,12 @@ describe('SignUpForm', () => {
     await fill(user);
     await user.click(screen.getByRole('button', { name: 'Criar conta' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Não foi possível concluir. Tente novamente.',
-    );
+    // The alert region is always mounted, so wait for the text itself.
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Não foi possível concluir. Tente novamente.',
+      );
+    });
     expect(mocks.replace).not.toHaveBeenCalled();
   });
 });

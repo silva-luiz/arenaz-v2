@@ -19,6 +19,22 @@ describe('Alert', () => {
     expect(region).toHaveTextContent('E-mail ou senha inválidos');
   });
 
+  it('swaps from visually hidden to the tone box on the same node', () => {
+    const { rerender } = render(<Alert tone="error">{null}</Alert>);
+    const region = screen.getByRole('alert');
+    expect(region).toHaveClass('sr-only');
+    expect(region).not.toHaveClass('border');
+
+    rerender(<Alert tone="error">Algo deu errado</Alert>);
+    expect(screen.getByRole('alert')).toBe(region);
+    expect(region).not.toHaveClass('sr-only');
+    expect(region).toHaveClass('border', 'bg-red-50');
+
+    rerender(<Alert tone="error">{null}</Alert>);
+    expect(region).toHaveClass('sr-only');
+    expect(region).not.toHaveClass('border');
+  });
+
   it('treats an empty string as no message', () => {
     render(<Alert tone="info">{''}</Alert>);
 

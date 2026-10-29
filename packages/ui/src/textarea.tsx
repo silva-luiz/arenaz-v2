@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { cn } from './cn';
-import { CONTROL_CLASSES } from './input';
+import { CONTROL_CLASSES } from './control';
 
 export type TextareaProps = ComponentProps<'textarea'>;
 

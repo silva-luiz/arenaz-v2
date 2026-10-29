@@ -82,6 +82,45 @@ describe('Field', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('merges an aria-describedby the control already has', () => {
+    render(
+      <Field label="Nome" hint="Dica" error="Informe o nome">
+        <Input id="nome" aria-describedby="extra" />
+      </Field>,
+    );
+
+    expect(screen.getByLabelText('Nome')).toHaveAttribute(
+      'aria-describedby',
+      'extra nome-hint nome-error',
+    );
+  });
+
+  it('keeps an aria-describedby of the control when there is no hint or error', () => {
+    render(
+      <Field label="Nome">
+        <Input aria-describedby="extra" />
+      </Field>,
+    );
+
+    expect(screen.getByLabelText('Nome')).toHaveAttribute(
+      'aria-describedby',
+      'extra',
+    );
+  });
+
+  it('keeps an aria-invalid the caller set when there is no error', () => {
+    render(
+      <Field label="Nome">
+        <Input aria-invalid="true" />
+      </Field>,
+    );
+
+    expect(screen.getByLabelText('Nome')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
   it('respects an id the control already has', () => {
     render(
       <Field label="Nome" error="Informe o nome">

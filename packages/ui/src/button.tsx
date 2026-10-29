@@ -65,7 +65,7 @@ export function Button({
       {...props}
     >
       {children}
-      {loading ? <span className="sr-only">{' Aguarde…'}</span> : null}
+      {loading ? <span className="sr-only">{', Aguarde…'}</span> : null}
     </button>
   );
 }

@@ -10,6 +10,15 @@
   --color-muted: #6a6a6a;
   --color-line: #ebebeb;
   --color-line-strong: #dddddd;
+  /*
+   * Deviation from the prototype: form-control borders. The prototype draws
+   * them with --color-line-strong (#ddd, about 1.4:1 on white), which fails
+   * WCAG 2.2 AA 1.4.11 (3:1 for the boundary of a UI component). The spec
+   * outranks the prototype, so Input/Textarea/Select/Checkbox use this token:
+   * #949494 is the lightest neutral gray that reaches 3:1 on white (3.03:1).
+   * --color-line-strong stays for pills and dividers.
+   */
+  --color-line-control: #949494;
   --color-brand: #0b7a4b;
   --color-night: #0e2018;
   --color-live: #3ddc84;
