@@ -1,8 +1,25 @@
 import { z } from 'zod';
 
+/** A non-empty URL whose scheme is one of `protocols` (e.g. `['redis:']`). */
+function urlWithProtocol(protocols: readonly string[], example: string) {
+  return z
+    .string()
+    .min(1, 'não pode ser vazia')
+    .refine((value) => {
+      try {
+        return protocols.includes(new URL(value).protocol);
+      } catch {
+        return false;
+      }
+    }, `precisa ser uma URL válida, como ${example}`);
+}
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, 'não pode ser vazia'),
-  REDIS_URL: z.string().min(1, 'não pode ser vazia'),
+  DATABASE_URL: urlWithProtocol(
+    ['postgres:', 'postgresql:'],
+    'postgres://usuario:senha@localhost:5432/banco',
+  ),
+  REDIS_URL: urlWithProtocol(['redis:', 'rediss:'], 'redis://localhost:6379'),
   BETTER_AUTH_SECRET: z.string().min(32, 'precisa ter ao menos 32 caracteres'),
   BETTER_AUTH_URL: z.url(),
   API_PORT: z.coerce

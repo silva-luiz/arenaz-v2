@@ -22,6 +22,34 @@ describe('loadEnv', () => {
     );
   });
 
+  it.each(['localhost:5432', 'not a url', 'http://localhost:5432'])(
+    'rejeita DATABASE_URL inválida (%s)',
+    (value) => {
+      expect(() => loadEnv({ ...valid, DATABASE_URL: value })).toThrow(
+        /DATABASE_URL/,
+      );
+    },
+  );
+
+  it.each(['localhost:6379', 'not a url', 'http://localhost:6379'])(
+    'rejeita REDIS_URL inválida (%s)',
+    (value) => {
+      expect(() => loadEnv({ ...valid, REDIS_URL: value })).toThrow(
+        /REDIS_URL/,
+      );
+    },
+  );
+
+  it('aceita postgresql:// e rediss://', () => {
+    expect(() =>
+      loadEnv({
+        ...valid,
+        DATABASE_URL: 'postgresql://u:p@db.example.com:5432/arenaz',
+        REDIS_URL: 'rediss://cache.example.com:6380',
+      }),
+    ).not.toThrow();
+  });
+
   it('API_PORT padrão 4000', () => {
     expect(loadEnv({ ...valid, API_PORT: undefined }).API_PORT).toBe(4000);
   });
