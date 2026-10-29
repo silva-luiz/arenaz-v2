@@ -56,7 +56,7 @@ interface SeedVenue {
   status?: 'draft' | 'published';
   location?: { lat: number; lng: number };
   fields?: SeedField[];
-  photoKeys?: { key: string; position: number }[];
+  photoKeys?: { key: string; position: number; variantWidths?: number[] }[];
   hours?: { weekday: number; openMinute: number; closeMinute: number }[];
   createdAt?: Date;
   description?: string | null;
@@ -124,6 +124,7 @@ async function seed(input: SeedVenue = {}, owner: string = ownerId) {
         venueId: row.id,
         storageKey: `${photo.key}-${randomUUID()}`,
         position: photo.position,
+        variantWidths: photo.variantWidths ?? null,
       })),
     );
   }
@@ -199,6 +200,7 @@ describe('GET /api/venues', () => {
       [
         'approxLocation',
         'city',
+        'coverSrcSet',
         'coverUrl',
         'distanceKm',
         'minPriceCentsPerHour',
@@ -477,6 +479,31 @@ describe('GET /api/venues', () => {
     expect(res.headers['content-type']).toContain('application/problem+json');
     const problem = res.json<Problem>();
     expect(Object.keys(problem.errors ?? {}).length).toBeGreaterThan(0);
+  });
+
+  it('a capa traz srcSet das variantes prontas, null enquanto pendentes', async () => {
+    const token = uniqueToken();
+    await seed({
+      neighborhood: `Variantes ${token} A`,
+      photoKeys: [
+        { key: `var-${token}-a`, position: 0, variantWidths: [400, 800, 1600] },
+      ],
+    });
+    await seed({
+      neighborhood: `Variantes ${token} B`,
+      photoKeys: [{ key: `var-${token}-b`, position: 0 }],
+    });
+    const body = await search(q(`Variantes ${token}`));
+    const [ready, pending] = [...body.items].sort((a, b) =>
+      a.neighborhood.localeCompare(b.neighborhood),
+    );
+    const cover = ready?.coverUrl ?? '';
+    expect(cover).toContain(`${testEnv.S3_PUBLIC_URL}/var-${token}-a-`);
+    expect(ready?.coverSrcSet).toBe(
+      `${cover}.w400.webp 400w, ${cover}.w800.webp 800w, ${cover}.w1600.webp 1600w`,
+    );
+    expect(pending?.coverUrl).toContain(`var-${token}-b`);
+    expect(pending?.coverSrcSet).toBeNull();
   });
 
   it('lat sem lng: o erro fica em lng', async () => {
@@ -797,7 +824,7 @@ describe('GET /api/venues/:slug', () => {
       description: 'Uma ótima arena',
       photoKeys: [
         { key: `det-${token}-b`, position: 1 },
-        { key: `det-${token}-a`, position: 0 },
+        { key: `det-${token}-a`, position: 0, variantWidths: [400] },
       ],
       timezone: 'America/Manaus',
       hours: [
@@ -838,6 +865,10 @@ describe('GET /api/venues/:slug', () => {
     ]);
     expect(body.photos.map((photo) => photo.position)).toEqual([0, 1]);
     expect(body.photos[0]?.url).toContain(`det-${token}-a`);
+    expect(body.photos[0]?.srcSet).toBe(
+      `${body.photos[0]?.url ?? ''}.w400.webp 400w`,
+    );
+    expect(body.photos[1]?.srcSet).toBeNull();
     expect(body.fields).toHaveLength(1);
     expect(body.fields[0]).toMatchObject({
       name: 'Quadra Ativa',

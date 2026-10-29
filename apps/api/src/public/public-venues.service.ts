@@ -14,6 +14,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { DB, type DbHandle } from '../db/db.module.js';
+import { photoUrls } from '../storage/photo-objects.js';
 import { STORAGE, type StoragePort } from '../storage/storage.port.js';
 import { loadNextFreeTimes, type NextFreeVenue } from './next-free.js';
 
@@ -35,6 +36,7 @@ interface CardRow extends Record<string, unknown> {
   min_price: number;
   sports: string[];
   cover_key: string | null;
+  cover_widths: number[] | null;
   distance_m: number | null;
   timezone: string;
   /** Opening hours and active fields, for the next free time. */
@@ -88,7 +90,7 @@ export class PublicVenuesService {
    * One set-based query: the published venues with at least one active
    * field, each with its lowest price (the cheapest of the base prices AND
    * the price rules of its active fields: that is what "a partir de" means),
-   * the sports of its active fields and its cover photo. Fetches one extra row to know `hasMore`.
+   * the sports of its active fields and its cover photo (with its variants). Fetches one extra row to know `hasMore`.
    * Then ONE more query (`loadNextFreeTimes`) gives every card its next free time today.
    * Optional filters: `amenities` (the venue has all of them) and `maxPrice`
    * (reais; the "a partir de" price is at most that).
@@ -149,10 +151,8 @@ export class PublicVenuesService {
              ST_X(v.approx_location::geometry) AS lng,
              fa.min_price,
              fa.sports,
-             (SELECT p.storage_key FROM venue_photo p
-               WHERE p.venue_id = v.id
-               ORDER BY p.position, p.created_at
-               LIMIT 1) AS cover_key,
+             cover.storage_key AS cover_key,
+             cover.variant_widths AS cover_widths,
              ${distance} AS distance_m,
              (SELECT coalesce(jsonb_agg(jsonb_build_object(
                        'weekday', h.weekday,
@@ -184,6 +184,13 @@ export class PublicVenuesService {
             CROSS JOIN LATERAL unnest(f.sports) AS s(sport)
            WHERE f.venue_id = v.id AND f.is_active
         ) fa
+        LEFT JOIN LATERAL (
+          SELECT p.storage_key, p.variant_widths
+            FROM venue_photo p
+           WHERE p.venue_id = v.id
+           ORDER BY p.position, p.created_at
+           LIMIT 1
+        ) cover ON true
        WHERE ${sql.join(where, sql` AND `)}
        ORDER BY ${order}
        LIMIT ${PUBLIC_PAGE_SIZE + 1} OFFSET ${(page - 1) * PUBLIC_PAGE_SIZE}
@@ -205,15 +212,19 @@ export class PublicVenuesService {
             })),
             new Date(pageRows[0].now),
           );
-    const items = pageRows.map((row) =>
-      publicVenueCardSchema.parse({
+    const items = pageRows.map((row) => {
+      const cover =
+        row.cover_key === null
+          ? null
+          : photoUrls(this.storage, row.cover_key, row.cover_widths);
+      return publicVenueCardSchema.parse({
         slug: row.slug,
         name: row.name,
         neighborhood: row.neighborhood,
         city: row.city,
         state: row.state,
-        coverUrl:
-          row.cover_key === null ? null : this.storage.publicUrl(row.cover_key),
+        coverUrl: cover?.url ?? null,
+        coverSrcSet: cover?.srcSet ?? null,
         // Catalog order, whatever order the database returned.
         sports: SPORTS.filter((known) => row.sports.includes(known)),
         minPriceCentsPerHour: row.min_price,
@@ -223,8 +234,8 @@ export class PublicVenuesService {
             ? null
             : Math.round(row.distance_m / 100) / 10,
         nextFreeTime: nextFree.get(row.id) ?? null,
-      }),
-    );
+      });
+    });
     return publicSearchResponseSchema.parse({
       items,
       page,
@@ -275,6 +286,7 @@ export class PublicVenuesService {
         .select({
           id: venuePhoto.id,
           storageKey: venuePhoto.storageKey,
+          variantWidths: venuePhoto.variantWidths,
           position: venuePhoto.position,
         })
         .from(venuePhoto)
@@ -314,7 +326,7 @@ export class PublicVenuesService {
       hours,
       photos: photos.map((photo) => ({
         id: photo.id,
-        url: this.storage.publicUrl(photo.storageKey),
+        ...photoUrls(this.storage, photo.storageKey, photo.variantWidths),
         position: photo.position,
       })),
       host: { firstName: firstNameOf(row.hostName) },

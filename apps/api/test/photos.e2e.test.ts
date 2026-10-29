@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import {
   PHOTO_MAX_BYTES,
   PHOTO_MAX_PER_VENUE,
+  PHOTO_VARIANT_WIDTHS,
+  photoVariantKey,
   photoSchema,
   photoUploadResponseSchema,
   venueSchema,
@@ -201,6 +203,42 @@ describe('venue photos e2e', () => {
     expect(Buffer.from(await served.arrayBuffer()).equals(png)).toBe(true);
 
     expect((await venueOf(api, venue.id)).photos).toEqual([photo]);
+  });
+
+  it('srcSet é null enquanto as variantes estão pendentes e lista as prontas depois', async () => {
+    const { api } = await newOwner();
+    const venue = await newVenue(api);
+    const photo = await addPhoto(api, venue.id);
+    expect(photo.srcSet).toBeNull();
+    const summaryOf = async () =>
+      venueSummarySchema
+        .array()
+        .parse((await api.get('/api/owner/venues')).json())
+        .find((item) => item.id === venue.id);
+    expect((await summaryOf())?.coverSrcSet).toBeNull();
+
+    // What the worker records once the variants are written.
+    const key = (await photoRows(venue.id))[0]?.storageKey ?? '';
+    await handle.db
+      .update(schema.venuePhoto)
+      .set({ variantWidths: [400, 800] })
+      .where(eq(schema.venuePhoto.id, photo.id));
+    const base = `${testEnv.S3_PUBLIC_URL}/${key.replace(/\.png$/, '')}`;
+    const srcSet = `${base}.w400.webp 400w, ${base}.w800.webp 800w`;
+
+    expect((await venueOf(api, venue.id)).photos[0]?.srcSet).toBe(srcSet);
+    expect((await summaryOf())?.coverSrcSet).toBe(srcSet);
+    const order = await api.put(photosUrl(venue.id, '/order'), {
+      photoIds: [photo.id],
+    });
+    expect(photoSchema.array().parse(order.json())[0]?.srcSet).toBe(srcSet);
+
+    // A photo too small for any variant has none either.
+    await handle.db
+      .update(schema.venuePhoto)
+      .set({ variantWidths: [] })
+      .where(eq(schema.venuePhoto.id, photo.id));
+    expect((await venueOf(api, venue.id)).photos[0]?.srcSet).toBeNull();
   });
 
   it('as fotos entram na última posição e o resumo usa a primeira como capa', async () => {
@@ -528,6 +566,27 @@ describe('venue photos e2e', () => {
     expect(await storage.head(key1)).toBeNull();
   });
 
+  it('apagar a foto remove também as variantes', async () => {
+    const { api } = await newOwner();
+    const venue = await newVenue(api);
+    const photo = await addPhoto(api, venue.id);
+    const key = (await photoRows(venue.id))[0]?.storageKey ?? '';
+    const variants = PHOTO_VARIANT_WIDTHS.map((width) =>
+      photoVariantKey(key, width),
+    );
+    // Only two exist (a smaller original): deleting the missing one is fine.
+    for (const variant of variants.slice(0, 2)) {
+      await putObject(variant, png, 'image/webp');
+    }
+
+    const res = await api.del(photosUrl(venue.id, `/${photo.id}`));
+    expect(res.statusCode).toBe(204);
+    expect(await storage.head(key)).toBeNull();
+    for (const variant of variants) {
+      expect(await storage.head(variant)).toBeNull();
+    }
+  });
+
   it('foto de outro espaço do mesmo dono, inexistente ou malformada → 404', async () => {
     const { api } = await newOwner();
     const venueA = await newVenue(api);
@@ -614,7 +673,7 @@ describe('venue photos e2e', () => {
     ]);
   });
 
-  it('apagar espaço apaga objetos do storage', async () => {
+  it('apagar espaço apaga objetos do storage, variantes inclusive', async () => {
     const { api } = await newOwner();
     const venue = await newVenue(api);
     await addPhoto(api, venue.id);
@@ -623,9 +682,18 @@ describe('venue photos e2e', () => {
     expect(keys).toHaveLength(2);
     for (const key of keys) expect(await storage.head(key)).not.toBeNull();
 
+    const variants = keys.flatMap((key) =>
+      PHOTO_VARIANT_WIDTHS.map((width) => photoVariantKey(key, width)),
+    );
+    for (const variant of variants) {
+      await putObject(variant, png, 'image/webp');
+    }
+
     const res = await api.del(`/api/owner/venues/${venue.id}`);
     expect(res.statusCode).toBe(204);
-    for (const key of keys) expect(await storage.head(key)).toBeNull();
+    for (const key of [...keys, ...variants]) {
+      expect(await storage.head(key)).toBeNull();
+    }
     expect(await photoRows(venue.id)).toEqual([]);
   });
 

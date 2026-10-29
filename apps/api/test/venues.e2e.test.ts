@@ -111,6 +111,7 @@ describe('owner venues e2e', () => {
         city: 'São Paulo',
         fieldsCount: 0,
         coverUrl: null,
+        coverSrcSet: null,
       },
     ]);
 

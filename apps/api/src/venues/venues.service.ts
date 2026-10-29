@@ -27,7 +27,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
+import { asc, count, desc, eq, or, sql, type SQL } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   VENUE_HAS_BOOKINGS,
   VENUE_HAS_PAID_HISTORY,
@@ -38,6 +39,11 @@ import { dbNow } from '../common/db-clock.js';
 import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
+import {
+  photoObjectKeys,
+  photoUrls,
+  type PhotoUrls,
+} from '../storage/photo-objects.js';
 import {
   deleteQuietly,
   STORAGE,
@@ -61,6 +67,14 @@ const { venue, venueHours, venuePhoto, field, priceRule, booking } = schema;
  * the outer reference out.
  */
 const OUTER_VENUE_ID = sql.raw('"venue"."id"');
+
+/**
+ * `column` of the venue's cover photo (position 0, the oldest on a tie), as a
+ * correlated subquery of the outer venue row.
+ */
+function coverPhoto<T>(column: AnyPgColumn): SQL<T | null> {
+  return sql<T | null>`(select ${column} from ${venuePhoto} where ${venuePhoto.venueId} = ${OUTER_VENUE_ID} order by ${venuePhoto.position}, ${venuePhoto.createdAt} limit 1)`;
+}
 
 /** Attempts at a unique slug when concurrent creates keep colliding. */
 const SLUG_ATTEMPTS = 10;
@@ -94,8 +108,9 @@ export function toFieldSummary(
 
 /**
  * DB rows → `Venue`, the one response mapper for owner venues. Hours are
- * sorted by weekday then opening minute, photos by position (URLs from
- * `photoUrl`, i.e. the storage's public URL), timestamps are ISO strings, and
+ * sorted by weekday then opening minute, photos by position (URLs and
+ * `srcSet` from `urlsOf`, i.e. the storage's public URLs), timestamps are ISO
+ * strings, and
  * the result is validated with the contract schema before it leaves the API.
  */
 export function toVenue(
@@ -103,7 +118,7 @@ export function toVenue(
   hours: VenueHoursRow[],
   photos: VenuePhoto[],
   fields: { field: Field; priceRulesCount: number }[],
-  photoUrl: (storageKey: string) => string,
+  urlsOf: (photo: VenuePhoto) => PhotoUrls,
 ): Venue {
   return venueSchema.parse({
     id: row.id,
@@ -136,7 +151,7 @@ export function toVenue(
       .sort((a, b) => a.position - b.position)
       .map((photo) => ({
         id: photo.id,
-        url: photoUrl(photo.storageKey),
+        ...urlsOf(photo),
         position: photo.position,
       })),
     fields: fields.map((item) =>
@@ -186,19 +201,23 @@ export class VenuesService {
         status: venue.status,
         city: venue.city,
         fieldsCount: sql<number>`(select count(*)::int from ${field} where ${field.venueId} = ${OUTER_VENUE_ID})`,
-        coverKey: sql<
-          string | null
-        >`(select ${venuePhoto.storageKey} from ${venuePhoto} where ${venuePhoto.venueId} = ${OUTER_VENUE_ID} order by ${venuePhoto.position}, ${venuePhoto.createdAt} limit 1)`,
+        coverKey: coverPhoto<string>(venuePhoto.storageKey),
+        coverWidths: coverPhoto<number[]>(venuePhoto.variantWidths),
       })
       .from(venue)
       .where(eq(venue.ownerId, userId))
       .orderBy(desc(venue.createdAt), asc(venue.id));
-    return rows.map(({ coverKey, ...rest }) =>
-      venueSummarySchema.parse({
+    return rows.map(({ coverKey, coverWidths, ...rest }) => {
+      const cover =
+        coverKey === null
+          ? null
+          : photoUrls(this.storage, coverKey, coverWidths);
+      return venueSummarySchema.parse({
         ...rest,
-        coverUrl: coverKey === null ? null : this.storage.publicUrl(coverKey),
-      }),
-    );
+        coverUrl: cover?.url ?? null,
+        coverSrcSet: cover?.srcSet ?? null,
+      });
+    });
   }
 
   async create(userId: string, input: VenueInput): Promise<Venue> {
@@ -315,7 +334,8 @@ export class VenuesService {
 
   /**
    * Deletes the venue (fields, hours and photo rows go with it, ON DELETE
-   * CASCADE) and, once that is committed, its photo objects. The keys are read
+   * CASCADE) and, once that is committed, its photo objects (originals and
+   * variants). The keys are read
    * under the venue lock, so a photo confirmed meanwhile is not missed; a
    * storage failure only leaves orphan objects and is logged.
    */
@@ -338,7 +358,7 @@ export class VenuesService {
       // RESTRICT, so they go with the venue.
       await tx.delete(booking).where(eq(booking.venueId, owned.id));
       await tx.delete(venue).where(eq(venue.id, owned.id));
-      return photos.map((photo) => photo.storageKey);
+      return photos.flatMap((photo) => photoObjectKeys(photo.storageKey));
     });
     await deleteQuietly(this.storage, keys, this.logger);
   }
@@ -470,8 +490,8 @@ export class VenuesService {
         .groupBy(field.id)
         .orderBy(asc(field.createdAt), asc(field.id)),
     ]);
-    return toVenue(row, hours, photos, fields, (key) =>
-      this.storage.publicUrl(key),
+    return toVenue(row, hours, photos, fields, (photo) =>
+      photoUrls(this.storage, photo.storageKey, photo.variantWidths),
     );
   }
 }

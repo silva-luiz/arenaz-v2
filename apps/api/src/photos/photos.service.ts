@@ -22,6 +22,7 @@ import {
 } from '@nestjs/common';
 import { and, asc, count, eq, max } from 'drizzle-orm';
 import { DB, type DbHandle } from '../db/db.module.js';
+import { photoObjectKeys, photoUrls } from '../storage/photo-objects.js';
 import {
   deleteQuietly,
   STORAGE,
@@ -88,7 +89,7 @@ export class PhotosService {
   private toPhoto(row: VenuePhoto): Photo {
     return photoSchema.parse({
       id: row.id,
-      url: this.storage.publicUrl(row.storageKey),
+      ...photoUrls(this.storage, row.storageKey, row.variantWidths),
       position: row.position,
     });
   }
@@ -238,8 +239,8 @@ export class PhotosService {
   /**
    * Deletes a photo and closes the gap in the positions. The venue is locked
    * first and the "published stays complete" check runs last, so removing the
-   * only photo of a published venue rolls everything back. The object goes
-   * away only after the commit.
+   * only photo of a published venue rolls everything back. The object (and
+   * its variants) go away only after the commit.
    */
   async remove(
     userId: string,
@@ -281,6 +282,6 @@ export class PhotosService {
       return removed.storageKey;
     });
 
-    await deleteQuietly(this.storage, [key], this.logger);
+    await deleteQuietly(this.storage, photoObjectKeys(key), this.logger);
   }
 }
