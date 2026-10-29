@@ -79,10 +79,7 @@ describe('POST /api/bookings/:id/payment', () => {
     const charge = paymentChargeSchema.parse(
       (await paid.api.post(`/api/bookings/${paid.created.id}/payment`)).json(),
     );
-    await app.inject({
-      method: 'POST',
-      url: `/api/payments/fake/${charge.chargeId}/pay`,
-    });
+    await paid.api.post(`/api/payments/fake/${charge.chargeId}/pay`);
     const confirmed = await paid.api.post(
       `/api/bookings/${paid.created.id}/payment`,
     );

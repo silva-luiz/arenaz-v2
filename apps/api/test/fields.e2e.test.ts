@@ -19,6 +19,8 @@ import { findOwnedField } from '../src/venues/owner.js';
 import {
   asUser,
   buildTestApp,
+  canSkipForeignKeys,
+  NEEDS_SUPERUSER,
   signUpAs,
   uniqueToken,
   venueBody,
@@ -452,10 +454,12 @@ describe('price rules e2e', () => {
 });
 
 describe('availability blocks e2e', () => {
-  it('EXCLUDE real: uma gravação concorrente não vista pela checagem vira 409', async () => {
+  it('EXCLUDE real: uma gravação concorrente não vista pela checagem vira 409', async (ctx) => {
+    if (!(await canSkipForeignKeys(handle.pool))) ctx.skip(NEEDS_SUPERUSER);
     const { api, field } = await setup();
     const start = '[2031-05-10 10:00+00,2031-05-10 12:00+00)';
     const raw = await handle.pool.connect();
+    let pending: Promise<LightMyRequestResponse> | undefined;
     try {
       // An uncommitted block is invisible to the service's overlap check, but
       // the EXCLUDE makes its insert wait for this transaction and then fail.
@@ -463,19 +467,23 @@ describe('availability blocks e2e', () => {
       // The FK check would take a share lock on the field row and make the
       // service wait at its own field lock instead; skip it (test superuser).
       await raw.query('set local session_replication_role = replica');
+      const {
+        rows: [self],
+      } = await raw.query<{ pid: number }>('select pg_backend_pid() as pid');
       await raw.query(
         'insert into availability_block (field_id, period) values ($1, $2::tstzrange)',
         [field.id, start],
       );
-      const pending = api.post(`/api/owner/fields/${field.id}/blocks`, {
+      pending = api.post(`/api/owner/fields/${field.id}/blocks`, {
         startsAt: '2031-05-10T11:00:00.000Z',
         endsAt: '2031-05-10T13:00:00.000Z',
       });
       let waiting = false;
       for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
+        // Some backend is blocked by the open transaction's pid.
         const { rowCount } = await handle.pool.query(
-          `select 1 from pg_stat_activity
-            where wait_event_type = 'Lock' and query ilike '%availability_block%'`,
+          'select 1 from pg_stat_activity where $1 = any(pg_blocking_pids(pid))',
+          [self?.pid],
         );
         waiting = (rowCount ?? 0) > 0;
         if (!waiting) await new Promise((resolve) => setTimeout(resolve, 50));
@@ -492,6 +500,8 @@ describe('availability blocks e2e', () => {
     } finally {
       await raw.query('rollback').catch(() => undefined);
       raw.release();
+      // On a wait timeout the request is still in flight: let it settle.
+      await pending?.catch(() => undefined);
     }
   });
 

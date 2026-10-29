@@ -20,9 +20,11 @@ export const CANCEL_TOO_LATE =
 export const FIELD_HAS_BOOKINGS = 'Esta quadra tem reservas futuras';
 export const VENUE_HAS_BOOKINGS = 'Este espaço tem reservas futuras';
 export const FIELD_HAS_PAID_HISTORY =
-  'Esta quadra tem histórico de reservas pagas. Desative-a em vez de excluir.';
+  'Esta quadra tem histórico de reservas confirmadas. Desative-a em vez de excluir.';
 export const VENUE_HAS_PAID_HISTORY =
-  'Este espaço tem histórico de reservas pagas. Despublique-o em vez de excluir.';
+  'Este espaço tem histórico de reservas confirmadas. Despublique-o em vez de excluir.';
+export const VENUE_TIMEZONE_LOCKED =
+  'Este espaço tem reservas futuras. Não é possível mudar o fuso horário.';
 export const BLOCK_OVER_BOOKING = 'Já existe uma reserva nesse período';
 export const FIELD_INACTIVE = 'Esta quadra está desativada';
 export const CANCELLED_HOLD = 'Reserva cancelada.';

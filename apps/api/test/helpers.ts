@@ -6,6 +6,7 @@ import type { LightMyRequestResponse } from 'fastify';
 import { inject } from 'vitest';
 import { createApp } from '../src/app.factory.js';
 import type { Env } from '../src/config/env.js';
+import type { DbHandle } from '../src/db/db.module.js';
 
 export const testEnv: Env = {
   DATABASE_URL: inject('DATABASE_URL'),
@@ -144,3 +145,20 @@ export function makePng(): Buffer {
     pngChunk('IEND', Buffer.alloc(0)),
   ]);
 }
+
+/**
+ * Whether the test database role may `SET session_replication_role = replica`
+ * (superuser only). The real-EXCLUDE tests need it to skip FK locks; without
+ * it they skip with a note instead of failing obscurely.
+ */
+export async function canSkipForeignKeys(
+  pool: DbHandle['pool'],
+): Promise<boolean> {
+  const { rows } = await pool.query<{ rolsuper: boolean }>(
+    'select rolsuper from pg_roles where rolname = current_user',
+  );
+  return rows[0]?.rolsuper === true;
+}
+
+export const NEEDS_SUPERUSER =
+  'o teste de EXCLUDE real precisa de um papel superusuário no banco de teste (session_replication_role)';

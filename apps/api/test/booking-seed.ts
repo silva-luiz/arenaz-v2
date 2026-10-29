@@ -103,6 +103,47 @@ export async function seedVenue(
   return { slug: v.slug, venueId: v.id, fieldId, inactiveFieldId };
 }
 
+/**
+ * A venue that opens 18:00-24:00 and, after midnight, 00:00-02:00 every day
+ * (an overnight shift stored as two intervals). Quadra Noturna: 60 min blocks,
+ * R$ 80/h base, but R$ 120/h 18:00-24:00 on `date`'s weekday and R$ 200/h
+ * 00:00-02:00 on the next weekday, so 23:00-01:00 on `date` costs
+ * 6000+6000+10000+10000 = 32000 only if each half is priced by its own weekday.
+ */
+export async function seedOvernightVenue(
+  handle: DbHandle,
+  ownerId: string,
+  date: string,
+): Promise<SeededVenue> {
+  const s = await seedVenue(handle, ownerId);
+  await handle.db.delete(venueHours).where(eq(venueHours.venueId, s.venueId));
+  await handle.db.insert(venueHours).values(
+    [0, 1, 2, 3, 4, 5, 6].flatMap((weekday) => [
+      { venueId: s.venueId, weekday, openMinute: 0, closeMinute: 120 },
+      { venueId: s.venueId, weekday, openMinute: 1080, closeMinute: 1440 },
+    ]),
+  );
+  await handle.db.delete(priceRule).where(eq(priceRule.fieldId, s.fieldId));
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+  await handle.db.insert(priceRule).values([
+    {
+      fieldId: s.fieldId,
+      weekdays: [weekday],
+      startMinute: 1080,
+      endMinute: 1440,
+      priceCentsPerHour: 12000,
+    },
+    {
+      fieldId: s.fieldId,
+      weekdays: [(weekday + 1) % 7],
+      startMinute: 0,
+      endMinute: 120,
+      priceCentsPerHour: 20000,
+    },
+  ]);
+  return s;
+}
+
 /** Inserts a booking straight into the table (bypasses the service). */
 export async function insertBooking(
   handle: DbHandle,

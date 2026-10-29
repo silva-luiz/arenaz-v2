@@ -13,11 +13,19 @@ import {
   at,
   expireHold,
   insertBooking,
+  seedOvernightVenue,
   seedVenue,
   spDate,
   type SeededVenue,
 } from './booking-seed.js';
-import { asUser, buildTestApp, signUpAs, type AsUser } from './helpers.js';
+import {
+  asUser,
+  buildTestApp,
+  canSkipForeignKeys,
+  NEEDS_SUPERUSER,
+  signUpAs,
+  type AsUser,
+} from './helpers.js';
 
 const { booking, availabilityBlock } = schema;
 
@@ -119,6 +127,38 @@ describe('POST /api/bookings', () => {
       totalCents: 20000,
     });
     expect(row?.priceBreakdown).toHaveLength(4);
+  });
+
+  it('atravessa a meia-noite: 23:00-01:00 num espaço com 18-24 e 00-02, cada metade no preço do seu dia', async () => {
+    const date = spDate(3);
+    const s = await seedOvernightVenue(handle, ownerId, date);
+    const p = await newPlayer();
+    const res = await p.api.post(
+      '/api/bookings',
+      request(s, date, '23:00', 120),
+    );
+    expect(res.statusCode, res.body).toBe(201);
+    const body = bookingSchema.parse(res.json());
+    expect(body.status).toBe('held');
+    expect(body.totalCents).toBe(32000);
+    expect(body.startsAt).toBe(at(date, '23:00').toISOString());
+    expect(body.endsAt).toBe(
+      new Date(at(date, '23:00').getTime() + 120 * MIN).toISOString(),
+    );
+    const [row] = await handle.db
+      .select({ breakdown: booking.priceBreakdown })
+      .from(booking)
+      .where(eq(booking.id, body.id));
+    expect(row?.breakdown.map((segment) => segment.priceCents)).toEqual([
+      6000, 6000, 10000, 10000,
+    ]);
+    // The same night is taken now: the second request loses.
+    const rival = await newPlayer();
+    const again = await rival.api.post(
+      '/api/bookings',
+      request(s, date, '23:30', 60),
+    );
+    expect(again.statusCode).toBe(409);
   });
 
   it('ignora preço e campos extras enviados pelo cliente', async () => {
@@ -283,12 +323,14 @@ describe('POST /api/bookings', () => {
     ).toBe(201);
   });
 
-  it('EXCLUDE real: reserva concorrente invisível à checagem vira 409', async () => {
+  it('EXCLUDE real: reserva concorrente invisível à checagem vira 409', async (ctx) => {
+    if (!(await canSkipForeignKeys(handle.pool))) ctx.skip(NEEDS_SUPERUSER);
     const s = await seedVenue(handle, ownerId);
     const p = await newPlayer();
     const rival = await newPlayer();
     const date = spDate(3);
     const raw = await handle.pool.connect();
+    let pending: Promise<LightMyRequestResponse> | undefined;
     try {
       await raw.query('begin');
       // The FK checks would take share locks on the field row and make the
@@ -312,10 +354,7 @@ describe('POST /api/bookings', () => {
       );
       // Uncommitted: the service cannot see it, so its checks pass and its
       // insert waits on this transaction, then fails with 23P01.
-      const pending = p.api.post(
-        '/api/bookings',
-        request(s, date, '09:00', 60),
-      );
+      pending = p.api.post('/api/bookings', request(s, date, '09:00', 60));
       let waiting = false;
       for (let attempt = 0; attempt < 100 && !waiting; attempt += 1) {
         const { rowCount } = await handle.pool.query(
@@ -334,6 +373,8 @@ describe('POST /api/bookings', () => {
     } finally {
       await raw.query('rollback').catch(() => undefined);
       raw.release();
+      // On a wait timeout the request is still in flight: let it settle.
+      await pending?.catch(() => undefined);
     }
     const rows = await handle.db
       .select({ userId: booking.userId })
@@ -611,11 +652,7 @@ describe('pagamento simulado e confirmação', () => {
     expect(charge.statusCode).toBe(201);
     const { chargeId } = charge.json<{ chargeId: string }>();
 
-    // The webhook has no session cookie.
-    const paid = await app.inject({
-      method: 'POST',
-      url: `/api/payments/fake/${chargeId}/pay`,
-    });
+    const paid = await p.api.post(`/api/payments/fake/${chargeId}/pay`);
     expect(paid.statusCode).toBe(200);
     expect(paid.json()).toEqual({ status: 'confirmed' });
 
@@ -636,6 +673,35 @@ describe('pagamento simulado e confirmação', () => {
       .where(eq(booking.id, created.id));
     expect(row?.confirmedAt).toBeInstanceOf(Date);
     expect(row?.holdExpiresAt).toBeNull();
+  });
+
+  it('o pagamento simulado exige login e a cobrança de outro jogador é 404', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const thief = await newPlayer();
+    const created = bookingSchema.parse(
+      (
+        await p.api.post('/api/bookings', request(s, spDate(3), '09:00', 60))
+      ).json(),
+    );
+    const { chargeId } = (
+      await p.api.post(`/api/bookings/${created.id}/payment`)
+    ).json<{ chargeId: string }>();
+    const url = `/api/payments/fake/${chargeId}/pay`;
+
+    const anonymous = await app.inject({ method: 'POST', url });
+    expect(anonymous.statusCode).toBe(401);
+    // Not 403: the existence of someone else's charge is not revealed.
+    const stolen = await thief.api.post(url);
+    expect(stolen.statusCode).toBe(404);
+    expect(problem(stolen).detail).toBe('Cobrança não encontrada');
+    const [row] = await handle.db
+      .select({ status: booking.status })
+      .from(booking)
+      .where(eq(booking.id, created.id));
+    expect(row?.status).toBe('held');
+
+    expect((await p.api.post(url)).statusCode).toBe(200);
   });
 
   it('endereço e telefone só na reserva confirmada', async () => {
@@ -679,12 +745,12 @@ describe('pagamento simulado e confirmação', () => {
       await p.api.post(`/api/bookings/${created.id}/payment`)
     ).json<{ chargeId: string }>();
     const url = `/api/payments/fake/${chargeId}/pay`;
-    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(200);
+    expect((await p.api.post(url)).statusCode).toBe(200);
     const [first] = await handle.db
       .select({ confirmedAt: booking.confirmedAt })
       .from(booking)
       .where(eq(booking.id, created.id));
-    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(200);
+    expect((await p.api.post(url)).statusCode).toBe(200);
     const [second] = await handle.db
       .select({ confirmedAt: booking.confirmedAt })
       .from(booking)
@@ -705,10 +771,7 @@ describe('pagamento simulado e confirmação', () => {
     ).json<{ chargeId: string }>();
     await expireHold(handle, created.id);
 
-    const paid = await app.inject({
-      method: 'POST',
-      url: `/api/payments/fake/${chargeId}/pay`,
-    });
+    const paid = await p.api.post(`/api/payments/fake/${chargeId}/pay`);
     expect(paid.statusCode).toBe(409);
     expect(problem(paid).detail).toBe('O prazo para pagamento acabou');
     const [row] = await handle.db
@@ -742,20 +805,14 @@ describe('pagamento simulado e confirmação', () => {
     expect(
       (await p.api.post(`/api/bookings/${created.id}/cancel`)).statusCode,
     ).toBe(200);
-    const paid = await app.inject({
-      method: 'POST',
-      url: `/api/payments/fake/${chargeId}/pay`,
-    });
+    const paid = await p.api.post(`/api/payments/fake/${chargeId}/pay`);
     expect(paid.statusCode).toBe(409);
     for (const id of [
       'lixo',
       'fake_lixo',
       'fake_00000000-0000-4000-8000-000000000000',
     ]) {
-      const res = await app.inject({
-        method: 'POST',
-        url: `/api/payments/fake/${id}/pay`,
-      });
+      const res = await p.api.post(`/api/payments/fake/${id}/pay`);
       expect(res.statusCode).toBe(404);
     }
     const [row] = await handle.db
@@ -777,7 +834,7 @@ describe('pagamento simulado e confirmação', () => {
       await p.api.post(`/api/bookings/${created.id}/payment`)
     ).json<{ chargeId: string }>();
     const [pay, cancel] = await Promise.all([
-      app.inject({ method: 'POST', url: `/api/payments/fake/${chargeId}/pay` }),
+      p.api.post(`/api/payments/fake/${chargeId}/pay`),
       p.api.post(`/api/bookings/${created.id}/cancel`),
     ]);
     const [row] = await handle.db

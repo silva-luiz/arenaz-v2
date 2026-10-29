@@ -31,6 +31,7 @@ import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
 import {
   VENUE_HAS_BOOKINGS,
   VENUE_HAS_PAID_HISTORY,
+  VENUE_TIMEZONE_LOCKED,
 } from '../booking/booking-errors.js';
 import { hasPaidHistory, hasUpcomingActiveBooking } from '../booking/busy.js';
 import { dbNow } from '../common/db-clock.js';
@@ -278,10 +279,36 @@ export class VenuesService {
     if (input.timezone !== undefined) changes.timezone = input.timezone;
 
     if (Object.keys(changes).length > 0) {
-      await this.handle.db
-        .update(venue)
-        .set({ ...changes, updatedAt: sql`now()` })
-        .where(eq(venue.id, owned.id));
+      await this.handle.db.transaction(async (tx) => {
+        // Lock order venue -> fields, like every other owner mutation.
+        if ((await lockVenueStatus(tx, owned.id)) === undefined) {
+          throw new NotFoundException(VENUE_NOT_FOUND);
+        }
+        if (changes.timezone !== undefined) {
+          const [current] = await tx
+            .select({ timezone: venue.timezone })
+            .from(venue)
+            .where(eq(venue.id, owned.id));
+          // Bookings are stored as instants but read in the venue's zone: a
+          // new zone would shift every future booking against the hours.
+          if (current && current.timezone !== changes.timezone) {
+            await lockVenueFields(tx, owned.id);
+            if (
+              await hasUpcomingActiveBooking(
+                tx,
+                { venueId: owned.id },
+                await dbNow(tx),
+              )
+            ) {
+              throw new ConflictException(VENUE_TIMEZONE_LOCKED);
+            }
+          }
+        }
+        await tx
+          .update(venue)
+          .set({ ...changes, updatedAt: sql`now()` })
+          .where(eq(venue.id, owned.id));
+      });
     }
     return this.load(owned.id);
   }

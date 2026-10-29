@@ -22,16 +22,21 @@ describe('timezone', () => {
   });
 
   it('o rótulo de cada fuso cita todos os estados que o mapa manda para ele', () => {
+    const names: Record<string, string> = {
+      CE: 'Ceará',
+      MA: 'Maranhão',
+      PI: 'Piauí',
+      RN: 'Rio Grande do Norte',
+      PB: 'Paraíba',
+    };
+    // The states come from the map itself, so a UF added to (or removed
+    // from) it fails here until the label and this table follow.
+    const mapped = UF.filter(
+      (uf) => defaultTimezoneForUf(uf) === 'America/Fortaleza',
+    );
+    expect([...mapped].sort()).toEqual(Object.keys(names).sort());
     const fortaleza = TIMEZONE_LABELS['America/Fortaleza'];
-    for (const name of [
-      'Ceará',
-      'Maranhão',
-      'Piauí',
-      'Rio Grande do Norte',
-      'Paraíba',
-    ]) {
-      expect(fortaleza).toContain(name);
-    }
+    for (const uf of mapped) expect(fortaleza).toContain(names[uf]);
   });
 
   it('todos os fusos são reconhecidos pelo Intl', () => {

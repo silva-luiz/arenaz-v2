@@ -14,7 +14,6 @@ import {
   schema,
   tstzrangeSql,
   type AvailabilityBlock,
-  type Db,
   type Field,
   type NewField,
   type PriceRule as PriceRuleRow,
@@ -32,6 +31,10 @@ import {
   FIELD_HAS_BOOKINGS,
   FIELD_HAS_PAID_HISTORY,
 } from '../booking/booking-errors.js';
+import {
+  lockField as lockFieldRow,
+  type Tx,
+} from '../booking/booking-context.js';
 import {
   hasActiveBookingIn,
   hasPaidHistory,
@@ -112,8 +115,6 @@ export function toField(
 function measureColumn(value: number | null): string | null {
   return value === null ? null : String(value);
 }
-
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 // --------------------------------------------------------------- service ----
 
@@ -362,16 +363,12 @@ export class FieldsService {
     if (deleted.length === 0) throw new NotFoundException(BLOCK_NOT_FOUND);
   }
 
-  /** `SELECT ... FOR UPDATE` on the field row; 404 if it just disappeared. */
+  /** The shared field row lock (`FOR UPDATE`); 404 if it just disappeared. */
   private async lockField(
     tx: Tx,
     fieldId: string,
   ): Promise<{ id: string; isActive: boolean }> {
-    const [row] = await tx
-      .select({ id: field.id, isActive: field.isActive })
-      .from(field)
-      .where(eq(field.id, fieldId))
-      .for('update');
+    const row = await lockFieldRow(tx, fieldId);
     if (!row) throw new NotFoundException(FIELD_NOT_FOUND);
     return row;
   }

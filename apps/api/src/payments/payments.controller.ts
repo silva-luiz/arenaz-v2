@@ -45,21 +45,26 @@ export class PaymentsController {
 }
 
 /**
- * The simulated provider's webhook ("Simular pagamento"). No session: a real
- * provider would call it server to server. Registered only when
+ * The simulated provider's "Simular pagamento". Unlike a real provider's
+ * webhook it is called from the browser, so it needs the player's session and
+ * only confirms that player's own booking. Registered only when
  * `PAYMENT_PROVIDER=fake` (see `PaymentsModule`).
  */
 @Controller('payments/fake')
+@UseGuards(AuthGuard)
 export class FakePaymentsController {
   constructor(private readonly bookings: BookingsService) {}
 
   @RouteConfig(LIMIT)
   @HttpCode(HttpStatus.OK)
   @Post(':chargeId/pay')
-  async pay(@Param('chargeId') chargeId: string): Promise<PaymentResult> {
+  async pay(
+    @CurrentUser() user: AuthUser,
+    @Param('chargeId') chargeId: string,
+  ): Promise<PaymentResult> {
     const bookingId = FakePayment.bookingIdOf(chargeId);
     if (bookingId === null) throw new NotFoundException(CHARGE_NOT_FOUND);
-    await this.bookings.confirmPaid(bookingId);
+    await this.bookings.confirmPaid(user.id, bookingId);
     return { status: 'confirmed' };
   }
 }

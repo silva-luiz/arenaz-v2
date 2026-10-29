@@ -23,6 +23,7 @@ import {
 import {
   toPriceBreakdown,
   validateUnderFieldLock,
+  type Tx,
 } from '../booking/booking-context.js';
 import { dbNow } from '../common/db-clock.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
@@ -31,8 +32,6 @@ import { DB, type DbHandle } from '../db/db.module.js';
 import { findOwnedField, findOwnedVenue, isUuid } from '../venues/owner.js';
 
 const { booking, venue, field, availabilityBlock, user } = schema;
-
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 
 const MINUTE_MS = 60_000;
 

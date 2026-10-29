@@ -14,6 +14,7 @@ import {
   at,
   expireHold,
   insertBooking,
+  seedOvernightVenue,
   seedVenue,
   spDate,
   type SeededVenue,
@@ -253,6 +254,22 @@ describe('POST /api/owner/fields/:id/bookings', () => {
         at(date, '10:00').toISOString(),
       ]),
     );
+  });
+
+  it('reserva manual atravessa a meia-noite: 23:00-01:00, cada metade no preço do seu dia', async () => {
+    const owner = await newPerson('Dona Arena');
+    const date = spDate(2);
+    const s = await seedOvernightVenue(handle, owner.userId, date);
+    const res = await owner.api.post(manualUrl(s), manual(date, '23:00', 120));
+    expect(res.statusCode, res.body).toBe(201);
+    const created = agendaBookingSchema.parse(res.json());
+    expect(created).toMatchObject({
+      status: 'confirmed',
+      origin: 'manual',
+      totalCents: 32000,
+      startsAt: at(date, '23:00').toISOString(),
+      endsAt: new Date(at(date, '23:00').getTime() + 120 * MIN).toISOString(),
+    });
   });
 
   it('conflito com reserva, hold vivo ou bloqueio dá 409; hold vencido não impede', async () => {
@@ -602,6 +619,72 @@ describe('regras com reservas futuras', () => {
     expect(v?.status).toBe('published');
   });
 
+  it('mudar o fuso do espaço com reserva futura: 409 e o fuso não muda; mesmo fuso passa', async () => {
+    const { owner, s } = await withFutureBooking('confirmed');
+    const res = await owner.api.patch(`/api/owner/venues/${s.venueId}`, {
+      timezone: 'America/Manaus',
+    });
+    expect(res.statusCode).toBe(409);
+    expect(problem(res).detail).toBe(
+      'Este espaço tem reservas futuras. Não é possível mudar o fuso horário.',
+    );
+    const [v] = await handle.db
+      .select({ timezone: venue.timezone })
+      .from(venue)
+      .where(eq(venue.id, s.venueId));
+    expect(v?.timezone).toBe('America/Sao_Paulo');
+    // Same zone is not a change; other fields still edit freely.
+    const same = await owner.api.patch(`/api/owner/venues/${s.venueId}`, {
+      timezone: 'America/Sao_Paulo',
+      name: 'Arena Renomeada',
+    });
+    expect(same.statusCode, same.body).toBe(200);
+  });
+
+  it('mudar o fuso do espaço sem reserva futura (só histórico ou cancelada) passa', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const player = await newPerson('Jogador');
+    const date = spDate(4);
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '08:00'),
+      at(date, '09:00'),
+      'cancelled',
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '09:00'),
+      at(date, '10:00'),
+      'held',
+      new Date(Date.now() - MIN),
+    );
+    const past = [
+      new Date(Date.now() - 3 * HOUR),
+      new Date(Date.now() - 2 * HOUR),
+    ] as const;
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      past[0],
+      past[1],
+      'confirmed',
+    );
+    const res = await owner.api.patch(`/api/owner/venues/${s.venueId}`, {
+      timezone: 'America/Manaus',
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const [v] = await handle.db
+      .select({ timezone: venue.timezone })
+      .from(venue)
+      .where(eq(venue.id, s.venueId));
+    expect(v?.timezone).toBe('America/Manaus');
+  });
+
   it('bloqueio sobre reserva ativa: 409 e nenhum bloqueio; sobre hold vencido ou cancelada, passa', async () => {
     const { owner, s, date } = await withFutureBooking('confirmed');
     const over = await owner.api.post(blocksUrl(s), {
@@ -726,7 +809,7 @@ describe('regras com reservas futuras', () => {
         const res = await owner.api.del(`/api/owner/fields/${s.fieldId}`);
         expect(res.statusCode).toBe(409);
         expect(problem(res).detail).toBe(
-          'Esta quadra tem histórico de reservas pagas. Desative-a em vez de excluir.',
+          'Esta quadra tem histórico de reservas confirmadas. Desative-a em vez de excluir.',
         );
         const [row] = await handle.db
           .select({ id: booking.id })
@@ -748,7 +831,7 @@ describe('regras com reservas futuras', () => {
         const res = await owner.api.del(`/api/owner/venues/${s.venueId}`);
         expect(res.statusCode).toBe(409);
         expect(problem(res).detail).toBe(
-          'Este espaço tem histórico de reservas pagas. Despublique-o em vez de excluir.',
+          'Este espaço tem histórico de reservas confirmadas. Despublique-o em vez de excluir.',
         );
         const [v] = await handle.db
           .select({ id: venue.id })

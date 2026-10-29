@@ -3,7 +3,6 @@ import {
   MAX_ACTIVE_HOLDS,
   bookingSchema,
   type Booking,
-  type BookingStatus,
   type CancelBookingResponse,
   type CreateBookingInput,
 } from '@arenaz/contracts';
@@ -89,7 +88,10 @@ function toBooking(row: ViewRow, now: Date): Booking {
     row.status === 'held' &&
     row.holdExpiresAt !== null &&
     row.holdExpiresAt.getTime() <= now.getTime();
-  const status = (stale ? 'expired' : row.status) as BookingStatus;
+  // The column is plain text: narrow it to the contract's enum, no cast.
+  const status = bookingSchema.shape.status.parse(
+    stale ? 'expired' : row.status,
+  );
   return bookingSchema.parse({
     id: row.id,
     status,
@@ -266,17 +268,21 @@ export class BookingsService {
    * The payment arrived: confirms the booking if its hold is still alive.
    * Takes the field lock like every other writer, so it cannot interleave
    * with a cancellation or with the hold being reclaimed. Idempotent.
+   * Only the booking's own player can confirm it (anyone else gets the same
+   * 404 as an unknown charge); this is the simulated provider only.
    */
-  async confirmPaid(bookingId: string): Promise<void> {
+  async confirmPaid(userId: string, bookingId: string): Promise<void> {
     if (!isUuid(bookingId)) throw new NotFoundException(CHARGE_NOT_FOUND);
     const outcome = await this.handle.db.transaction(
       async (tx): Promise<'confirmed' | 'expired' | 'closed'> => {
         const [own] = await tx
-          .select({ fieldId: booking.fieldId })
+          .select({ fieldId: booking.fieldId, userId: booking.userId })
           .from(booking)
           .where(eq(booking.id, bookingId))
           .limit(1);
-        if (!own) throw new NotFoundException(CHARGE_NOT_FOUND);
+        if (!own || own.userId !== userId) {
+          throw new NotFoundException(CHARGE_NOT_FOUND);
+        }
         await lockField(tx, own.fieldId);
         const [row] = await tx
           .select({

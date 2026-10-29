@@ -180,7 +180,7 @@ describe('loadEnv', () => {
     }
     expect(message).toMatch(/PAYMENT_PROVIDER/);
     expect(message).not.toMatch(/GEO_PROVIDER/);
-    expect(message.trim().split(String.fromCharCode(10))).toHaveLength(2);
+    expect(message.trim().split('\n')).toHaveLength(2);
   });
 
   it('rejeita GEO_PROVIDER desconhecido', () => {

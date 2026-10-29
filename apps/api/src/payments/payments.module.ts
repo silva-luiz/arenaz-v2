@@ -15,7 +15,7 @@ export class PaymentsModule {
     return {
       module: PaymentsModule,
       imports: [BookingsModule],
-      // The webhook that confirms payments on demand exists only for the fake.
+      // The endpoint that confirms payments on demand exists only for the fake.
       controllers: fake
         ? [PaymentsController, FakePaymentsController]
         : [PaymentsController],
