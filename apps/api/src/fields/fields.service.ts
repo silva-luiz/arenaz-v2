@@ -26,6 +26,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
+import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import {
   FIELD_NOT_FOUND,
@@ -103,11 +104,6 @@ export function toField(
 /** A measure in meters as the numeric column takes it; null stays NULL. */
 function measureColumn(value: number | null): string | null {
   return value === null ? null : String(value);
-}
-
-/** An empty optional text becomes NULL. */
-function textOrNull(value: string | undefined): string | null {
-  return value === undefined || value === '' ? null : value;
 }
 
 type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];

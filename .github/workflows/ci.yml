@@ -67,8 +67,8 @@ jobs:
 
       - run: pnpm --filter @arenaz/web exec playwright install --with-deps chromium
 
-      # Object storage for the e2e photo upload (the browser PUTs straight to
-      # it through a presigned URL). Same images as infra/docker-compose.yml,
+      # Object storage for the e2e photo upload (the browser POSTs straight to
+      # it through a presigned POST policy). Same images as infra/docker-compose.yml,
       # pinned by digest. Not a `services:` entry: the image only starts the
       # server when given `server /data` and a root user (its default user
       # cannot write to /data), and service containers take neither. The

@@ -57,14 +57,23 @@ As fotos dos espaços vão direto do navegador para um storage compatível com S
 - O serviço `minio-init` cria o bucket `arenaz-photos` (idempotente) com
   leitura pública anônima dos objetos; ele roda uma vez e sai com código 0.
 - A imagem (`alpine/minio`, build automático da release oficial; o MinIO não
-  publica mais `minio/minio` no Docker Hub) é fixada por tag de release em
-  `infra/docker-compose.yml`; os testes (`pnpm test`) sobem o mesmo MinIO via Testcontainers.
+  publica mais `minio/minio` no Docker Hub) é fixada por **tag de release e
+  digest** (`tag@sha256:...`) em `infra/docker-compose.yml`, e o `minio-init`
+  (`amazon/aws-cli`) também. Para atualizar, troque a tag **e** o digest
+  juntos (e o mesmo em `.github/workflows/ci.yml`); trocar só a tag mantém o
+  digest antigo e o Docker continua usando a imagem antiga. Os testes
+  (`pnpm test`) sobem o mesmo MinIO via Testcontainers.
 - CORS: o painel envia a foto com um POST do navegador direto ao storage
   (origem diferente da web). O MinIO local aceita qualquer origem por padrão
   (`MINIO_API_CORS_ALLOW_ORIGIN=*`), então nada a configurar em desenvolvimento.
   **Em produção (S3, R2 etc.) é preciso configurar o CORS do bucket**: permitir
   a origem da web (`WEB_ORIGIN`) com o método `POST`; sem isso o navegador
   bloqueia o envio das fotos.
+- Produção: o envio depende de **POST pré-assinado do S3** (política com
+  `content-length-range` e `Content-Type` exato, que é o que limita tamanho e
+  tipo no próprio storage). O Cloudflare R2 pode não suportar POST
+  pré-assinado; num provedor sem esse recurso será preciso uma variante com
+  PUT pré-assinado (e validar tipo e tamanho na confirmação).
 
 ## Testes
 

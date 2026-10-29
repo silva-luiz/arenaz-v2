@@ -152,6 +152,47 @@ describe('owner venues e2e', () => {
     expect(venueOf(res)).toEqual(venue);
   });
 
+  it('descrição e complemento vazios ou em branco viram NULL', async () => {
+    const { api } = await newOwner();
+    const body = venueBody();
+    const venue = venueOf(
+      await api.post('/api/owner/venues', {
+        ...body,
+        description: '   ',
+        address: { ...body.address, complement: '' },
+      }),
+    );
+    expect(venue.description).toBeNull();
+    expect(venue.address.complement).toBeNull();
+
+    const filled = venueOf(
+      await api.patch(`/api/owner/venues/${venue.id}`, {
+        description: 'Quadras novas',
+        address: { ...body.address, complement: 'Bloco B' },
+      }),
+    );
+    expect(filled.description).toBe('Quadras novas');
+    expect(filled.address.complement).toBe('Bloco B');
+
+    const cleared = venueOf(
+      await api.patch(`/api/owner/venues/${venue.id}`, {
+        description: '  ',
+        address: { ...body.address, complement: '   ' },
+      }),
+    );
+    expect(cleared.description).toBeNull();
+    expect(cleared.address.complement).toBeNull();
+
+    const [row] = await handle.db
+      .select({
+        description: schema.venue.description,
+        complement: schema.venue.complement,
+      })
+      .from(schema.venue)
+      .where(eq(schema.venue.id, venue.id));
+    expect(row).toEqual({ description: null, complement: null });
+  });
+
   it('dados inválidos → 422 com erros por campo', async () => {
     const { api } = await newOwner();
     const res = await api.post('/api/owner/venues', {

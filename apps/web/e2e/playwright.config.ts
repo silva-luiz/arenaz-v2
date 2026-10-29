@@ -28,8 +28,8 @@ const sharedEnv: Record<string, string> = {
     : { DATABASE_URL: process.env.DATABASE_URL }),
 };
 
-// The owner flow uploads real photos: the browser PUTs straight to object
-// storage through a presigned URL. Taken from the environment when set (CI),
+// The owner flow uploads real photos: the browser POSTs straight to object
+// storage through a presigned POST policy. Taken from the environment when set (CI),
 // else the local compose MinIO. These are dev/test values, not secrets.
 const storageEnv: Record<string, string> = {
   S3_ENDPOINT: process.env.S3_ENDPOINT ?? 'http://localhost:9000',

@@ -26,6 +26,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
+import { textOrNull } from '../common/text.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import {
   deleteQuietly,
@@ -199,12 +200,12 @@ export class VenuesService {
             ownerId: userId,
             slug,
             name: input.name,
-            description: input.description ?? null,
+            description: textOrNull(input.description),
             phone: input.phone,
             cep: address.cep,
             street: address.street,
             number: address.number,
-            complement: address.complement ?? null,
+            complement: textOrNull(address.complement),
             neighborhood: address.neighborhood,
             city: address.city,
             state: address.state,
@@ -240,7 +241,7 @@ export class VenuesService {
     const changes: Partial<NewVenue> = {};
     if (input.name !== undefined) changes.name = input.name;
     if (input.description !== undefined) {
-      changes.description = input.description;
+      changes.description = textOrNull(input.description);
     }
     if (input.phone !== undefined) changes.phone = input.phone;
     if (input.address !== undefined) {
@@ -252,7 +253,7 @@ export class VenuesService {
       changes.city = address.city;
       changes.state = address.state;
       if (address.complement !== undefined) {
-        changes.complement = address.complement;
+        changes.complement = textOrNull(address.complement);
       }
     }
     if (input.location !== undefined) changes.location = input.location;
