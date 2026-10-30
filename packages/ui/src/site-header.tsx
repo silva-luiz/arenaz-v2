@@ -58,7 +58,7 @@ export interface SiteHeaderProps {
 }
 
 const PILL_LINK = cn(
-  'inline-flex h-11 items-center rounded-full px-4 max-md:px-2.5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
+  'inline-flex h-11 items-center whitespace-nowrap rounded-full px-4 max-lg:px-3 max-md:px-2.5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
   FOCUS_RING,
 );
 
@@ -132,11 +132,14 @@ export function SiteHeader({
     >
       <div
         className={cn(
-          'mx-auto flex h-16 items-center justify-between gap-3 px-4 md:h-[84px] md:gap-6 md:px-10',
+          'mx-auto flex h-16 items-center justify-between gap-3 px-4 md:h-[84px] md:gap-4 md:px-10 lg:gap-6',
           !fluid && 'max-w-[1360px]',
         )}
       >
-        <div className="flex shrink-0 items-center gap-3 md:flex-1 md:basis-0">
+        {/* The side groups share the leftover width equally (centring the
+            nav) only from 1100px; below that each keeps its own width, so
+            "Anuncie sua quadra" never wraps (68.8125rem: see HomeHero). */}
+        <div className="flex shrink-0 items-center gap-3 min-[68.8125rem]:flex-1 min-[68.8125rem]:basis-0">
           <Link
             href="/"
             aria-label="ArenaZ, início"
@@ -169,7 +172,7 @@ export function SiteHeader({
         {nav && nav.length > 0 ? (
           <nav
             aria-label="Principal"
-            className="flex items-center gap-[30px] max-md:hidden"
+            className="flex items-center gap-[30px] max-md:hidden max-lg:gap-5"
           >
             {nav.map((item) => (
               <Link
@@ -189,13 +192,15 @@ export function SiteHeader({
                   alt=""
                   width={34}
                   height={34}
-                  className="size-[34px] rounded-full object-cover shadow-[0_0_0_2px_#ffffff,0_4px_10px_-3px_rgba(8,36,24,0.45)]"
+                  className="size-[34px] rounded-full object-cover shadow-[0_0_0_2px_#ffffff,0_4px_10px_-3px_rgba(8,36,24,0.45)] max-lg:hidden"
                 />
                 {item.label}
                 {item.isNew ? (
                   <>
                     {' '}
-                    <span className="absolute -top-1.5 left-[22px] rounded-md bg-ink px-1.5 py-[3px] text-[10px] font-bold text-white shadow-[0_3px_8px_-2px_rgba(0,0,0,0.4)]">
+                    {/* Over the photo; centred above the label below lg,
+                        where the photos are hidden. */}
+                    <span className="absolute -top-1.5 left-[22px] max-lg:-top-4 max-lg:left-1/2 max-lg:-translate-x-1/2 rounded-md bg-ink px-1.5 py-[3px] text-[10px] font-bold text-white shadow-[0_3px_8px_-2px_rgba(0,0,0,0.4)]">
                       Novo
                     </span>
                   </>
@@ -209,23 +214,31 @@ export function SiteHeader({
           <div className="flex min-w-0 flex-1 justify-center">{children}</div>
         ) : null}
 
-        <div className="flex shrink-0 items-center justify-end gap-1.5 md:flex-1 md:basis-0">
-          {/* Short on mobile, full from md up. The aria-label always holds the
-              whole phrase, which contains the visible text (WCAG 2.5.3). The space is
-              a no-break one: a plain leading space is dropped inside the flex
-              link. */}
+        <div className="flex shrink-0 items-center justify-end gap-1.5 min-[68.8125rem]:flex-1 min-[68.8125rem]:basis-0">
+          {/* Short below 1100px, full from there. The aria-label always holds
+              the whole phrase, which contains the visible text (WCAG 2.5.3).
+              The space is a no-break one: a plain leading space is dropped
+              inside the flex link. */}
           {showOwnerCta ? (
             <Link
               href="/painel"
               aria-label="Anuncie sua quadra"
               className={cn(PILL_LINK, hideOwnerCtaOnPhone && 'max-md:hidden')}
             >
-              Anuncie<span className="max-md:hidden">{'\u00a0sua quadra'}</span>
+              Anuncie
+              <span className="max-[68.8125rem]:hidden">
+                {'\u00a0sua quadra'}
+              </span>
             </Link>
           ) : null}
           {user ? (
-            <Link href="/reservas" className={cn(PILL_LINK, 'max-md:hidden')}>
-              Minhas reservas
+            <Link
+              href="/reservas"
+              aria-label="Minhas reservas"
+              className={cn(PILL_LINK, 'max-md:hidden')}
+            >
+              <span className="max-[68.8125rem]:hidden">Minhas reservas</span>
+              <span className="min-[68.8125rem]:hidden">Reservas</span>
             </Link>
           ) : null}
           {user ? (

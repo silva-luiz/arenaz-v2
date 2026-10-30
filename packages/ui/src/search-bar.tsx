@@ -106,7 +106,7 @@ function navigateTo(url: string) {
  * control has no box of its own.
  */
 const SEGMENT =
-  'flex min-w-0 flex-1 flex-col rounded-button border border-line-control px-4 py-2 transition-colors duration-150 hover:bg-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand motion-reduce:transition-none md:rounded-full md:border-0 md:px-[22px] md:py-3';
+  'flex min-w-0 flex-1 flex-col rounded-button border border-line-control px-4 py-2 transition-colors duration-150 hover:bg-surface has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-brand motion-reduce:transition-none md:rounded-full md:border-0 md:px-3 md:py-3 lg:px-[22px]';
 const SEGMENT_LABEL = 'text-xs font-semibold text-ink';
 const SEGMENT_CONTROL =
   'mt-0.5 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-muted';
@@ -250,7 +250,12 @@ export function SearchBar({
             <input key={name} type="hidden" name={name} value={value} />
           ) : null,
         )}
-        <label className={cn(SEGMENT, 'md:flex-[1.3] md:pl-[26px]')}>
+        <label
+          className={cn(
+            SEGMENT,
+            'md:flex-[1.15] md:pl-4 lg:flex-[1.3] lg:pl-[26px]',
+          )}
+        >
           <span className={SEGMENT_LABEL}>Onde</span>
           <input
             type="text"
@@ -311,9 +316,10 @@ export function SearchBar({
           </select>
         </label>
         <Divider />
-        {/* md:flex-none: as wide as the longest option ("Qualquer esporte"),
-            not squeezed by the text field next to it. */}
-        <label className={cn(SEGMENT, 'md:flex-none')}>
+        {/* lg:flex-none: as wide as the longest option ("Qualquer esporte"),
+            not squeezed by the text field next to it. Below lg the bar is too
+            narrow for that: the segments share the row. */}
+        <label className={cn(SEGMENT, 'md:flex-[1.2] lg:flex-none')}>
           <span className={SEGMENT_LABEL}>Esporte</span>
           <select
             name="sport"
@@ -332,7 +338,7 @@ export function SearchBar({
         {/* The prototype puts "Buscar" inside the last segment; a button
             cannot sit inside a <label>, so they are siblings in one row. */}
         <div className="flex flex-col gap-3 md:flex-[1.45] md:flex-row md:items-center md:gap-2">
-          <label className={cn(SEGMENT, 'md:min-w-[7.5rem]')}>
+          <label className={cn(SEGMENT, 'lg:min-w-[7.5rem]')}>
             <span className={SEGMENT_LABEL}>Jogadores</span>
             <select
               name="jogadores"
@@ -350,7 +356,8 @@ export function SearchBar({
           <button
             type="submit"
             className={cn(
-              'inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-[22px] text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_10px_22px_-8px_rgba(11,122,75,0.65)] transition-colors duration-150 hover:bg-[color-mix(in_oklab,var(--color-brand)_88%,black)] motion-reduce:transition-none',
+              // A round icon button between md and lg, where the bar is narrow.
+              'inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-[22px] md:max-lg:w-14 md:max-lg:px-0 text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_10px_22px_-8px_rgba(11,122,75,0.65)] transition-colors duration-150 hover:bg-[color-mix(in_oklab,var(--color-brand)_88%,black)] motion-reduce:transition-none',
               FOCUS_RING,
             )}
           >
@@ -367,7 +374,7 @@ export function SearchBar({
               <circle cx="11" cy="11" r="7" />
               <line x1="16.5" y1="16.5" x2="21" y2="21" />
             </svg>
-            Buscar
+            <span className="md:max-lg:sr-only">Buscar</span>
           </button>
         </div>
       </form>

@@ -74,11 +74,19 @@ describe('SearchBar', () => {
 
     const select = screen.getByRole('combobox', { name: 'Esporte' });
     const segment = select.closest('label');
-    // flex-none: the segment is as wide as its longest option instead of
-    // sharing the row with the text field.
-    expect(segment).toHaveClass('md:flex-none');
+    // From lg the segment is as wide as its longest option instead of
+    // sharing the row with the text field; below lg it gets a larger share.
+    expect(segment).toHaveClass('lg:flex-none', 'md:flex-[1.2]');
     // The visible label and the selected option both stay readable by name.
     expect(select).toHaveDisplayValue('Qualquer esporte');
+  });
+
+  it('keeps "Buscar" as the name of the round icon button between md and lg', () => {
+    render(<SearchBar />);
+
+    const button = screen.getByRole('button', { name: 'Buscar' });
+    expect(button).toHaveClass('md:max-lg:w-14');
+    expect(within(button).getByText('Buscar')).toHaveClass('md:max-lg:sr-only');
   });
 
   it('honours action, defaultQuery and defaultSport', () => {

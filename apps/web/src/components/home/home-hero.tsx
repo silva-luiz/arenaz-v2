@@ -115,7 +115,7 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
         className="absolute top-4 right-4 w-[calc(50%-18px)] [transform:rotate(1.5deg)] md:hidden"
       />
 
-      <div className="absolute -bottom-10 left-1/2 z-10 w-[calc(100%-112px)] max-w-[940px] -translate-x-1/2 max-md:hidden">
+      <div className="absolute -bottom-10 left-1/2 z-10 w-[calc(100%-112px)] max-w-[940px] max-lg:w-[calc(100%-32px)] -translate-x-1/2 max-md:hidden">
         <SearchBar />
       </div>
     </section>

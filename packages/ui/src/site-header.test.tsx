@@ -51,14 +51,26 @@ describe('SiteHeader', () => {
     ).toHaveAttribute('href', '/painel');
   });
 
-  it('keeps the owner link reachable on mobile with a short visible label', () => {
+  it('shortens "Minhas reservas" to "Reservas" below 1100px, same name', () => {
+    render(<SiteHeader user={{ name: 'Joana Lima' }} />);
+    const link = screen.getByRole('link', { name: 'Minhas reservas' });
+    expect(within(link).getByText('Minhas reservas')).toHaveClass(
+      'max-[68.8125rem]:hidden',
+    );
+    expect(within(link).getByText('Reservas')).toHaveClass(
+      'min-[68.8125rem]:hidden',
+    );
+  });
+
+  it('keeps the owner link reachable below 1100px with a short visible label, on one line', () => {
     render(<SiteHeader user={null} />);
     const link = screen.getByRole('link', { name: 'Anuncie sua quadra' });
     // The link itself is never hidden; only the tail of its text is.
     expect(link.className).not.toMatch(/hidden/);
     expect(link).toHaveTextContent('Anuncie');
     const tail = screen.getByText('sua quadra');
-    expect(tail).toHaveClass('max-md:hidden');
+    expect(tail).toHaveClass('max-[68.8125rem]:hidden');
+    expect(link).toHaveClass('whitespace-nowrap');
     // A plain leading space is dropped inside the flex link ("Anunciesua").
     expect(link.textContent).toBe('Anuncie sua quadra');
   });
