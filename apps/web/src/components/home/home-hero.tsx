@@ -20,9 +20,12 @@ function setPointer(element: HTMLElement, x: string, y: string) {
  *
  * The two floating cards read a {@link HeroShowcase} (today the illustration
  * {@link HERO_SHOWCASE_MOCK}, with no data about a real booking), so they show
- * in every mode from md; between md and 1100px they shrink and stack on the
- * right of a smaller title. The "312 quadras" counter shows only in the demo
- * mode.
+ * in every mode from md; between md and 1100px they shrink beside a smaller
+ * title. The 1100px step is written in rem (68.8125rem) like the other home
+ * rails: a px breakpoint would sort before `lg` and lose to it. The hero is
+ * 520px tall, lower than the prototype's 580px, so the search pill stays in
+ * view on a 768px-tall laptop. The "312 quadras" counter shows only in the
+ * demo mode.
  */
 export function HomeHero({
   showcase = HERO_SHOWCASE_MOCK,
@@ -54,7 +57,7 @@ export function HomeHero({
       aria-labelledby="hero-titulo"
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="relative [--mx:0] [--my:0] md:h-[580px]"
+      className="relative [--mx:0] [--my:0] md:h-[520px]"
     >
       <div className="absolute inset-0 overflow-hidden rounded-section bg-[#0B1A12] shadow-2 max-md:hidden">
         {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
@@ -79,26 +82,26 @@ export function HomeHero({
         ) : null}
         <h1
           id="hero-titulo"
-          className="font-wordmark text-[52px] leading-[0.94] font-[750] tracking-[-0.05em] [text-shadow:0_6px_30px_rgba(0,0,0,0.35)] lg:text-[60px] min-[1101px]:text-[76px]"
+          className="font-wordmark text-[52px] leading-[0.94] font-[750] tracking-[-0.05em] [text-shadow:0_6px_30px_rgba(0,0,0,0.35)] lg:text-[60px] min-[68.8125rem]:text-[76px]"
         >
           Bora jogar <br />
           hoje à noite?
         </h1>
-        <p className="mt-[18px] max-w-[340px] text-lg lg:max-w-[400px] min-[1101px]:max-w-[460px] leading-normal text-white/84">
+        <p className="mt-[18px] max-w-[300px] text-lg leading-normal lg:max-w-[400px] min-[68.8125rem]:max-w-[460px] text-white/84">
           {isDemoMode
             ? 'Reserve a quadra na hora, chame o time e divida no Pix sem ficar cobrando ninguém.'
             : 'Reserve a quadra na hora, chame o time e pague no Pix.'}
         </p>
       </div>
 
-      <ConfirmedBookingCard
-        booking={showcase.booking}
-        className="absolute top-8 right-8 w-[240px] [transform:translate(calc(var(--mx)*22px),calc(var(--my)*16px))_rotate(1.5deg)] max-md:hidden lg:top-10 lg:right-10 lg:w-[260px] min-[1101px]:top-16 min-[1101px]:right-14 min-[1101px]:w-[300px]"
-      />
-
       <RachaCard
         racha={showcase.racha}
-        className="absolute top-[268px] right-8 w-[230px] [transform:translate(calc(var(--mx)*10px),calc(var(--my)*8px))_rotate(-2deg)] max-md:hidden lg:top-[290px] lg:right-10 lg:w-[240px] min-[1101px]:top-[300px] min-[1101px]:right-[250px] min-[1101px]:w-[270px]"
+        className="absolute top-[252px] right-[88px] w-[230px] [transform:translate(calc(var(--mx)*10px),calc(var(--my)*8px))_rotate(-2deg)] max-md:hidden lg:top-[284px] lg:right-[190px] lg:w-[240px] min-[68.8125rem]:top-[292px] min-[68.8125rem]:right-[250px] min-[68.8125rem]:w-[270px]"
+      />
+
+      <ConfirmedBookingCard
+        booking={showcase.booking}
+        className="absolute top-8 right-8 w-[240px] [transform:translate(calc(var(--mx)*22px),calc(var(--my)*16px))_rotate(1.5deg)] max-md:hidden lg:top-10 lg:right-10 lg:w-[260px] min-[68.8125rem]:top-12 min-[68.8125rem]:right-14 min-[68.8125rem]:w-[300px]"
       />
 
       <div className="absolute -bottom-10 left-1/2 z-10 w-[calc(100%-112px)] max-w-[940px] -translate-x-1/2 max-md:hidden">

@@ -24,7 +24,7 @@ export function ConfirmedBookingCard({
       aria-hidden="true"
       className={`rounded-[22px] bg-white p-3 shadow-3 transition-transform duration-[800ms] ease-out motion-reduce:transition-none ${className}`}
     >
-      <div className="relative h-[110px] overflow-hidden rounded-[14px] lg:h-[130px] min-[1101px]:h-[150px]">
+      <div className="relative h-[110px] overflow-hidden rounded-[14px] lg:h-[130px] min-[68.8125rem]:h-[150px]">
         {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
         <img
           src={booking.photoUrl}
