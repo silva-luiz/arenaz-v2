@@ -211,7 +211,11 @@ export function SiteHeader({
         ) : null}
 
         {children ? (
-          <div className="flex min-w-0 flex-1 justify-center">{children}</div>
+          // From 1100px the side groups share the row equally with this one:
+          // a double share keeps a search pill from truncating its place.
+          <div className="flex min-w-0 flex-1 justify-center min-[68.8125rem]:flex-[2]">
+            {children}
+          </div>
         ) : null}
 
         <div className="flex shrink-0 items-center justify-end gap-1.5 min-[68.8125rem]:flex-1 min-[68.8125rem]:basis-0">

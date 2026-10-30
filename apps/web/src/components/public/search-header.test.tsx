@@ -41,6 +41,18 @@ describe('SearchSummary', () => {
     );
   });
 
+  it('leaves the day out on a phone and the sport out below lg, never the place', () => {
+    mocks.search = `q=Vila+Madalena&data=${day(0)}&sport=futebol_society`;
+    render(<SearchSummary />);
+
+    const summary = within(
+      screen.getByText('Vila Madalena').closest('summary') as HTMLElement,
+    );
+    expect(summary.getByText('Vila Madalena')).toHaveClass('truncate');
+    expect(summary.getByText('Hoje')).toHaveClass('max-md:hidden');
+    expect(summary.getByText('Society')).toHaveClass('max-lg:hidden');
+  });
+
   it('shows the search a venue page hands it instead of the URL', () => {
     mocks.search = 'q=Pinheiros&sport=padel';
     render(
