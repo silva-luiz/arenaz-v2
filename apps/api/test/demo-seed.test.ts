@@ -153,11 +153,9 @@ describe('runDemoSeed', () => {
     await seed();
     afterFirst = await snapshot();
     firstKeys = await photoKeys();
-    const width = PHOTO_VARIANT_WIDTHS[0];
-    if (width === undefined || firstKeys[0] === undefined) {
-      throw new Error('sem foto ou largura de variante');
-    }
-    firstVariantKey = photoVariantKey(firstKeys[0], width);
+    const [firstKey] = firstKeys;
+    if (firstKey === undefined) throw new Error('sem foto no primeiro seed');
+    firstVariantKey = photoVariantKey(firstKey, PHOTO_VARIANT_WIDTHS[0]);
     await storage.put(firstVariantKey, Buffer.from('webp'), 'image/webp');
     await seed();
     afterSecond = await snapshot();
