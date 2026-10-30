@@ -3,11 +3,20 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ apiSend: vi.fn(), refresh: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  apiSend: vi.fn(),
+  refresh: vi.fn(),
+  demo: { value: false },
+}));
 
 vi.mock('@/lib/api-client', () => ({ apiSend: mocks.apiSend }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: mocks.refresh, replace: vi.fn() }),
+}));
+vi.mock('@/lib/demo', () => ({
+  get isDemoMode() {
+    return mocks.demo.value;
+  },
 }));
 
 import { AgendaView } from './agenda-view';
@@ -93,14 +102,18 @@ function renderView(data: OwnerAgenda = agenda()) {
 describe('AgendaView (wide)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.demo.value = false;
   });
 
-  it('names the courts with level 2 headings, right under the page h1', () => {
+  it('names the courts with level 2 headings, like the agenda section', () => {
     renderView();
 
-    // The page has the only h1; a court heading is a h2, never a h3 that
-    // would skip a level.
+    // The page has the only h1; the section and the court headings are h2,
+    // never a h3 that would skip a level.
     expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Agenda' }),
+    ).toBeVisible();
     expect(
       screen.getAllByRole('heading', { level: 2, name: 'Quadra 1' }).length,
     ).toBeGreaterThan(0);
@@ -109,40 +122,101 @@ describe('AgendaView (wide)', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('is a table with court columns and time rows', () => {
+  it('puts the actions beside the intro and the indicators under it', () => {
+    render(
+      <AgendaView
+        date="2026-11-02"
+        today="2026-11-02"
+        timezone="America/Sao_Paulo"
+        fields={agenda().fields}
+        hours={HOURS}
+        intro={<h1>Boa noite, Marcos</h1>}
+        indicators={<p>Ocupação hoje</p>}
+        dayNav={<nav aria-label="Dia da agenda" />}
+      />,
+    );
+    const heading = screen.getByRole('heading', { level: 1 });
+    const manual = screen.getByRole('button', { name: '+ Reserva manual' });
+    const indicators = screen.getByText('Ocupação hoje');
+    const section = screen.getByRole('region', { name: 'Agenda' });
+    // Document order: intro, actions, indicators, agenda.
+    expect(
+      heading.compareDocumentPosition(manual) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      manual.compareDocumentPosition(indicators) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      within(section).getByRole('navigation', { name: 'Dia da agenda' }),
+    ).toBeInTheDocument();
+    expect(section).toHaveAttribute('id', 'agenda');
+  });
+
+  it('is a table with a row per court and the hours as columns', () => {
     renderView();
     const table = screen.getByRole('table', { name: /agenda/i });
     expect(
-      within(table).getByRole('columnheader', { name: 'Quadra 1' }),
-    ).toHaveAttribute('scope', 'col');
+      within(table).getByRole('rowheader', { name: 'Quadra 1' }),
+    ).toHaveAttribute('scope', 'row');
     expect(
-      within(table).getByRole('columnheader', { name: 'Quadra 2' }),
+      within(table).getByRole('rowheader', { name: 'Quadra 2' }),
     ).toBeVisible();
-    const rowHeader = within(table).getByRole('rowheader', { name: '18:00' });
-    expect(rowHeader).toHaveAttribute('scope', 'row');
+    // 17:00-23:00: six hours of two 30-minute columns each.
+    const hours = within(table)
+      .getAllByRole('columnheader')
+      .filter((header) => /h$/.test(header.textContent));
+    expect(hours.map((header) => header.textContent)).toEqual([
+      '17h',
+      '18h',
+      '19h',
+      '20h',
+      '21h',
+      '22h',
+    ]);
+    expect(
+      within(table).getByRole('columnheader', { name: '18h' }),
+    ).toHaveAttribute('colspan', '2');
   });
 
   it('puts each item in the right cell, in the time of the venue', () => {
     renderView();
-    const row18 = screen
-      .getByRole('rowheader', { name: '18:00' })
+    const court1 = screen
+      .getByRole('rowheader', { name: 'Quadra 1' })
       .closest('tr') as HTMLElement;
-    const booking = within(row18).getByRole('button', {
+    const booking = within(court1).getByRole('button', {
       name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
     });
     const cell = booking.closest('td');
-    expect(cell).toHaveAttribute('rowspan', '4');
-    // First court is the first data cell of the row.
-    expect(cell).toBe(row18.querySelectorAll('td')[0]);
+    // Four 30-minute columns, right after the 17:00-18:00 block (two).
+    expect(cell).toHaveAttribute('colspan', '4');
+    expect(cell).toBe(court1.querySelectorAll('td')[1]);
+    expect(court1.querySelectorAll('td')[0]).toHaveAttribute('colspan', '2');
 
-    const row21 = screen
-      .getByRole('rowheader', { name: '21:00' })
+    const court2 = screen
+      .getByRole('rowheader', { name: 'Quadra 2' })
       .closest('tr') as HTMLElement;
-    expect(
-      within(row21).getByRole('button', {
-        name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
-      }),
-    ).toBeVisible();
+    const manual = within(court2).getByRole('button', {
+      name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
+    });
+    // 17:00 to 21:00 free: eight empty cells before it.
+    const cells = [...court2.querySelectorAll('td')];
+    expect(cells.indexOf(manual.closest('td') as HTMLTableCellElement)).toBe(8);
+  });
+
+  it('shows who and when on each item, colored by its origin', () => {
+    renderView();
+    const app = inGrid().getByRole('button', {
+      name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
+    });
+    expect(app).toHaveTextContent('Ana S.');
+    expect(app).toHaveTextContent('18:00–20:00');
+    expect(app.className).toContain('bg-[#DDF0E5]');
+    const manual = inGrid().getByRole('button', {
+      name: /reserva de Escolinha, manual/,
+    });
+    expect(manual.className).toContain('bg-[#F2F2F2]');
   });
 
   it('shows the same instant on the wall clock of another zone', () => {
@@ -155,7 +229,7 @@ describe('AgendaView (wide)', () => {
     ).toBeVisible();
   });
 
-  it('marks blocks with text and a legend explains the origins', () => {
+  it('marks blocks with text and a legend of the types that exist', () => {
     renderView();
     expect(
       inGrid().getByRole('button', {
@@ -163,12 +237,78 @@ describe('AgendaView (wide)', () => {
       }),
     ).toBeVisible();
     const legend = screen.getByRole('list', { name: 'Legenda' });
-    expect(within(legend).getByText('Pelo app')).toBeVisible();
-    expect(within(legend).getByText('Manual')).toBeVisible();
-    expect(within(legend).getByText('Bloqueio')).toBeVisible();
+    expect(
+      within(legend)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Pelo app', 'Manual', 'Bloqueio', 'Aguardando pagamento']);
   });
 
-  it('opens the detail, cancels after confirming and refreshes', async () => {
+  it('adds Mensalista and Partida aberta to the legend only in the demo, with no items', () => {
+    mocks.demo.value = true;
+    renderView();
+    const legend = screen.getByRole('list', { name: 'Legenda' });
+    expect(
+      within(legend)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'Pelo app',
+      'Mensalista',
+      'Manual',
+      'Partida aberta',
+      'Bloqueio',
+      'Aguardando pagamento',
+    ]);
+    // Still only the real items.
+    expect(
+      within(screen.getByRole('table')).getAllByRole('button'),
+    ).toHaveLength(3);
+  });
+
+  it('selects an item, shows its detail below and moves the focus there', async () => {
+    const user = userEvent.setup();
+    renderView();
+    expect(
+      screen.queryByRole('region', { name: 'Reserva selecionada' }),
+    ).toBeNull();
+
+    const button = inGrid().getByRole('button', {
+      name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
+    });
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    await user.click(button);
+
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    const detail = screen.getByRole('region', { name: 'Reserva selecionada' });
+    expect(detail).toHaveFocus();
+    expect(within(detail).getByText('Quadra 1 · 18:00–20:00')).toBeVisible();
+    expect(
+      within(detail).getByRole('heading', { level: 2, name: 'Ana S.' }),
+    ).toBeVisible();
+    expect(within(detail).getByText('Pelo app · R$ 360,00')).toBeVisible();
+    expect(within(detail).getByText('Pago no Pix')).toBeVisible();
+    // Messaging does not exist yet (and is only teased in the demo).
+    expect(
+      within(detail).queryByRole('button', { name: /Mandar mensagem/ }),
+    ).toBeNull();
+  });
+
+  it('shows "Mandar mensagem" disabled in the demo', async () => {
+    mocks.demo.value = true;
+    const user = userEvent.setup();
+    renderView();
+    await user.click(
+      inGrid().getByRole('button', { name: /reserva de Ana S\./ }),
+    );
+    const message = within(
+      screen.getByRole('region', { name: 'Reserva selecionada' }),
+    ).getByRole('button', { name: 'Mandar mensagem (em breve)' });
+    expect(message).toBeDisabled();
+    expect(message).toHaveAttribute('title', 'Em breve');
+  });
+
+  it('cancels the selected booking after confirming and refreshes', async () => {
     mocks.apiSend.mockResolvedValue({ ok: true, data: undefined });
     const user = userEvent.setup();
     renderView();
@@ -178,18 +318,13 @@ describe('AgendaView (wide)', () => {
         name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
       }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
-    expect(within(dialog).getByText('Ana S.')).toBeVisible();
-    expect(within(dialog).getByText('18:00–20:00')).toBeVisible();
-    expect(within(dialog).getByText('R$ 360,00')).toBeVisible();
-    expect(within(dialog).getByText('Pelo app')).toBeVisible();
-
+    const detail = screen.getByRole('region', { name: 'Reserva selecionada' });
     await user.click(
-      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
     );
     expect(mocks.apiSend).not.toHaveBeenCalled();
     await user.click(
-      within(dialog).getByRole('button', { name: 'Sim, cancelar' }),
+      within(detail).getByRole('button', { name: 'Sim, cancelar' }),
     );
 
     expect(mocks.apiSend).toHaveBeenCalledWith(
@@ -197,7 +332,9 @@ describe('AgendaView (wide)', () => {
       `/owner/bookings/${BOOKING_ID}/cancel`,
     );
     expect(mocks.refresh).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(
+      screen.queryByRole('region', { name: 'Reserva selecionada' }),
+    ).toBeNull();
     expect(screen.getByRole('status')).toHaveTextContent('Reserva cancelada');
   });
 
@@ -210,17 +347,17 @@ describe('AgendaView (wide)', () => {
         name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
       }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    const detail = screen.getByRole('region', { name: 'Reserva selecionada' });
     expect(
-      within(dialog).queryByText(/O jogador já pagou/),
+      within(detail).queryByText(/O jogador já pagou/),
     ).not.toBeInTheDocument();
 
     await user.click(
-      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
     );
 
     expect(
-      within(dialog).getByText(
+      within(detail).getByText(
         'O jogador já pagou. O reembolso será tratado pelo suporte.',
       ),
     ).toBeVisible();
@@ -249,23 +386,24 @@ describe('AgendaView (wide)', () => {
         name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
       }),
     );
-    let dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    let detail = screen.getByRole('region', { name: 'Reserva selecionada' });
+    expect(within(detail).getByText('Pagar no local')).toBeVisible();
     await user.click(
-      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
     );
-    expect(dialog).not.toHaveTextContent('já pagou');
-    await user.keyboard('{Escape}');
+    expect(detail).not.toHaveTextContent('já pagou');
 
     await user.click(
       inGrid().getByRole('button', {
         name: /^Quadra 1, 20:00–21:00, reserva de Beto P\./,
       }),
     );
-    dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    detail = screen.getByRole('region', { name: 'Reserva selecionada' });
+    expect(within(detail).getByText('Aguardando pagamento')).toBeVisible();
     await user.click(
-      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
     );
-    expect(dialog).not.toHaveTextContent('já pagou');
+    expect(detail).not.toHaveTextContent('já pagou');
   });
 
   it('shows the phone of a manual booking and the API refusal to cancel', async () => {
@@ -283,17 +421,18 @@ describe('AgendaView (wide)', () => {
         name: 'Quadra 2, 21:00–22:00, reserva de Escolinha, manual, confirmada',
       }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
-    expect(within(dialog).getByText('(11) 98765-4321')).toBeVisible();
-    expect(within(dialog).getByText('Manual')).toBeVisible();
+    const detail = screen.getByRole('region', { name: 'Reserva selecionada' });
+    expect(
+      within(detail).getByText('Reserva manual · R$ 180,00 · (11) 98765-4321'),
+    ).toBeVisible();
 
     await user.click(
-      within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
     );
     await user.click(
-      within(dialog).getByRole('button', { name: 'Sim, cancelar' }),
+      within(detail).getByRole('button', { name: 'Sim, cancelar' }),
     );
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+    expect(await within(detail).findByRole('alert')).toHaveTextContent(
       'Essa reserva não pode ser cancelada',
     );
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -309,12 +448,16 @@ describe('AgendaView (wide)', () => {
         name: 'Quadra 1, 17:00–18:00, bloqueio, Manutenção',
       }),
     );
-    const dialog = screen.getByRole('dialog', { name: 'Bloqueio' });
+    const detail = screen.getByRole('region', { name: 'Bloqueio selecionado' });
+    expect(
+      within(detail).getByRole('heading', { level: 2, name: 'Bloqueio' }),
+    ).toBeVisible();
+    expect(within(detail).getByText('Manutenção')).toBeVisible();
     await user.click(
-      within(dialog).getByRole('button', { name: 'Remover bloqueio' }),
+      within(detail).getByRole('button', { name: 'Remover bloqueio' }),
     );
     await user.click(
-      within(dialog).getByRole('button', { name: 'Sim, remover' }),
+      within(detail).getByRole('button', { name: 'Sim, remover' }),
     );
     expect(mocks.apiSend).toHaveBeenCalledWith(
       'DELETE',
@@ -323,16 +466,50 @@ describe('AgendaView (wide)', () => {
     expect(mocks.refresh).toHaveBeenCalled();
   });
 
-  it('returns the focus to the button that opened the detail', async () => {
+  it('pressing the item again or Esc closes the detail and gives the focus back', async () => {
     const user = userEvent.setup();
     renderView();
     const opener = inGrid().getByRole('button', {
       name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
     });
     await user.click(opener);
-    await user.click(screen.getByRole('button', { name: 'Fechar' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(
+      screen.queryByRole('region', { name: 'Reserva selecionada' }),
+    ).toBeNull();
     expect(opener).toHaveFocus();
+    expect(opener).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(opener);
+    await user.click(opener);
+    expect(
+      screen.queryByRole('region', { name: 'Reserva selecionada' }),
+    ).toBeNull();
+  });
+
+  it('keeps the selection while a cancel is pending', async () => {
+    mocks.apiSend.mockReturnValue(new Promise(() => undefined));
+    const user = userEvent.setup();
+    renderView();
+    await user.click(
+      inGrid().getByRole('button', { name: /reserva de Ana S\./ }),
+    );
+    const detail = screen.getByRole('region', { name: 'Reserva selecionada' });
+    await user.click(
+      within(detail).getByRole('button', { name: 'Cancelar reserva' }),
+    );
+    await user.click(
+      within(detail).getByRole('button', { name: 'Sim, cancelar' }),
+    );
+    await user.click(
+      inGrid().getByRole('button', { name: /reserva de Escolinha/ }),
+    );
+    await user.keyboard('{Escape}');
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Reserva selecionada' }),
+      ).getByText('Ana S.'),
+    ).toBeVisible();
   });
 
   it('creates a manual booking in the venue zone', async () => {
@@ -487,11 +664,10 @@ describe('AgendaView (wide)', () => {
       name: 'Quadra 1, 19:00–21:00, reserva de Beto P., pelo app, confirmada',
     });
     await user.click(button);
-    expect(screen.getByRole('dialog', { name: 'Reserva' })).toBeVisible();
     expect(
-      within(screen.getByRole('dialog', { name: 'Reserva' })).getByText(
-        'Beto P.',
-      ),
+      within(
+        screen.getByRole('region', { name: 'Reserva selecionada' }),
+      ).getByText('Beto P.'),
     ).toBeVisible();
   });
 
@@ -601,6 +777,7 @@ describe('AgendaView (wide)', () => {
 describe('AgendaView (phone)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.demo.value = false;
   });
 
   it('lists the items by court instead of a grid', async () => {
@@ -620,7 +797,9 @@ describe('AgendaView (phone)', () => {
         name: 'Quadra 1, 18:00–20:00, reserva de Ana S., pelo app, confirmada',
       }),
     );
-    expect(screen.getByRole('dialog', { name: 'Reserva' })).toBeVisible();
+    expect(
+      screen.getByRole('region', { name: 'Reserva selecionada' }),
+    ).toBeVisible();
   });
 
   it('says a court is free when it has no items', () => {

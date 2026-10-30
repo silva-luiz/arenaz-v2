@@ -1,4 +1,5 @@
 import type { AgendaItem, Venue } from '@arenaz/contracts';
+import { formatMinute } from './format-br';
 import { formatZonedRange, toZonedIso } from './zoned-time';
 
 const STEP = 30;
@@ -82,6 +83,45 @@ export function agendaRowMinutes(
       rows.add(minute);
   }
   return [...rows].sort((a, b) => a - b);
+}
+
+/** One header of the agenda's time axis: the hour over its 30-minute columns. */
+export interface HourGroup {
+  /** First column of the group (minute of the day). */
+  minute: number;
+  /** "16h", or "16:30" when the group starts on the half hour. */
+  label: string;
+  /** Number of 30-minute columns under it (1 or 2). */
+  span: number;
+}
+
+/**
+ * The hour headers over the columns of `agendaRowMinutes`: consecutive
+ * columns of the same hour share one header; a gap in the opening hours
+ * starts a new one.
+ */
+export function hourGroups(columns: readonly number[]): HourGroup[] {
+  const groups: HourGroup[] = [];
+  let previous: number | undefined;
+  for (const minute of columns) {
+    const last = groups.at(-1);
+    const sameHour =
+      last !== undefined &&
+      previous === minute - STEP &&
+      Math.floor(previous / 60) === Math.floor(minute / 60);
+    if (sameHour) {
+      last.span += 1;
+    } else {
+      groups.push({
+        minute,
+        label:
+          minute % 60 === 0 ? `${String(minute / 60)}h` : formatMinute(minute),
+        span: 1,
+      });
+    }
+    previous = minute;
+  }
+  return groups;
 }
 
 export interface AgendaGridModel {

@@ -50,17 +50,23 @@ test('dono vê a agenda, cria reserva manual, bloqueia e cancela', async ({
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`/painel/espacos/${venue.id}`);
-  await page.getByRole('link', { name: 'Agenda' }).click();
+  // The venue page's own "Agenda" link (the sidebar has one too).
+  await page.getByRole('main').getByRole('link', { name: 'Agenda' }).click();
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Agenda' }),
+    page.getByRole('heading', {
+      level: 1,
+      name: /^(Bom dia|Boa tarde|Boa noite), Dono$/,
+    }),
   ).toBeVisible();
+  await expect(page.getByText('Ocupação hoje')).toBeVisible();
+  await expect(page.getByText('Recebido na semana')).toBeVisible();
 
   await page.goto(`/painel/espacos/${venue.id}/agenda?data=${date}`);
   const table = page.getByRole('table');
   await expect(
-    table.getByRole('columnheader', { name: 'Society 1' }),
+    table.getByRole('rowheader', { name: 'Society 1' }),
   ).toBeVisible();
-  await expect(table.getByRole('rowheader', { name: '18:00' })).toBeVisible();
+  await expect(table.getByRole('columnheader', { name: '18h' })).toBeAttached();
 
   // Manual booking, 18:00-19:00 (the form defaults).
   await page.getByRole('button', { name: '+ Reserva manual' }).click();
@@ -100,11 +106,13 @@ test('dono vê a agenda, cria reserva manual, bloqueia e cancela', async ({
     fullPage: true,
   });
 
-  // The detail, then cancelling the booking.
+  // The detail under the agenda, then cancelling the booking.
   await booking.click();
-  const detail = page.getByRole('dialog', { name: 'Reserva' });
+  await expect(booking).toHaveAttribute('aria-pressed', 'true');
+  const detail = page.getByRole('region', { name: 'Reserva selecionada' });
+  await expect(detail).toBeFocused();
   await expect(detail.getByText(customer)).toBeVisible();
-  await expect(detail.getByText('R$ 180,00')).toBeVisible();
+  await expect(detail.getByText('Reserva manual · R$ 180,00')).toBeVisible();
   expect(await seriousViolations(page), 'violações no detalhe').toEqual([]);
   await detail.getByRole('button', { name: 'Cancelar reserva' }).click();
   await detail.getByRole('button', { name: 'Sim, cancelar' }).click();

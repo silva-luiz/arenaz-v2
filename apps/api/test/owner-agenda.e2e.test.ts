@@ -2,6 +2,7 @@ import {
   agendaBookingSchema,
   availabilitySchema,
   ownerAgendaSchema,
+  ownerVenueSummarySchema,
   type Problem,
 } from '@arenaz/contracts';
 import { schema } from '@arenaz/db';
@@ -21,7 +22,7 @@ import {
 } from './booking-seed.js';
 import { asUser, buildTestApp, signUpAs, type AsUser } from './helpers.js';
 
-const { booking, availabilityBlock, field, venue } = schema;
+const { booking, availabilityBlock, field, venue, venueHours } = schema;
 
 let app: NestFastifyApplication;
 let handle: DbHandle;
@@ -201,6 +202,296 @@ describe('GET /api/owner/venues/:id/agenda', () => {
     ).toBe(422);
     expect(
       (await owner.api.get(`/api/owner/venues/${s.venueId}/agenda`)).statusCode,
+    ).toBe(422);
+  });
+});
+
+/** Calendar date `days` after `date` (YYYY-MM-DD, zone independent). */
+function plusDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T12:00:00Z`) + days * 24 * HOUR)
+    .toISOString()
+    .slice(0, 10);
+}
+
+async function setTotal(bookingId: string, totalCents: number): Promise<void> {
+  await handle.db
+    .update(booking)
+    .set({ totalCents })
+    .where(eq(booking.id, bookingId));
+}
+
+async function summaryOf(owner: Person, venueId: string, date: string) {
+  const res = await owner.api.get(
+    `/api/owner/venues/${venueId}/summary?date=${date}`,
+  );
+  expect(res.statusCode, res.body).toBe(200);
+  expect(res.headers['cache-control']).toBe('no-store');
+  return ownerVenueSummarySchema.parse(res.json());
+}
+
+describe('GET /api/owner/venues/:id/summary', () => {
+  it('ocupação: reservas ativas das quadras ativas sobre os minutos abertos do dia', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const player = await newPerson('Joana Jogadora');
+    const date = spDate(3);
+    // Open 08-12 = 240 min; only Quadra A is active.
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '08:00'),
+      at(date, '09:00'),
+      'confirmed',
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '09:00'),
+      at(date, '10:00'),
+      'held',
+      new Date(Date.now() + 10 * MIN),
+    );
+    const manualRes = await owner.api.post(
+      manualUrl(s),
+      manual(date, '11:00', 60),
+    );
+    expect(manualRes.statusCode).toBe(201);
+    // None of these count: an expired hold, a cancelled booking, a booking of
+    // the inactive court and one of another day.
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '10:00'),
+      at(date, '10:30'),
+      'held',
+      new Date(Date.now() - MIN),
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '10:30'),
+      at(date, '11:00'),
+      'cancelled',
+    );
+    await insertBooking(
+      handle,
+      { ...s, fieldId: s.inactiveFieldId },
+      player.userId,
+      at(date, '08:00'),
+      at(date, '12:00'),
+      'confirmed',
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(spDate(4), '08:00'),
+      at(spDate(4), '12:00'),
+      'confirmed',
+    );
+
+    // 180 of 240 minutes.
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(75);
+    // The other day is full.
+    expect((await summaryOf(owner, s.venueId, spDate(4))).occupancyPct).toBe(
+      100,
+    );
+    // A day without bookings is 0.
+    expect((await summaryOf(owner, s.venueId, spDate(5))).occupancyPct).toBe(0);
+  });
+
+  it('um bloqueio ocupa a quadra mas não é reserva', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const date = spDate(3);
+    const blocked = await owner.api.post(blocksUrl(s), {
+      startsAt: at(date, '10:00').toISOString(),
+      endsAt: at(date, '11:00').toISOString(),
+    });
+    expect(blocked.statusCode).toBe(201);
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(0);
+  });
+
+  it('ocupação arredonda, conta todas as quadras ativas e só o que cai no horário aberto', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const player = await newPerson('Pedro');
+    const date = spDate(6);
+    // Both courts active: 2 × 240 = 480 open minutes.
+    await handle.db
+      .update(field)
+      .set({ isActive: true })
+      .where(eq(field.id, s.inactiveFieldId));
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '08:00'),
+      at(date, '09:30'),
+      'confirmed',
+    );
+    // 07:00-08:30 on the other court: only 08:00-08:30 is inside the hours.
+    await insertBooking(
+      handle,
+      { ...s, fieldId: s.inactiveFieldId },
+      player.userId,
+      at(date, '07:00'),
+      at(date, '08:30'),
+      'confirmed',
+    );
+    // 90 + 30 = 120 of 480 minutes = 25%.
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(25);
+
+    // One more half hour: 150 / 480 = 31.25% -> 31.
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '11:30'),
+      at(date, '12:00'),
+      'confirmed',
+    );
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(31);
+  });
+
+  it('a madrugada conta no dia em que cai, e um dia sem horário de funcionamento é 0', async () => {
+    const owner = await newPerson('Dona Noite');
+    const player = await newPerson('Jogador Noite');
+    const date = spDate(7);
+    const next = plusDays(date, 1);
+    // 00:00-02:00 and 18:00-24:00 every day: 480 open minutes.
+    const s = await seedOvernightVenue(handle, owner.userId, date);
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '23:00'),
+      at(next, '01:00'),
+      'confirmed',
+    );
+    // 60 of 480 on each day: 12.5% -> 13.
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(13);
+    expect((await summaryOf(owner, s.venueId, next)).occupancyPct).toBe(13);
+
+    await handle.db.delete(venueHours).where(eq(venueHours.venueId, s.venueId));
+    expect((await summaryOf(owner, s.venueId, date)).occupancyPct).toBe(0);
+  });
+
+  it('recebido na semana: reservas do app confirmadas que começam de segunda a domingo', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const player = await newPerson('Ana Pagadora');
+    const date = spDate(10);
+    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+    const monday = plusDays(date, -((weekday + 6) % 7));
+    const sunday = plusDays(monday, 6);
+
+    const first = await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(monday, '08:00'),
+      at(monday, '09:00'),
+      'confirmed',
+    );
+    await setTotal(first, 12_000);
+    // Starts on Sunday, ends on Monday: it belongs to the week it starts in.
+    const last = await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(sunday, '23:00'),
+      at(plusDays(sunday, 1), '00:30'),
+      'confirmed',
+    );
+    await setTotal(last, 9_000);
+    // An inactive court still earned it.
+    await insertBooking(
+      handle,
+      { ...s, fieldId: s.inactiveFieldId },
+      player.userId,
+      at(date, '10:00'),
+      at(date, '11:00'),
+      'confirmed',
+    );
+    // Not counted: the weeks before and after, a hold, a cancelled booking and
+    // a manual booking (paid at the venue, not through the app).
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(plusDays(monday, -1), '11:00'),
+      at(plusDays(monday, -1), '12:00'),
+      'confirmed',
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(plusDays(monday, 7), '08:00'),
+      at(plusDays(monday, 7), '09:00'),
+      'confirmed',
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '09:00'),
+      at(date, '10:00'),
+      'held',
+      new Date(Date.now() + 10 * MIN),
+    );
+    await insertBooking(
+      handle,
+      s,
+      player.userId,
+      at(date, '10:00'),
+      at(date, '11:00'),
+      'cancelled',
+    );
+    const manualRes = await owner.api.post(
+      manualUrl(s),
+      manual(date, '11:00', 60),
+    );
+    expect(manualRes.statusCode).toBe(201);
+
+    // 12000 + 9000 + 8000
+    for (const day of [monday, date, sunday]) {
+      expect((await summaryOf(owner, s.venueId, day)).weekRevenueCents).toBe(
+        29_000,
+      );
+    }
+    expect(
+      (await summaryOf(owner, s.venueId, plusDays(monday, 14)))
+        .weekRevenueCents,
+    ).toBe(0);
+  });
+
+  it('exige login, data válida e dono; outro dono recebe 404', async () => {
+    const { owner, s } = await newOwnerVenue();
+    const stranger = await newPerson('Outro Dono');
+    const url = `/api/owner/venues/${s.venueId}/summary?date=${spDate(1)}`;
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    const hidden = await stranger.api.get(url);
+    expect(hidden.statusCode).toBe(404);
+    expect(problem(hidden).status).toBe(404);
+    expect(
+      (
+        await stranger.api.get(
+          '/api/owner/venues/nao-e-uuid/summary?date=2030-01-01',
+        )
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await owner.api.get(
+          `/api/owner/venues/${s.venueId}/summary?date=2030-02-30`,
+        )
+      ).statusCode,
+    ).toBe(422);
+    expect(
+      (await owner.api.get(`/api/owner/venues/${s.venueId}/summary`))
+        .statusCode,
     ).toBe(422);
   });
 });

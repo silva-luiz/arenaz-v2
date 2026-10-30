@@ -48,7 +48,7 @@ export async function loadBusy(
 }
 
 /** What counts as an active booking: confirmed, or a hold still alive at `now`. */
-const ACTIVE_AT = (now: Date) => sql`(status = 'confirmed'
+export const ACTIVE_AT = (now: Date) => sql`(status = 'confirmed'
   OR (status = 'held' AND hold_expires_at > ${now.toISOString()}::timestamptz))`;
 
 /**

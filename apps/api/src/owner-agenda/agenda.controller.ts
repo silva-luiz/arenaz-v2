@@ -5,6 +5,7 @@ import {
   type AvailabilityQuery,
   type ManualBookingInput,
   type OwnerAgenda,
+  type OwnerVenueSummary,
 } from '@arenaz/contracts';
 import {
   Body,
@@ -40,6 +41,17 @@ export class AgendaController {
     @Query(new ZodPipe(availabilityQuerySchema)) query: AvailabilityQuery,
   ): Promise<OwnerAgenda> {
     return this.agenda.day(user.id, id, query.date);
+  }
+
+  /** The owner's numbers (occupancy of the day, app revenue of its week). */
+  @Header('Cache-Control', 'no-store')
+  @Get('venues/:id/summary')
+  summary(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query(new ZodPipe(availabilityQuerySchema)) query: AvailabilityQuery,
+  ): Promise<OwnerVenueSummary> {
+    return this.agenda.summary(user.id, id, query.date);
   }
 
   @Post('fields/:id/bookings')

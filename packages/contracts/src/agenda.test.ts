@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { agendaItemSchema, manualBookingInputSchema } from './agenda.js';
+import {
+  agendaItemSchema,
+  manualBookingInputSchema,
+  ownerVenueSummarySchema,
+} from './agenda.js';
 
 const base = {
   startsAt: '2030-01-01T12:00:00.000Z',
@@ -58,5 +62,43 @@ describe('agendaItemSchema', () => {
     });
     expect(block.success).toBe(true);
     expect(agendaItemSchema.safeParse({ kind: 'other' }).success).toBe(false);
+  });
+});
+
+describe('ownerVenueSummarySchema', () => {
+  it('aceita ocupação inteira de 0 a 100 e receita em centavos', () => {
+    expect(
+      ownerVenueSummarySchema.parse({
+        occupancyPct: 63,
+        weekRevenueCents: 864000,
+      }),
+    ).toEqual({ occupancyPct: 63, weekRevenueCents: 864000 });
+    expect(
+      ownerVenueSummarySchema.safeParse({
+        occupancyPct: 0,
+        weekRevenueCents: 0,
+      }).success,
+    ).toBe(true);
+    expect(
+      ownerVenueSummarySchema.safeParse({
+        occupancyPct: 100,
+        weekRevenueCents: 0,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('recusa ocupação fora de 0..100, fracionada, e receita negativa ou fracionada', () => {
+    for (const occupancyPct of [-1, 101, 62.5]) {
+      expect(
+        ownerVenueSummarySchema.safeParse({ occupancyPct, weekRevenueCents: 0 })
+          .success,
+      ).toBe(false);
+    }
+    for (const weekRevenueCents of [-1, 10.5]) {
+      expect(
+        ownerVenueSummarySchema.safeParse({ occupancyPct: 0, weekRevenueCents })
+          .success,
+      ).toBe(false);
+    }
   });
 });

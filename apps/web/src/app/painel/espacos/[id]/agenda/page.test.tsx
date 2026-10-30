@@ -2,13 +2,26 @@ import type { OwnerAgenda, Venue } from '@arenaz/contracts';
 import { render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ apiGet: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  apiGet: vi.fn(),
+  getSession: vi.fn(),
+  demo: { value: false },
+}));
 
 vi.mock('@/lib/api', () => ({ apiGet: mocks.apiGet }));
+vi.mock('@/lib/session', () => ({ getSession: mocks.getSession }));
+vi.mock('@/lib/demo', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/demo')>()),
+  get isDemoMode() {
+    return mocks.demo.value;
+  },
+}));
 vi.mock('@/lib/api-client', () => ({ apiSend: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
+
+const SUMMARY = { occupancyPct: 63, weekRevenueCents: 864000 };
 
 import AgendaPage from './page';
 
@@ -49,11 +62,20 @@ describe('/painel/espacos/[id]/agenda', () => {
     // 2026-10-29 (Thursday) 12:00 in São Paulo.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-29T15:00:00Z'));
+    mocks.demo.value = false;
+    mocks.getSession.mockResolvedValue({
+      id: 'u1',
+      name: 'Marcos Almeida',
+      email: 'marcos@mail.com',
+      createdAt: '2026-10-28T12:00:00.000Z',
+    });
     mocks.apiGet.mockImplementation((path: string) =>
       Promise.resolve(
         path.includes('/agenda')
           ? agendaFor(new URL(`http://x${path}`).searchParams.get('date') ?? '')
-          : VENUE,
+          : path.includes('/summary')
+            ? SUMMARY
+            : VENUE,
       ),
     );
   });
@@ -145,13 +167,12 @@ describe('/painel/espacos/[id]/agenda', () => {
   it('has a Hoje link that goes back to today', async () => {
     await renderPage({ data: '2026-11-30' });
 
-    const link = screen.getByRole('link', { name: 'Hoje' });
-    expect(link).toHaveAttribute(
+    const nav = screen.getByRole('navigation', { name: 'Dia da agenda' });
+    expect(within(nav).getByRole('link', { name: /^Hoje, / })).toHaveAttribute(
       'href',
       `/painel/espacos/${ID}/agenda?data=2026-10-29`,
     );
     // Outside the week chips, so none of them is the current one.
-    const nav = screen.getByRole('navigation', { name: 'Dia da agenda' });
     expect(
       within(nav)
         .getAllByRole('link')
@@ -159,15 +180,57 @@ describe('/painel/espacos/[id]/agenda', () => {
     ).toHaveLength(0);
   });
 
-  it('has the page heading and a way back to the venue', async () => {
+  it('greets the owner by first name at the hour of the venue, with today', async () => {
+    await renderPage({ data: '2026-11-30' });
+    // 15:00 UTC is 12:00 in São Paulo.
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Boa tarde, Marcos' }),
+    ).toBeVisible();
+    expect(screen.getByText('Quinta, 29 de outubro')).toBeVisible();
+  });
+
+  it('shows the real indicators of today and nothing invented outside the demo', async () => {
+    await renderPage({ data: '2026-11-30' });
+    expect(requested()).toContain(
+      `/owner/venues/${ID}/summary?date=2026-10-29`,
+    );
+    const occupancy = screen.getByText('Ocupação hoje').closest('div');
+    expect(occupancy).toHaveTextContent('63%');
+    const revenue = screen.getByText('Recebido na semana').closest('div');
+    expect(revenue).toHaveTextContent('R$ 8.640');
+    expect(revenue).toHaveTextContent('Tudo já pago no Pix');
+    expect(screen.queryByText('Repasse de sexta')).toBeNull();
+    expect(screen.queryByText('Mensalistas ativos')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Semana/ })).toBeNull();
+  });
+
+  it('does not claim a payment when nothing came in this week', async () => {
+    mocks.apiGet.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.includes('/agenda')
+          ? agendaFor('2026-10-29')
+          : path.includes('/summary')
+            ? { occupancyPct: 0, weekRevenueCents: 0 }
+            : VENUE,
+      ),
+    );
+    await renderPage();
+    const revenue = screen.getByText('Recebido na semana').closest('div');
+    expect(revenue).toHaveTextContent('R$ 0');
+    expect(revenue).not.toHaveTextContent('Tudo já pago no Pix');
+  });
+
+  it('adds the demo indicators and the week tab only in the demo', async () => {
+    mocks.demo.value = true;
     await renderPage();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Agenda' }),
-    ).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Arena Central' })).toHaveAttribute(
-      'href',
-      `/painel/espacos/${ID}`,
-    );
+      screen.getByText('Repasse de sexta').closest('div'),
+    ).toHaveTextContent('R$ 3.120Cai na conta 30/10');
+    expect(
+      screen.getByText('Mensalistas ativos').closest('div'),
+    ).toHaveTextContent('12 times2 renovam esta semana');
+    const week = screen.getByRole('button', { name: 'Semana (em breve)' });
+    expect(week).toBeDisabled();
   });
 
   it('lets the not-found of the API (another owner, bad id) through', async () => {

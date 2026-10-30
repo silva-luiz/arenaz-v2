@@ -3,22 +3,25 @@
 import type { AgendaItem } from '@arenaz/contracts';
 import { Button, cn } from '@arenaz/ui';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { isDemoMode } from '@/lib/demo';
 import { AgendaBlockForm } from './agenda-block-form';
 import { AgendaDialog } from './agenda-dialog';
 import {
   AgendaGrid,
   AgendaList,
-  LEGEND_ITEMS,
+  legendEntries,
   type AgendaField,
 } from './agenda-grid';
 import { BookingDetail } from './booking-detail';
 import { ManualBookingForm } from './manual-booking-form';
 
-type OpenDialog =
-  | { kind: 'manual' }
-  | { kind: 'block' }
-  | { kind: 'detail'; item: AgendaItem; fieldName: string };
+type OpenDialog = { kind: 'manual' } | { kind: 'block' };
+
+interface Selection {
+  item: AgendaItem;
+  fieldName: string;
+}
 
 export interface AgendaViewProps {
   /** Day shown, "YYYY-MM-DD" in the venue's zone. */
@@ -28,12 +31,22 @@ export interface AgendaViewProps {
   timezone: string;
   fields: AgendaField[];
   hours: { weekday: number; openMinute: number; closeMinute: number }[];
+  /** Left of the actions: the date line and the page's h1. */
+  intro?: ReactNode;
+  /** Between the actions and the agenda: the owner's numbers. */
+  indicators?: ReactNode;
+  /** Beside the "Agenda" title: the day navigation. */
+  dayNav?: ReactNode;
 }
 
+const ACTION = 'min-h-11';
+
 /**
- * The owner's agenda of one day: actions, legend, the court × time table (a
- * list per court on a phone) and the dialogs. After any change the server
- * data is refreshed and the result is announced in a status region.
+ * The owner's day as in Painel.dc.html: intro with the actions ("Bloquear
+ * horário", "+ Reserva manual"), the indicators, the agenda card (title, day
+ * navigation, legend, the court × hour table or a list per court on a phone)
+ * and, under it, the selected item. After any change the server data is
+ * refreshed and the result is announced in a status region.
  */
 export function AgendaView({
   date,
@@ -41,16 +54,29 @@ export function AgendaView({
   timezone,
   fields,
   hours,
+  intro,
+  indicators,
+  dayNav,
 }: AgendaViewProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
+  const [selected, setSelected] = useState<Selection | null>(null);
   const [notice, setNotice] = useState('');
-  const region = useRef<HTMLDivElement>(null);
+  const region = useRef<HTMLElement>(null);
+  const detail = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);
   const changed = useRef(false);
 
   const activeFields = fields.filter((field) => field.isActive);
   const canCreate = activeFields.length > 0;
+  const selectedId = selected?.item.id;
+
+  // A new selection takes the focus to its detail (under the agenda; on a
+  // phone it is far below the item).
+  useEffect(() => {
+    if (selectedId) detail.current?.focus();
+  }, [selectedId]);
 
   function open(next: OpenDialog) {
     changed.current = false;
@@ -58,42 +84,61 @@ export function AgendaView({
     setDialog(next);
   }
 
-  function done(message: string) {
-    changed.current = true;
+  function refreshWith(message: string) {
     setBusy(false);
-    setDialog(null);
     setNotice(message);
     router.refresh();
+  }
+
+  /** A dialog saved something. */
+  function done(message: string) {
+    changed.current = true;
+    setDialog(null);
+    refreshWith(message);
+  }
+
+  /** The selected item was cancelled or removed: it leaves the page. */
+  function detailDone(message: string) {
+    setSelected(null);
+    refreshWith(message);
+    region.current?.focus();
   }
 
   function close() {
     setDialog(null);
   }
 
-  function openItem(item: AgendaItem, field: AgendaField) {
-    open({ kind: 'detail', item, fieldName: field.name });
+  function select(
+    item: AgendaItem,
+    field: AgendaField,
+    button: HTMLButtonElement,
+  ) {
+    // A pending cancel keeps its item on screen until it settles.
+    if (busy) return;
+    if (selectedId === item.id) {
+      setSelected(null);
+      return;
+    }
+    opener.current = button;
+    setNotice('');
+    setSelected({ item, fieldName: field.name });
+  }
+
+  function closeDetail() {
+    setSelected(null);
+    if (opener.current?.isConnected) opener.current.focus();
+    else region.current?.focus();
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ul
-          aria-label="Legenda"
-          className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted"
-        >
-          {LEGEND_ITEMS.map((entry) => (
-            <li key={entry.label} className="flex items-center gap-1.5">
-              <span
-                aria-hidden="true"
-                className={cn('size-3 rounded-[3px] border', entry.classes)}
-              />
-              {entry.label}
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>{intro}</div>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
+            size="sm"
+            className={ACTION}
             disabled={!canCreate}
             onClick={() => {
               open({ kind: 'block' });
@@ -102,6 +147,8 @@ export function AgendaView({
             Bloquear horário
           </Button>
           <Button
+            size="sm"
+            className={ACTION}
             disabled={!canCreate}
             onClick={() => {
               open({ kind: 'manual' });
@@ -112,13 +159,48 @@ export function AgendaView({
         </div>
       </div>
 
-      <p role="status" className="min-h-5 text-sm font-medium text-brand">
-        {notice}
-      </p>
+      {indicators}
 
-      <div ref={region} tabIndex={-1} className="outline-none">
+      <section
+        id="agenda"
+        ref={region}
+        tabIndex={-1}
+        aria-labelledby="agenda-titulo"
+        className="scroll-mt-4 rounded-card border border-line bg-bg px-4 pt-5 pb-[22px] shadow-2 outline-none min-[761px]:px-[22px]"
+      >
+        <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3">
+          <h2 id="agenda-titulo" className="text-[19px] font-[650]">
+            Agenda
+          </h2>
+          <ul
+            aria-label="Legenda"
+            className="flex flex-wrap gap-x-3.5 gap-y-2 text-xs text-muted"
+          >
+            {legendEntries(isDemoMode).map((entry) => (
+              <li key={entry.label} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className={cn('size-2.5 rounded-[3px] border', entry.classes)}
+                />
+                {entry.label}
+              </li>
+            ))}
+          </ul>
+          {/* Its own row: a week of days and any date are more than the
+              prototype's three tabs. */}
+          {dayNav ? <div className="min-w-0 basis-full">{dayNav}</div> : null}
+        </div>
+
+        {/* Out of the flow while empty; announced when a change lands. */}
+        <p
+          role="status"
+          className="mb-3 text-sm font-medium text-brand empty:sr-only"
+        >
+          {notice}
+        </p>
+
         {fields.length === 0 ? (
-          <p className="rounded-card border border-line p-6 text-muted">
+          <p className="rounded-[20px] border border-line p-6 text-muted">
             Cadastre uma quadra para ver a agenda.
           </p>
         ) : (
@@ -130,19 +212,34 @@ export function AgendaView({
                 timezone={timezone}
                 fields={fields}
                 hours={hours}
-                onOpen={openItem}
+                onOpen={select}
+                selectedId={selectedId}
               />
             </div>
             <div data-agenda="list" className="md:hidden">
               <AgendaList
                 timezone={timezone}
                 fields={fields}
-                onOpen={openItem}
+                onOpen={select}
+                selectedId={selectedId}
               />
             </div>
           </>
         )}
-      </div>
+      </section>
+
+      {selected ? (
+        <BookingDetail
+          key={selected.item.id}
+          ref={detail}
+          item={selected.item}
+          fieldName={selected.fieldName}
+          timezone={timezone}
+          onDone={detailDone}
+          onClose={closeDetail}
+          onBusyChange={setBusy}
+        />
+      ) : null}
 
       {dialog?.kind === 'manual' ? (
         <AgendaDialog
@@ -175,23 +272,6 @@ export function AgendaView({
             timezone={timezone}
             date={date}
             today={today}
-            onDone={done}
-            onBusyChange={setBusy}
-          />
-        </AgendaDialog>
-      ) : null}
-      {dialog?.kind === 'detail' ? (
-        <AgendaDialog
-          title={dialog.item.kind === 'booking' ? 'Reserva' : 'Bloqueio'}
-          onClose={close}
-          fallbackFocusRef={region}
-          locked={busy}
-          wasChanged={() => changed.current}
-        >
-          <BookingDetail
-            item={dialog.item}
-            fieldName={dialog.fieldName}
-            timezone={timezone}
             onDone={done}
             onBusyChange={setBusy}
           />

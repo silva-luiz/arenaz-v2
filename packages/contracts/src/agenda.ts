@@ -79,3 +79,16 @@ export const ownerAgendaSchema = z.object({
   ),
 });
 export type OwnerAgenda = z.infer<typeof ownerAgendaSchema>;
+
+/**
+ * `GET /owner/venues/:id/summary?date=`: the owner's numbers of a day, in the
+ * venue's zone. `occupancyPct`: minutes of active bookings (confirmed, or held
+ * and alive) inside the opening hours of the day, over the open minutes of
+ * every active court, rounded. `weekRevenueCents`: confirmed app bookings
+ * starting in the Monday–Sunday week of the date.
+ */
+export const ownerVenueSummarySchema = z.object({
+  occupancyPct: z.number().int().min(0).max(100),
+  weekRevenueCents: z.number().int().nonnegative(),
+});
+export type OwnerVenueSummary = z.infer<typeof ownerVenueSummarySchema>;

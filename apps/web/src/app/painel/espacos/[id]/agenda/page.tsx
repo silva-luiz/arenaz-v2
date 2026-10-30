@@ -1,18 +1,19 @@
 import {
   AVAILABILITY_HORIZON_DAYS,
   ownerAgendaSchema,
+  ownerVenueSummarySchema,
   venueSchema,
 } from '@arenaz/contracts';
-import { Button, cn, Field, Input } from '@arenaz/ui';
+import { cn } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AgendaView } from '@/components/owner/agenda-view';
+import { OwnerIndicators } from '@/components/owner/owner-indicators';
 import { apiGet } from '@/lib/api';
-import {
-  addDaysToDateKey,
-  dateChips,
-  longDateLabel,
-} from '@/lib/booking-client';
+import { addDaysToDateKey, dateChips } from '@/lib/booking-client';
+import { isDemoMode } from '@/lib/demo';
+import { dashboardDateLabel, ownerGreeting } from '@/lib/owner-dashboard';
+import { getSession } from '@/lib/session';
 import { todayInZone } from '@/lib/zoned-time';
 
 export const metadata: Metadata = { title: 'Agenda' };
@@ -23,8 +24,12 @@ const DAYS_BACK = 30;
 const DAYS_AHEAD = AVAILABILITY_HORIZON_DAYS;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
-const LINK =
-  'text-sm font-semibold text-brand underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand';
+const FOCUS =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink';
+
+// The segmented "Hoje | Amanhã | Semana" of Painel.dc.html.
+const SEGMENT =
+  'inline-flex h-11 shrink-0 items-center rounded-[9px] px-3.5 text-[13px] font-semibold whitespace-nowrap md:h-[34px]';
 
 /**
  * `?data=` when it is a real date from 30 days ago to 60 days ahead (in the
@@ -39,6 +44,12 @@ function pickDate(requested: string | string[] | undefined, today: string) {
   return exists && requested >= first && requested <= last ? requested : today;
 }
 
+/**
+ * The owner's day of one venue (Painel.dc.html "Hoje"): today's date and a
+ * greeting at the venue's hour, the indicators of today, and the agenda of
+ * the chosen day with its navigation (a week of days, any date from 30 days
+ * back to the booking horizon).
+ */
 export default async function AgendaPage({
   params,
   searchParams,
@@ -53,25 +64,40 @@ export default async function AgendaPage({
   const venue = await apiGet(`/owner/venues/${venueId}`, venueSchema, here);
   const today = todayInZone(venue.timezone);
   const date = pickDate(search.data, today);
-  const agenda = await apiGet(
-    `/owner/venues/${venueId}/agenda?date=${date}`,
-    ownerAgendaSchema,
-    here,
-  );
+  const [agenda, summary, session] = await Promise.all([
+    apiGet(
+      `/owner/venues/${venueId}/agenda?date=${date}`,
+      ownerAgendaSchema,
+      here,
+    ),
+    apiGet(
+      `/owner/venues/${venueId}/summary?date=${today}`,
+      ownerVenueSummarySchema,
+      here,
+    ),
+    getSession(),
+  ]);
 
   const days = dateChips(today).slice(0, DAYS);
+  const base = `/painel/espacos/${venue.id}/agenda`;
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <Link href={`/painel/espacos/${venue.id}`} className={LINK}>
-          {venue.name}
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Agenda</h1>
-      </div>
+  const intro = (
+    <>
+      <p className="text-sm text-muted">{dashboardDateLabel(today)}</p>
+      <h1 className="mt-1 text-[30px] leading-tight font-[650] tracking-[-0.025em]">
+        {ownerGreeting(session?.name ?? '', venue.timezone)}
+      </h1>
+    </>
+  );
 
-      <nav aria-label="Dia da agenda">
-        <ul className="flex flex-wrap gap-2">
+  const dayNav = (
+    <div className="flex max-w-full min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      {/* relative: the sr-only text stays inside the scroller. */}
+      <nav
+        aria-label="Dia da agenda"
+        className="relative max-w-full overflow-x-auto"
+      >
+        <ul className="flex w-max gap-0.5 rounded-xl bg-[#F2F2F2] p-1">
           {days.map((day) => {
             const current = day.date === date;
             return (
@@ -81,10 +107,11 @@ export default async function AgendaPage({
                   aria-current={current ? 'page' : undefined}
                   aria-label={day.ariaLabel}
                   className={cn(
-                    'inline-flex h-11 items-center rounded-full border px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+                    SEGMENT,
+                    FOCUS,
                     current
-                      ? 'border-brand bg-brand text-white'
-                      : 'border-line-strong bg-bg text-ink hover:bg-surface',
+                      ? 'bg-bg text-ink shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                      : 'text-muted hover:text-ink',
                   )}
                 >
                   {day.label}
@@ -92,48 +119,68 @@ export default async function AgendaPage({
               </li>
             );
           })}
+          {/* A week view does not exist yet: only teased in the demo. */}
+          {isDemoMode ? (
+            <li>
+              <button
+                type="button"
+                disabled
+                title="Em breve"
+                className={cn(SEGMENT, 'cursor-not-allowed text-muted')}
+              >
+                Semana <span className="sr-only">(em breve)</span>
+              </button>
+            </li>
+          ) : null}
         </ul>
       </nav>
-
-      <div className="flex flex-wrap items-end gap-3">
-        <form
-          method="get"
-          action={`/painel/espacos/${venue.id}/agenda`}
-          className="flex flex-wrap items-end gap-3"
+      <form
+        method="get"
+        action={base}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <label htmlFor="agenda-data" className="text-[13px] text-muted">
+          Ir para a data
+        </label>
+        <input
+          id="agenda-data"
+          type="date"
+          name="data"
+          defaultValue={date}
+          min={addDaysToDateKey(today, -DAYS_BACK)}
+          max={addDaysToDateKey(today, DAYS_AHEAD)}
+          required
+          className={cn(
+            'h-11 rounded-[9px] border border-line-control bg-bg px-2.5 text-[13px] text-ink md:h-[34px]',
+            FOCUS,
+          )}
+        />
+        <button
+          type="submit"
+          className={cn(
+            'h-11 rounded-[9px] border border-line-strong bg-bg px-3 text-[13px] font-semibold text-ink hover:bg-surface md:h-[34px]',
+            FOCUS,
+          )}
         >
-          <Field label="Ir para a data" className="w-48">
-            <Input
-              type="date"
-              name="data"
-              defaultValue={date}
-              min={addDaysToDateKey(today, -DAYS_BACK)}
-              max={addDaysToDateKey(today, DAYS_AHEAD)}
-              required
-            />
-          </Field>
-          <Button type="submit" variant="secondary">
-            Ver dia
-          </Button>
-        </form>
-        <Link
-          href={`/painel/espacos/${venue.id}/agenda?data=${today}`}
-          className={cn(LINK, 'inline-flex h-11 items-center')}
-        >
-          Hoje
-        </Link>
-      </div>
-
-      <p className="text-sm font-medium text-ink">{longDateLabel(date)}</p>
-
-      {/* Remounts per day: dialogs and notices never leak across days. */}
-      <AgendaView
-        key={`${date}-${agenda.timezone}`}
-        date={date}
-        today={today}
-        timezone={agenda.timezone}
-        fields={agenda.fields}
-        hours={venue.hours}
-      />
+          Ver dia
+        </button>
+      </form>
     </div>
+  );
+
+  return (
+    // Remounts per day: the selection, dialogs and notices never leak across
+    // days.
+    <AgendaView
+      key={`${date}-${agenda.timezone}`}
+      date={date}
+      today={today}
+      timezone={agenda.timezone}
+      fields={agenda.fields}
+      hours={venue.hours}
+      intro={intro}
+      indicators={<OwnerIndicators summary={summary} />}
+      dayNav={dayNav}
+    />
   );
 }

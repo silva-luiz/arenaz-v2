@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   agendaRowMinutes,
   buildAgendaGrid,
+  hourGroups,
   itemAriaLabel,
   placeItem,
   weekdayOf,
@@ -210,5 +211,33 @@ describe('itemAriaLabel', () => {
     expect(itemAriaLabel(block({ reason: null }), 'Quadra 1', SP)).toBe(
       'Quadra 1, 18:00–19:00, bloqueio, sem motivo',
     );
+  });
+});
+
+describe('hourGroups', () => {
+  it('groups the 30-minute columns by hour, labelled like the prototype', () => {
+    expect(hourGroups([960, 990, 1020, 1050])).toEqual([
+      { minute: 960, label: '16h', span: 2 },
+      { minute: 1020, label: '17h', span: 2 },
+    ]);
+  });
+
+  it('labels a group that starts on the half hour with its time', () => {
+    expect(hourGroups([990, 1020, 1050, 1080])).toEqual([
+      { minute: 990, label: '16:30', span: 1 },
+      { minute: 1020, label: '17h', span: 2 },
+      { minute: 1080, label: '18h', span: 1 },
+    ]);
+  });
+
+  it('starts a new group after a gap in the hours', () => {
+    expect(hourGroups([480, 510, 1080, 1110])).toEqual([
+      { minute: 480, label: '8h', span: 2 },
+      { minute: 1080, label: '18h', span: 2 },
+    ]);
+  });
+
+  it('is empty without columns', () => {
+    expect(hourGroups([])).toEqual([]);
   });
 });

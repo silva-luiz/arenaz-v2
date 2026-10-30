@@ -70,7 +70,9 @@ describe('AgendaView with an expired session', () => {
         '[data-agenda="grid"] button[aria-label^="Quadra 1"]',
       ) as HTMLElement,
     );
-    const dialog = screen.getByRole('dialog', { name: 'Reserva' });
+    const dialog = screen.getByRole('region', {
+      name: 'Reserva selecionada',
+    });
     await user.click(
       within(dialog).getByRole('button', { name: 'Cancelar reserva' }),
     );
