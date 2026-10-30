@@ -5,11 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   apiSend: vi.fn(),
   replace: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock('@/lib/api-client', () => ({ apiSend: mocks.apiSend }));
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: mocks.replace, refresh: vi.fn() }),
+  useRouter: () => ({ replace: mocks.replace, refresh: mocks.refresh }),
 }));
 
 import { DeleteVenueButton } from './delete-venue-button';
@@ -60,6 +61,7 @@ describe('DeleteVenueButton', () => {
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith('/painel');
     });
+    expect(mocks.refresh).toHaveBeenCalled();
     const call = mocks.apiSend.mock.calls[0] as unknown[];
     expect(call[0]).toBe('DELETE');
     expect(call[1]).toBe(`/owner/venues/${VENUE_ID}`);

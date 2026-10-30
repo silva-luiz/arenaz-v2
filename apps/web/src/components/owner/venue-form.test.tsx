@@ -272,6 +272,8 @@ describe('VenueForm (create)', () => {
 
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith(`/painel/espacos/${VENUE.id}`);
+      // The sidebar (panel layout) learns about the new venue.
+      expect(mocks.refresh).toHaveBeenCalled();
     });
     const post = mocks.apiSend.mock.calls.find((call) => call[0] === 'POST');
     expect(post?.[1]).toBe('/owner/venues');

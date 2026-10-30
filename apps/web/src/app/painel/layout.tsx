@@ -32,6 +32,7 @@ async function sidebarVenues(): Promise<OwnerNavVenue[]> {
     }));
   } catch (error) {
     unstable_rethrow(error);
+    console.error('Lista de espaços do painel indisponível', error);
     return [];
   }
 }
@@ -47,9 +48,10 @@ export default async function PainelLayout({
 }: {
   children: ReactNode;
 }) {
-  const session = await getSession();
+  // In parallel: without a session the venue list gets 401 and redirects to
+  // the same sign-in page as the guard below.
+  const [session, venues] = await Promise.all([getSession(), sidebarVenues()]);
   if (!session) redirect('/entrar?next=/painel');
-  const venues = await sidebarVenues();
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface min-[880px]:flex-row">

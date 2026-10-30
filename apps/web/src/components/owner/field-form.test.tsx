@@ -120,6 +120,8 @@ describe('FieldForm (create)', () => {
 
     await waitFor(() => {
       expect(mocks.replace).toHaveBeenCalledWith(`/painel/quadras/${FIELD.id}`);
+      // The sidebar's court count is refreshed.
+      expect(mocks.refresh).toHaveBeenCalled();
     });
     const [method, path, body] = mocks.apiSend.mock.calls[0] as [
       string,

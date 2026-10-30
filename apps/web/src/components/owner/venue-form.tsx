@@ -252,6 +252,9 @@ export function VenueForm({ venue }: VenueFormProps) {
     if (!venue) {
       setRedirecting(true);
       router.replace(`/painel/espacos/${result.data.id}`);
+      // The panel layout (sidebar venue list) is not re-rendered by a
+      // navigation; refresh it so the new venue shows up there.
+      router.refresh();
       return;
     }
     reset(toFormValues(result.data));

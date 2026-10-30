@@ -100,6 +100,7 @@ describe('/painel layout', () => {
   it('still renders the panel when the venue list fails', async () => {
     mocks.getSession.mockResolvedValue(USER);
     mocks.apiGet.mockRejectedValue(new Error('GET falhou com status 500'));
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(await PainelLayout({ children: <p>conteúdo</p> }));
 
@@ -107,6 +108,11 @@ describe('/painel layout', () => {
       screen.getByRole('navigation', { name: 'Painel do dono' }),
     ).toBeVisible();
     expect(screen.queryByText('Arena Vila Madalena')).toBeNull();
+    expect(logged).toHaveBeenCalledWith(
+      'Lista de espaços do painel indisponível',
+      expect.any(Error),
+    );
+    logged.mockRestore();
     expect(screen.getByRole('main')).toHaveTextContent('conteúdo');
   });
 

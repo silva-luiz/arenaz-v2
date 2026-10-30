@@ -41,6 +41,9 @@ export function DeleteButton<T extends string>({
     }
     // Stays busy: the page is about to go away.
     router.replace(redirectTo);
+    // The panel layout (sidebar venue and court count) is not re-rendered by
+    // a navigation; refresh it too.
+    router.refresh();
   }
 
   const panelId = `${useId()}-confirmar`;

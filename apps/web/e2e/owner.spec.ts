@@ -58,6 +58,15 @@ test('dono cadastra e publica um espaço', async ({ page }) => {
   const venuePath = await createVenue(page, venueName);
 
   await expect(page.getByText('Rascunho')).toBeVisible();
+  // The first venue reaches the sidebar without a reload (the panel layout
+  // is refreshed after the client-side redirect).
+  const sidebar = page.getByRole('navigation', { name: 'Painel do dono' });
+  await expect(sidebar.getByRole('link', { name: 'Hoje' })).toHaveAttribute(
+    'href',
+    `${venuePath}/agenda`,
+  );
+  await expect(sidebar.getByText(venueName)).toBeVisible();
+  await expect(sidebar.getByText('0 quadras · Dono')).toBeVisible();
 
   // Horário: segunda a sexta, 08:00 às 23:00.
   for (const day of ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']) {
@@ -85,6 +94,8 @@ test('dono cadastra e publica um espaço', async ({ page }) => {
   await expect(
     page.getByRole('heading', { level: 1, name: 'Society 1' }),
   ).toBeVisible();
+  // And its new court is counted there.
+  await expect(sidebar.getByText('1 quadra · Dono')).toBeVisible();
 
   // Faixa: sexta e sábado, 18:00 às 23:00, R$ 250,00.
   const rules = page.getByRole('region', { name: 'Faixas de preço' });

@@ -127,27 +127,28 @@ function ItemButton({
         onOpen(item, field, event.currentTarget);
       }}
       className={cn(
-        'flex min-w-0 flex-col items-start justify-center overflow-hidden rounded-[10px] border py-1.5 text-left transition-[transform,box-shadow,filter] duration-150 hover:brightness-[.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none',
-        // Narrower padding in a cell: an hour still shows its whole range.
+        'flex min-w-0 flex-col items-start justify-center overflow-hidden rounded-[10px] border px-2.5 py-1.5 text-left transition-[transform,box-shadow,filter] duration-150 hover:brightness-[.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none',
         layout === 'cell'
-          ? 'absolute inset-x-[3px] inset-y-1.5 px-2'
-          : 'min-h-14 w-full px-2.5',
+          ? 'absolute inset-x-[3px] inset-y-1.5'
+          : 'min-h-14 w-full',
         selected
           ? 'shadow-[0_0_0_2px_#161616,0_12px_24px_-10px_rgba(0,0,0,0.45)] -translate-y-0.5 motion-reduce:translate-y-0'
           : 'shadow-[0_1px_2px_rgba(0,0,0,0.08)]',
         itemClasses(item),
       )}
     >
-      <strong className="block w-full truncate text-[13px] font-[650]">
-        {itemTitle(item)}
-      </strong>
-      <span className="flex w-full min-w-0 items-center gap-1 text-xs">
-        <span className="truncate opacity-80">
-          {formatZonedRange(item.startsAt, item.endsAt, timezone)}
-          {/* The list has room for the origin or the reason in words. */}
-          {layout === 'row' ? ` · ${itemTag(item)}` : null}
-        </span>
+      {/* The glyph rides on the name line: the time range below keeps the
+          whole width, so a one-hour item shows "19:00–20:00" in full. */}
+      <span className="flex w-full min-w-0 items-center gap-1">
+        <strong className="min-w-0 truncate text-[13px] font-[650]">
+          {itemTitle(item)}
+        </strong>
         <OriginIcon item={item} />
+      </span>
+      <span className="block w-full truncate text-xs tabular-nums opacity-80">
+        {formatZonedRange(item.startsAt, item.endsAt, timezone)}
+        {/* The list has room for the origin or the reason in words. */}
+        {layout === 'row' ? ` · ${itemTag(item)}` : null}
       </span>
     </button>
   );

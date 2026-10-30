@@ -218,6 +218,8 @@ export function FieldForm({ venueId, field }: FieldFormProps) {
     if (!field) {
       setRedirecting(true);
       router.replace(`/painel/quadras/${result.data.id}`);
+      // The sidebar's court count lives in the panel layout: refresh it.
+      router.refresh();
       return;
     }
     reset(toFormValues(result.data));
