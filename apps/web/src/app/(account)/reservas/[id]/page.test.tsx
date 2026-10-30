@@ -146,9 +146,10 @@ describe('/reservas/[id]', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Confirmar e pagar' }),
     ).toBeVisible();
+    // Going back keeps the group size the person chose.
     expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
-      '/espacos/arena',
+      '/espacos/arena?jogadores=14',
     );
     expect(screen.getByText('Arena Vila')).toBeVisible();
     // 21:00Z is 18:00 on Monday 2 in São Paulo.
@@ -193,6 +194,10 @@ describe('/reservas/[id]', () => {
     await renderPage(make(), { jogadores: '99' });
     expect(screen.getByText('Society 1')).toBeVisible();
     expect(screen.queryByText(/jogadores/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+      'href',
+      '/espacos/arena',
+    );
   });
 
   it('held: marks a peak time when the hour costs more than the court base price', async () => {

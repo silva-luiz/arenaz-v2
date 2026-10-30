@@ -4,6 +4,7 @@ import {
   cancelDeadline,
   isPeakBooking,
   parsePlayersParam,
+  venuePath,
   FREE_CANCEL_HOURS,
 } from './checkout';
 
@@ -31,6 +32,13 @@ describe('bookingPath', () => {
   it('is the booking page, with the group size when it is known', () => {
     expect(bookingPath('abc')).toBe('/reservas/abc');
     expect(bookingPath('abc', 14)).toBe('/reservas/abc?jogadores=14');
+  });
+});
+
+describe('venuePath', () => {
+  it('is the venue page, with the group size when it is known', () => {
+    expect(venuePath('arena')).toBe('/espacos/arena');
+    expect(venuePath('arena', 14)).toBe('/espacos/arena?jogadores=14');
   });
 });
 

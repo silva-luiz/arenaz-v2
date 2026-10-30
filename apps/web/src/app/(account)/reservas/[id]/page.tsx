@@ -24,6 +24,7 @@ import {
   cancelDeadline,
   isPeakBooking,
   parsePlayersParam,
+  venuePath,
 } from '@/lib/checkout';
 import { isDemoMode } from '@/lib/demo';
 import { loadPublicVenue } from '@/lib/public-venue';
@@ -101,7 +102,9 @@ export default async function BookingPage({
     venue.timezone,
   );
   const deadline = cancelDeadline(booking.startsAt, venue.timezone, now);
-  const backHref = `/espacos/${venue.slug}`;
+  // The share link stays clean; only going back keeps the group size.
+  const venueHref = `/espacos/${venue.slug}`;
+  const backHref = venuePath(venue.slug, players);
 
   if (booking.status === 'held') {
     const minutes =
@@ -181,7 +184,7 @@ export default async function BookingPage({
             <SquadRacha
               players={players}
               totalCents={booking.totalCents}
-              shareMessage={`Bora jogar! ${venue.name}, ${when}, ${range}. ${absoluteUrl(backHref)}`}
+              shareMessage={`Bora jogar! ${venue.name}, ${when}, ${range}. ${absoluteUrl(venueHref)}`}
             />
           ) : null}
           <CancelNote deadline={deadline} paid />

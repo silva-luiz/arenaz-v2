@@ -134,8 +134,8 @@ function Divider() {
  * Search pill of the prototype: Onde · Quando · Esporte · Jogadores + Buscar.
  * The form is a plain GET (`q`, `data`, `sport`, `jogadores`) so it works
  * without JavaScript; "Perto de mim" is the only client enhancement (browser
- * geolocation, then navigation to `action?lat=..&lng=..[&sport=..]` with 3
- * decimals, about 100 m). Without JS the empty fields are still sent (`q=`,
+ * geolocation, then navigation to `action?lat=..&lng=..` with 3 decimals,
+ * about 100 m, plus every other filled field but `q`). Without JS the empty fields are still sent (`q=`,
  * `sport=`), so the search page must treat empty values as absent; with JS
  * they are left out of the URL on submit.
  */
@@ -220,11 +220,13 @@ export function SearchBar({
           lat: position.coords.latitude.toFixed(3),
           lng: position.coords.longitude.toFixed(3),
         });
-        const sport = formRef.current
-          ? formRef.current.elements.namedItem('sport')
-          : null;
-        if (sport instanceof HTMLSelectElement && sport.value) {
-          params.set('sport', sport.value);
+        // The place is what "Perto de mim" replaces; every other filled
+        // field (day, sport, players, carried filters) stays in the search.
+        if (formRef.current) {
+          for (const [name, value] of new FormData(formRef.current)) {
+            if (name === 'q' || typeof value !== 'string') continue;
+            if (value.trim() !== '') params.set(name, value);
+          }
         }
         onNavigate(`${action}?${params.toString()}`);
       },

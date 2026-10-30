@@ -367,6 +367,41 @@ describe('SearchBar', () => {
       );
     });
 
+    it('keeps the day, players and carried filters, but drops the typed place', async () => {
+      const user = userEvent.setup();
+      mockGeolocation((success) => {
+        success({ coords: { latitude: -23.5, longitude: -46.6 } });
+      });
+      const onNavigate = vi.fn();
+      render(
+        <SearchBar
+          today="2026-10-29"
+          defaultQuery="Pinheiros"
+          defaultDate="2026-10-30"
+          defaultPlayers="10"
+          extraFields={{ amenities: 'coberta,vestiario', maxPrice: '20000' }}
+          onNavigate={onNavigate}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: 'Perto de mim' }));
+
+      expect(onNavigate).toHaveBeenCalledTimes(1);
+      const url = new URL(
+        onNavigate.mock.calls[0]?.[0] as string,
+        'http://x.test',
+      );
+      expect(url.pathname).toBe('/buscar');
+      expect(Object.fromEntries(url.searchParams)).toEqual({
+        lat: '-23.500',
+        lng: '-46.600',
+        data: '2026-10-30',
+        jogadores: '10',
+        amenities: 'coberta,vestiario',
+        maxPrice: '20000',
+      });
+    });
+
     it('shows the error when the permission is denied', async () => {
       const user = userEvent.setup();
       mockGeolocation((_success, failure) => {

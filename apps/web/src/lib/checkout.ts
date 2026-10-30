@@ -25,6 +25,13 @@ export function bookingPath(id: string, players?: number): string {
     : `/reservas/${id}?jogadores=${String(players)}`;
 }
 
+/** The venue page, with the group size so going back keeps it. */
+export function venuePath(slug: string, players?: number): string {
+  return players === undefined
+    ? `/espacos/${slug}`
+    : `/espacos/${slug}?jogadores=${String(players)}`;
+}
+
 export interface CancelDeadline {
   /** "ter, 27 out, 20:00": 24 hours before the start, on the venue's clock. */
   label: string;
