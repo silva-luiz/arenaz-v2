@@ -115,3 +115,13 @@ html:has([data-booking-bar]) {
     --search-header-h: 145px;
   }
 }
+
+/*
+ * The search page's sticky header (bar + filter row) is 125px tall, 145px from
+ * md, not the 65 / 84px of the other pages: focus and anchors must not land
+ * under it (WCAG 2.4.11). `data-search-page` is set on <main> by
+ * layout/public-main.tsx; the rule is more specific than the `html` ones above.
+ */
+html:has([data-search-page]) {
+  scroll-padding-top: var(--search-header-h);
+}

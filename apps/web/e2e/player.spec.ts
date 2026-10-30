@@ -246,6 +246,16 @@ test('busca: filtros, pinos e prévia do mapa', async ({ page, published }) => {
   await expect(price).toHaveAttribute('aria-pressed', 'true');
   await expect(card).toBeVisible();
 
+  // Focus and scroll-into-view must clear the sticky header (2.4.11): the
+  // scroll padding of the page is the header's own height.
+  const headerHeight = await page
+    .getByRole('banner')
+    .evaluate((header) => header.getBoundingClientRect().height);
+  const scrollPadding = await page.evaluate(() =>
+    parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop),
+  );
+  expect(scrollPadding).toBeGreaterThanOrEqual(headerHeight);
+
   // The pin is a keyboard-reachable button named with venue and price.
   const pin = page.getByRole('button', {
     name: `${published.name}, R$ 180 por hora`,

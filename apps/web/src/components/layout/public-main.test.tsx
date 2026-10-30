@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,6 +33,28 @@ describe('PublicMain', () => {
     expect(main.className).not.toMatch(/(^|\s)px-/);
     expect(main).toHaveClass('w-full', 'flex-1');
     expect(main).toHaveAttribute('id', 'conteudo');
+  });
+
+  it('marks the search page for the scroll padding of its taller sticky header', () => {
+    mocks.pathname = '/buscar';
+    const { unmount } = render(<PublicMain>conteúdo</PublicMain>);
+    expect(screen.getByRole('main')).toHaveAttribute('data-search-page', '');
+    unmount();
+
+    mocks.pathname = '/espacos/arena-1';
+    render(<PublicMain>conteúdo</PublicMain>);
+    expect(screen.getByRole('main')).not.toHaveAttribute('data-search-page');
+  });
+
+  it('globals.css gives that mark the header height as scroll padding', () => {
+    const css = readFileSync(
+      resolve(process.cwd(), 'src/app/globals.css'),
+      'utf8',
+    );
+
+    expect(css).toMatch(
+      /html:has\(\[data-search-page\]\)\s*\{\s*scroll-padding-top:\s*var\(--search-header-h\);/,
+    );
   });
 
   it('leaves the bottom spacing to the tab bar spacer', () => {
