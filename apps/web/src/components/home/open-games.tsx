@@ -44,7 +44,7 @@ function GameCard({ game }: { game: DemoOpenGame }) {
       )}
     >
       <span className="relative block aspect-[16/10] overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+        {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
         <img
           src={photo(game)}
           alt={game.photoAlt}
@@ -184,7 +184,7 @@ export function OpenGames() {
                 )}
               >
                 <span className="relative block h-[150px] overflow-hidden rounded-2xl shadow-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+                  {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
                   <img
                     src={photo(game)}
                     alt={game.photoAlt}

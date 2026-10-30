@@ -223,7 +223,7 @@ export function OwnerNav({ venues, ownerName }: OwnerNavProps) {
       {venue ? (
         <div className="mt-auto flex items-center gap-3 rounded-2xl bg-surface p-3.5 max-[879px]:mt-3">
           {venue.coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- venue photos are served by the API/storage, with variants
+            // biome-ignore lint/performance/noImgElement: venue photos are served by the API/storage, with variants
             <img
               src={venue.coverUrl}
               srcSet={venue.coverSrcSet ?? undefined}

@@ -19,7 +19,7 @@ export function OwnerBanner() {
       aria-labelledby="dono-titulo"
       className="relative flex min-h-[520px] items-end overflow-hidden rounded-section shadow-2 md:min-h-[480px]"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+      {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
       <img
         src="/home/owner-sunset.jpg"
         alt="Campo de futebol vazio ao entardecer, com um gol ao fundo"

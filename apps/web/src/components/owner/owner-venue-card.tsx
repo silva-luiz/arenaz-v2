@@ -41,7 +41,7 @@ export function OwnerVenueCard({ venue }: { venue: VenueSummary }) {
         {venue.coverUrl ? (
           // Photos live in object storage on another origin and come with
           // their own resized variants (srcSet), so no next/image here.
-          // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: API photos carry their own resized variants (srcSet)
           <img
             src={venue.coverUrl}
             {...(venue.coverSrcSet

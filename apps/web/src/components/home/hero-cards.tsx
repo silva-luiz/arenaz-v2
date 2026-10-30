@@ -33,7 +33,7 @@ export function ConfirmedBookingCard({
       <div
         className={`relative overflow-hidden ${compact ? 'h-[76px] rounded-[12px]' : 'h-[110px] rounded-[14px] lg:h-[130px] min-[68.8125rem]:h-[150px]'}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+        {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
         <img
           src={booking.photoUrl}
           alt=""

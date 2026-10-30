@@ -314,6 +314,7 @@ export function BookingProvider({
     };
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `fields` only matters for `?hora`; a court change never needs a new request
   useEffect(() => {
     const controller = new AbortController();
     // A function: TypeScript would keep the first check's narrowing across the
@@ -386,7 +387,6 @@ export function BookingProvider({
     };
     // `fields` only matters for `?hora`, applied to the first grid; a court
     // change never needs a new request.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, date, requestKey, timezone]);
 
   const current = loaded?.key === requestKey ? loaded : null;

@@ -86,6 +86,7 @@ export function Lightbox({
     Math.min(Math.max(index, 0), Math.max(total - 1, 0)),
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount/unmount only, the focus target is captured once
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -104,7 +105,6 @@ export function Lightbox({
       returnTo?.focus();
     };
     // Mount/unmount only: the focus target is captured once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const go = useCallback(

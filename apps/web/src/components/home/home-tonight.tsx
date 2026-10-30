@@ -5,7 +5,7 @@ import {
   type PublicVenueCard,
 } from '@arenaz/contracts';
 import { Alert, EmptyState, FOCUS_RING, Skeleton, cn } from '@arenaz/ui';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { AppLink } from '@/components/ui/next-link';
 import { apiSend } from '@/lib/api-client';
 import { FreeNowCard } from './free-now-card';
@@ -110,7 +110,7 @@ function SportPicker({
                 : 'font-medium text-muted hover:text-ink',
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+            {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
             <img
               src={pick.image}
               alt=""
@@ -181,7 +181,7 @@ export function HomeTonight({ initialItems, initialStarts }: HomeTonightProps) {
   const items = loaded[pick.id];
   const searchHref = `/buscar?${homeSportQuery(pick)}`;
 
-  let content;
+  let content: ReactNode;
   if (items === undefined) {
     content = <RailSkeleton />;
   } else if (items === 'error') {

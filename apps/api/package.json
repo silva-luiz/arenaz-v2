@@ -10,7 +10,6 @@
     "start": "node --env-file-if-exists=../../.env dist/main.js",
     "demo:seed": "node --env-file-if-exists=../../.env scripts/demo-seed.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -37,7 +36,6 @@
     "@swc/core": "^1.16.20",
     "@types/node": "^24.19.2",
     "@vitest/coverage-v8": "5.0.5",
-    "eslint": "^10.13.0",
     "testcontainers": "^12.2.1",
     "typescript": "^6.0.3",
     "unplugin-swc": "^2.0.0",

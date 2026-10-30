@@ -49,6 +49,7 @@ export function AgendaDialog({
     lockedRef.current = locked;
   }, [locked]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount/unmount only, the focus target is captured once
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -78,7 +79,6 @@ export function AgendaDialog({
       });
     };
     // Mount/unmount only: the focus target is captured once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

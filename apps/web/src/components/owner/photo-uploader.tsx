@@ -302,7 +302,7 @@ export function PhotoUploader({
                 <div className="relative aspect-4/3 overflow-hidden rounded-photo bg-surface">
                   {/* Photos are served by object storage on another origin;
                       next/image would need that host configured, so a plain img. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {/* biome-ignore lint/performance/noImgElement: next/image would need the storage host configured */}
                   <img
                     src={photo.url}
                     {...(photo.srcSet

@@ -1,8 +1,0 @@
-pnpm-lock.yaml
-docs/design/prototipo
-dist
-.next
-coverage
-.env.example
-playwright-report
-test-results

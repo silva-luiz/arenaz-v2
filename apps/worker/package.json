@@ -9,7 +9,6 @@
     "dev": "node scripts/dev.mjs",
     "start": "node --env-file-if-exists=../../.env dist/main.js",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -28,7 +27,6 @@
     "@testcontainers/redis": "12.2.1",
     "@types/node": "^24.19.2",
     "@vitest/coverage-v8": "5.0.5",
-    "eslint": "^10.13.0",
     "testcontainers": "^12.2.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"

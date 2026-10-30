@@ -243,6 +243,7 @@ export function AgendaGrid({
     ? Math.min(...placed.map((entry) => entry.startMinute))
     : undefined;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per day shown (the view remounts per day)
   useEffect(() => {
     const box = scroller.current;
     if (!box) return;
@@ -257,7 +258,6 @@ export function AgendaGrid({
     const header = headers.at(-1);
     if (header) box.scrollLeft = header.offsetLeft - COURT_COLUMN_PX;
     // Once per day shown (the view remounts per day).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (columns.length === 0) {

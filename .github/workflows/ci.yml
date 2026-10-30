@@ -61,9 +61,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm lint
+
       # Unit and integration tests start their own Postgres through
       # Testcontainers (Docker is available on the runner).
-      - run: pnpm turbo run lint typecheck test build
+      - run: pnpm turbo run typecheck test build
 
       - run: pnpm --filter @arenaz/web exec playwright install --with-deps chromium
 

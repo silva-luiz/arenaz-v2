@@ -180,6 +180,7 @@ export default async function VenuePage({ params, searchParams }: Props) {
     <div className="mx-auto max-w-[1160px] pb-12 md:pt-1">
       <script
         type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD, escaped by serializeJsonLd
         dangerouslySetInnerHTML={{
           __html: serializeJsonLd(
             venueJsonLd(venue, absoluteUrl(`/espacos/${venue.slug}`)),

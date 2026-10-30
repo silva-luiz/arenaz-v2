@@ -8,17 +8,17 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint",
+    "lint": "biome check --error-on-warnings .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "db:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "db:migrate": "pnpm --filter @arenaz/db migrate",
     "demo": "node infra/demo/demo.mjs",
     "e2e": "turbo run e2e",
-    "format": "prettier --write ."
+    "format": "biome format --write ."
   },
   "devDependencies": {
-    "prettier": "^3.9.10",
+    "@biomejs/biome": "2.5.15",
     "turbo": "^2.11.10",
     "typescript": "^6.0.3"
   }

@@ -68,6 +68,7 @@ export function RailSection({
     });
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure the edges when the items change
   useEffect(() => {
     measure();
   }, [measure, items]);

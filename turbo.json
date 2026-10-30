@@ -15,9 +15,6 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
-    "lint": {
-      "dependsOn": ["^build"]
-    },
     "test": {
       "dependsOn": ["^build"],
       "env": ["DATABASE_URL"]
