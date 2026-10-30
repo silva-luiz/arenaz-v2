@@ -195,9 +195,8 @@ export function PixPayment({
         Pague com Pix
       </h2>
       <Countdown
-        // Each render of the page brings its own server clock, and a
-        // countdown fixes its skew when it mounts: a new page, a new one.
-        key={stamp}
+        // Stays mounted across refreshes (its status region must not be
+        // re-inserted); it re-bases its clock on each new `serverNow`.
         expiresAt={holdExpiresAt}
         serverNow={serverNow}
         onExpire={onExpire}

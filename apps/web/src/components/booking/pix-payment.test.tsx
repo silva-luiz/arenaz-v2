@@ -489,6 +489,40 @@ describe('PixPayment', () => {
       expect(mocks.refresh).toHaveBeenCalledTimes(1);
     });
 
+    it('never re-inserts the countdown status region on a poll (new serverNow each time)', async () => {
+      mockCharge();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(NOW);
+      const expiresAt = new Date(NOW.getTime() + 600_000).toISOString();
+      const element = () => (
+        <PixPayment
+          bookingId={ID}
+          holdExpiresAt={expiresAt}
+          venueSlug="arena"
+          totalCents={46200}
+          serverNow={new Date(Date.now()).toISOString()}
+        />
+      );
+      const view = render(element());
+      await ready();
+      const status = screen.getByText(/^Faltam \d+ minutos? para pagar$/);
+      const spoken = [status.textContent];
+      for (let poll = 0; poll < 30; poll += 1) {
+        advance(POLL_MS);
+        // The refreshed page: same hold, a new server clock.
+        view.rerender(element());
+        const now = screen.getByText(/^Faltam \d+ minutos? para pagar$/);
+        expect(now).toBe(status);
+        if (now.textContent !== spoken.at(-1)) spoken.push(now.textContent);
+      }
+      // 150 s later (7:30 left): 10 -> 8 minutes, announced once per minute.
+      expect(spoken).toEqual([
+        'Faltam 10 minutos para pagar',
+        'Faltam 9 minutos para pagar',
+        'Faltam 8 minutos para pagar',
+      ]);
+    });
+
     it('keeps the QR and its state across refreshes', async () => {
       setup();
       await ready();

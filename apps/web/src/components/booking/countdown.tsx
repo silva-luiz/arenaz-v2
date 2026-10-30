@@ -19,6 +19,12 @@ function minutesText(minutes: number): string {
     : `Faltam ${String(minutes)} minutos para pagar`;
 }
 
+function skewOf(serverNow: string | undefined): number {
+  return serverNow === undefined
+    ? 0
+    : new Date(serverNow).getTime() - Date.now();
+}
+
 export interface CountdownProps {
   /** The server's deadline (ISO with offset). */
   expiresAt: string;
@@ -41,10 +47,20 @@ export interface CountdownProps {
  */
 export function Countdown({ expiresAt, serverNow, onExpire }: CountdownProps) {
   const deadline = new Date(expiresAt).getTime();
-  // Fixed when the component mounts (the parent re-keys it on a new render).
-  const [skew] = useState(() =>
-    serverNow === undefined ? 0 : new Date(serverNow).getTime() - Date.now(),
-  );
+  // The browser clock's shift from the server's. Fixed when the component
+  // mounts and re-based only when the page brings a new `serverNow` (a refresh
+  // that still says "held"). Never recomputed from an old `serverNow`, so a
+  // re-render cannot undo an expiry. The component stays mounted across those
+  // refreshes: its status region is never destroyed and re-inserted, which a
+  // screen reader could announce again.
+  const [base, setBase] = useState(() => ({
+    serverNow,
+    skew: skewOf(serverNow),
+  }));
+  if (base.serverNow !== serverNow) {
+    setBase({ serverNow, skew: skewOf(serverNow) });
+  }
+  const skew = base.skew;
   // Whole seconds left: the snapshot only changes once a second. The server
   // renders nothing (null), so the clocks of server and browser never clash.
   const seconds = useSyncExternalStore(
@@ -61,7 +77,12 @@ export function Countdown({ expiresAt, serverNow, onExpire }: CountdownProps) {
   const wasLive = useRef(false);
   const notified = useRef(false);
   useEffect(() => {
-    if (seconds !== null && seconds > 0) wasLive.current = true;
+    if (seconds !== null && seconds > 0) {
+      wasLive.current = true;
+      // Time left again (a refreshed page re-based the clock): the next
+      // expiry is reported anew.
+      notified.current = false;
+    }
     if (expired && !notified.current) {
       notified.current = true;
       onExpire?.(wasLive.current);

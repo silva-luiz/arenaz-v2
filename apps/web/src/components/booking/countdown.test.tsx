@@ -97,4 +97,138 @@ describe('Countdown', () => {
       'Falta 1 minuto para pagar',
     );
   });
+
+  describe('across refreshes of the page (new serverNow props)', () => {
+    const serverNowIso = () => new Date(Date.now()).toISOString();
+
+    function poll(
+      view: ReturnType<typeof render>,
+      expiresAt: string,
+      onExpire?: (live: boolean) => void,
+    ) {
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      view.rerender(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={serverNowIso()}
+          onExpire={onExpire}
+        />,
+      );
+    }
+
+    it('keeps the same status node and speaks only when the minute changes', () => {
+      const expiresAt = inSeconds(200);
+      const view = render(
+        <Countdown expiresAt={expiresAt} serverNow={serverNowIso()} />,
+      );
+      const status = screen.getByRole('status');
+      const observer = new MutationObserver(() => undefined);
+      observer.observe(status, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+
+      const spoken = [status.textContent];
+      // Twenty polls, 100 seconds: 200 s -> 100 s left (4, 3 and 2 minutes).
+      for (let step = 0; step < 20; step += 1) {
+        poll(view, expiresAt);
+        const now = screen.getByRole('status');
+        expect(now).toBe(status);
+        if (now.textContent !== spoken.at(-1)) spoken.push(now.textContent);
+      }
+      const touched = observer.takeRecords();
+      observer.disconnect();
+
+      expect(spoken).toEqual([
+        'Faltam 4 minutos para pagar',
+        'Faltam 3 minutos para pagar',
+        'Faltam 2 minutos para pagar',
+      ]);
+      // The region was only touched when the spoken text changed.
+      expect(touched).toHaveLength(2);
+    });
+
+    it('re-bases the clock on the new server time', () => {
+      // The device runs a minute behind the server: 3 minutes are left by the
+      // server's clock, 4 by the device's.
+      const expiresAt = inSeconds(180);
+      const view = render(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={new Date(NOW.getTime()).toISOString()}
+        />,
+      );
+      expect(screen.getByText('03:00')).toBeVisible();
+      // A refreshed page says the server is 30 s further than the device thinks.
+      view.rerender(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={new Date(NOW.getTime() + 30_000).toISOString()}
+        />,
+      );
+      expect(screen.getByText('02:30')).toBeVisible();
+    });
+
+    it('expiry sticks: still expired, same node, reported once, after more polls', () => {
+      const onExpire = vi.fn();
+      const expiresAt = inSeconds(8);
+      const view = render(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={serverNowIso()}
+          onExpire={onExpire}
+        />,
+      );
+      const status = screen.getByRole('status');
+      poll(view, expiresAt, onExpire);
+      expect(onExpire).not.toHaveBeenCalled();
+      poll(view, expiresAt, onExpire);
+      expect(status).toHaveTextContent('O prazo para pagamento acabou');
+      expect(onExpire).toHaveBeenCalledTimes(1);
+      expect(onExpire).toHaveBeenCalledWith(true);
+
+      for (let step = 0; step < 5; step += 1) poll(view, expiresAt, onExpire);
+      expect(screen.getByRole('status')).toBe(status);
+      expect(status).toHaveTextContent('O prazo para pagamento acabou');
+      expect(screen.queryByText(/^\d{2}:\d{2}$/)).toBeNull();
+      expect(onExpire).toHaveBeenCalledTimes(1);
+    });
+
+    it('goes back to counting when a refresh says there is time left, and reports the next expiry', () => {
+      const onExpire = vi.fn();
+      const expiresAt = inSeconds(5);
+      // The device clock is ahead: it runs out early.
+      const view = render(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={new Date(NOW.getTime() - 60_000).toISOString()}
+          onExpire={onExpire}
+        />,
+      );
+      expect(screen.getByText('01:05')).toBeVisible();
+      act(() => {
+        vi.advanceTimersByTime(66_000);
+      });
+      expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+      expect(onExpire).toHaveBeenCalledTimes(1);
+
+      // The refreshed page still says "held": 10 s left on the server's clock.
+      view.rerender(
+        <Countdown
+          expiresAt={expiresAt}
+          serverNow={new Date(NOW.getTime() - 5000).toISOString()}
+          onExpire={onExpire}
+        />,
+      );
+      expect(screen.getByText('00:10')).toBeVisible();
+      act(() => {
+        vi.advanceTimersByTime(11_000);
+      });
+      expect(screen.getByText('O prazo para pagamento acabou')).toBeVisible();
+      expect(onExpire).toHaveBeenCalledTimes(2);
+    });
+  });
 });
