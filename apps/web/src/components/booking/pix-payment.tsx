@@ -9,7 +9,7 @@ import {
 import { Alert, Button, buttonClasses, cn } from '@arenaz/ui';
 import { AppLink } from '@/components/ui/next-link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { apiSend } from '@/lib/api-client';
 import { Countdown } from './countdown';
 
@@ -37,6 +37,11 @@ function qrSource(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+/** How often the page asks the server whether the payment arrived. */
+const POLL_MS = 5000;
+/** Two checks closer than this are one (tab shown and window focused). */
+const MIN_GAP_MS = 1000;
+
 const FOCUS =
   'focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink';
 
@@ -63,6 +68,49 @@ export function PixPayment({
   const [paying, setPaying] = useState(false);
   // StrictMode runs effects twice; one charge per page view is enough.
   const requested = useRef(false);
+
+  // "Aguardando pagamento…" is true: while the charge is pending and the hold
+  // is live the page asks the server again every few seconds, and when the
+  // tab is shown or focused again, so a payment made elsewhere (another tab,
+  // later the PSP's webhook) turns the page into the confirmed one. The
+  // refresh runs in a transition: `refreshing` stays true until the new page
+  // arrives, and no second refresh starts meanwhile. Stops on expiry (the
+  // countdown's own refresh tells the server's side), when the booking is no
+  // longer held (the page stops rendering this) and on unmount.
+  const [refreshing, startRefresh] = useTransition();
+  const refreshingRef = useRef(false);
+  const routerRef = useRef(router);
+  const lastCheck = useRef(0);
+  useEffect(() => {
+    refreshingRef.current = refreshing;
+    routerRef.current = router;
+  });
+  const polling = state.status === 'ready' && expiredStamp !== stamp;
+  useEffect(() => {
+    if (!polling) return;
+    const check = () => {
+      if (document.visibilityState !== 'visible' || refreshingRef.current) {
+        return;
+      }
+      // Coming back to a tab fires "visibilitychange" and "focus" together.
+      const now = Date.now();
+      if (now - lastCheck.current < MIN_GAP_MS) return;
+      lastCheck.current = now;
+      startRefresh(() => {
+        // Returned on purpose: the transition lasts as long as the refresh.
+        // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+        return routerRef.current.refresh();
+      });
+    };
+    const timer = setInterval(check, POLL_MS);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+    };
+  }, [polling]);
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
@@ -147,6 +195,8 @@ export function PixPayment({
         Pague com Pix
       </h2>
       <Countdown
+        // Each render of the page brings its own server clock, and a
+        // countdown fixes its skew when it mounts: a new page, a new one.
         key={stamp}
         expiresAt={holdExpiresAt}
         serverNow={serverNow}

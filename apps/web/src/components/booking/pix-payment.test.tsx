@@ -344,6 +344,165 @@ describe('PixPayment', () => {
     });
   });
 
+  describe('waiting for the payment', () => {
+    const POLL_MS = 5000;
+
+    function setup(holdSeconds = 600) {
+      mockCharge();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(NOW);
+      return render(
+        <PixPayment
+          bookingId={ID}
+          holdExpiresAt={new Date(
+            NOW.getTime() + holdSeconds * 1000,
+          ).toISOString()}
+          venueSlug="arena"
+          totalCents={46200}
+        />,
+      );
+    }
+
+    async function ready() {
+      await screen.findByRole('img', { name: /QR code do Pix/ });
+      // Let the effects of that render (the listeners) run.
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+
+    function advance(ms: number) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    }
+
+    it('refreshes the page every 5 seconds while the charge is pending', async () => {
+      setup();
+      await ready();
+      expect(mocks.refresh).not.toHaveBeenCalled();
+      advance(POLL_MS);
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      advance(POLL_MS);
+      expect(mocks.refresh).toHaveBeenCalledTimes(2);
+      advance(POLL_MS * 3);
+      expect(mocks.refresh).toHaveBeenCalledTimes(5);
+    });
+
+    it('does not poll before there is a charge to wait for', () => {
+      mocks.apiSend.mockReturnValue(new Promise(() => undefined));
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(NOW);
+      renderPix();
+      advance(POLL_MS * 3);
+      expect(mocks.refresh).not.toHaveBeenCalled();
+    });
+
+    it('refreshes when the tab becomes visible again and when the window is focused', async () => {
+      setup();
+      await ready();
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      // Coming back to a tab fires both at once: one refresh, not two.
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      advance(1000);
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not refresh while the tab is hidden', async () => {
+      setup();
+      await ready();
+      const state = vi
+        .spyOn(document, 'visibilityState', 'get')
+        .mockReturnValue('hidden');
+      try {
+        act(() => {
+          document.dispatchEvent(new Event('visibilitychange'));
+        });
+        advance(POLL_MS * 2);
+        expect(mocks.refresh).not.toHaveBeenCalled();
+      } finally {
+        state.mockRestore();
+      }
+    });
+
+    it('never overlaps refreshes: waits for the one in flight', async () => {
+      let finish: () => void = () => undefined;
+      mocks.refresh.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      setup();
+      await ready();
+      advance(POLL_MS);
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      advance(POLL_MS * 2);
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        finish();
+        await Promise.resolve();
+      });
+      advance(POLL_MS);
+      expect(mocks.refresh).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops when the hold runs out (the expiry itself refreshes once)', async () => {
+      setup(12);
+      await ready();
+      advance(POLL_MS * 2);
+      expect(mocks.refresh).toHaveBeenCalledTimes(2);
+      advance(3000);
+      // Ran out while watching: one refresh so the server says what it is.
+      expect(mocks.refresh).toHaveBeenCalledTimes(3);
+      advance(POLL_MS * 6);
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(3);
+    });
+
+    it('stops when the booking is no longer held (the page unmounts it)', async () => {
+      const view = setup();
+      await ready();
+      advance(POLL_MS);
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+      view.unmount();
+      advance(POLL_MS * 4);
+      act(() => {
+        window.dispatchEvent(new Event('focus'));
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the QR and its state across refreshes', async () => {
+      setup();
+      await ready();
+      advance(POLL_MS * 2);
+      expect(screen.getByRole('img', { name: /QR code do Pix/ })).toBeVisible();
+      // One charge per page view, not one per refresh.
+      expect(
+        mocks.apiSend.mock.calls.filter(([, path]) =>
+          String(path).endsWith('/payment'),
+        ),
+      ).toHaveLength(1);
+    });
+  });
+
   describe('clock skew', () => {
     function renderWith(serverNow: string | undefined) {
       return render(
@@ -371,7 +530,6 @@ describe('PixPayment', () => {
       expect(
         screen.getByRole('button', { name: 'Copiar código' }),
       ).toBeVisible();
-      expect(mocks.refresh).not.toHaveBeenCalled();
     });
 
     it('a device clock behind the server does not expire the hold late', async () => {
