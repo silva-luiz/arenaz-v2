@@ -2,9 +2,11 @@ import {
   HOLD_MINUTES,
   MAX_ACTIVE_HOLDS,
   bookingSchema,
+  photoVariantKey,
   type Booking,
   type CancelBookingResponse,
   type CreateBookingInput,
+  type NextBookingResponse,
 } from '@arenaz/contracts';
 import { expireDueHolds, schema, type Db } from '@arenaz/db';
 import {
@@ -18,6 +20,8 @@ import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { dbNow } from '../common/db-clock.js';
 import { EXCLUSION_VIOLATION, hasPgCode } from '../common/pg-errors.js';
 import { DB, type DbHandle } from '../db/db.module.js';
+import { STORAGE, type StoragePort } from '../storage/storage.port.js';
+import { coverPhoto } from '../venues/cover-photo.js';
 import { isUuid } from '../venues/owner.js';
 import {
   ALREADY_PAID,
@@ -37,8 +41,12 @@ import {
   toPriceBreakdown,
   validateUnderFieldLock,
 } from './booking-context.js';
+import { bookingCode, formatNextBookingWhen } from './next-booking.js';
 
-const { booking, venue, field } = schema;
+const { booking, venue, venuePhoto, field } = schema;
+
+/** Width of the cover variant the hero card asks for (2x its ~300px slot). */
+const CARD_COVER_WIDTH = 800;
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -124,7 +132,10 @@ function toBooking(row: ViewRow, now: Date): Booking {
 
 @Injectable()
 export class BookingsService {
-  constructor(@Inject(DB) private readonly handle: DbHandle) {}
+  constructor(
+    @Inject(DB) private readonly handle: DbHandle,
+    @Inject(STORAGE) private readonly storage: StoragePort,
+  ) {}
 
   /**
    * Holds a slot for 10 minutes. Everything happens in one transaction that
@@ -215,6 +226,65 @@ export class BookingsService {
       .filter((item) => time(item) < now.getTime())
       .sort((a, b) => time(b) - time(a));
     return [...upcoming, ...past];
+  }
+
+  /**
+   * The player's next confirmed booking that has not started yet, worded for
+   * the home hero card, or `null`. Held bookings are not "confirmed" yet;
+   * cancelled ones drop off. The database clock decides what has started.
+   */
+  async nextConfirmed(userId: string): Promise<NextBookingResponse> {
+    const now = await dbNow(this.handle.db);
+    const [row] = await this.handle.db
+      .select({
+        id: booking.id,
+        period: booking.period,
+        venueName: venue.name,
+        venueSlug: venue.slug,
+        timezone: venue.timezone,
+        fieldName: field.name,
+        coverKey: coverPhoto<string>(venuePhoto.storageKey),
+        coverWidths: coverPhoto<number[]>(venuePhoto.variantWidths),
+      })
+      .from(booking)
+      .innerJoin(venue, eq(venue.id, booking.venueId))
+      .innerJoin(field, eq(field.id, booking.fieldId))
+      .where(
+        and(
+          eq(booking.userId, userId),
+          eq(booking.status, 'confirmed'),
+          sql`lower(${booking.period}) > ${now.toISOString()}::timestamptz`,
+        ),
+      )
+      .orderBy(sql`lower(${booking.period})`)
+      .limit(1);
+    if (!row) return { booking: null };
+
+    // The 800px variant when the worker made one, else the original.
+    const coverUrl =
+      row.coverKey === null
+        ? null
+        : row.coverWidths?.includes(CARD_COVER_WIDTH)
+          ? this.storage.publicUrl(
+              photoVariantKey(row.coverKey, CARD_COVER_WIDTH),
+            )
+          : this.storage.publicUrl(row.coverKey);
+    return {
+      booking: {
+        bookingId: row.id,
+        venueName: row.venueName,
+        venueSlug: row.venueSlug,
+        coverUrl,
+        when: formatNextBookingWhen(
+          row.period.startsAt,
+          row.period.endsAt,
+          row.fieldName,
+          row.timezone,
+          now,
+        ),
+        code: bookingCode(row.id),
+      },
+    };
   }
 
   /** Someone else's booking is a 404, never a 403. */

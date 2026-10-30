@@ -1,6 +1,7 @@
 import {
   bookingSchema,
   cancelBookingResponseSchema,
+  nextBookingResponseSchema,
   type Problem,
 } from '@arenaz/contracts';
 import { schema } from '@arenaz/db';
@@ -27,7 +28,7 @@ import {
   type AsUser,
 } from './helpers.js';
 
-const { booking, availabilityBlock } = schema;
+const { booking, availabilityBlock, venue, venuePhoto } = schema;
 
 let app: NestFastifyApplication;
 let handle: DbHandle;
@@ -946,5 +947,154 @@ describe('POST /api/bookings/:id/cancel', () => {
     expect(
       (await p.api.post(`/api/bookings/${created.id}/cancel`)).statusCode,
     ).toBe(409);
+  });
+});
+
+describe('GET /api/bookings/me/next', () => {
+  const HOUR = 60 * MIN;
+
+  async function next(p: Player) {
+    const res = await p.api.get('/api/bookings/me/next');
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.headers['cache-control']).toBe('no-store');
+    return nextBookingResponseSchema.parse(res.json()).booking;
+  }
+
+  it('exige login', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/bookings/me/next',
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('sem reserva confirmada futura devolve null', async () => {
+    expect(await next(await newPlayer())).toBeNull();
+  });
+
+  it('devolve só confirmada, a que começa antes, nunca começada, cancelada ou de outro jogador', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const other = await newPlayer();
+    const date = spDate(3);
+    const now = Date.now();
+    // Not the next one, for different reasons each, all before the winner.
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      new Date(now - HOUR / 2),
+      new Date(now + HOUR / 2),
+      'confirmed',
+    );
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(date, '06:00'),
+      at(date, '07:00'),
+      'held',
+      new Date(now + 5 * MIN),
+    );
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(date, '07:00'),
+      at(date, '08:00'),
+      'cancelled',
+    );
+    await insertBooking(
+      handle,
+      s,
+      other.userId,
+      at(date, '08:00'),
+      at(date, '09:00'),
+      'confirmed',
+    );
+    const later = await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(date, '11:00'),
+      at(date, '12:00'),
+      'confirmed',
+    );
+    const winner = await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(date, '09:30'),
+      at(date, '10:30'),
+      'confirmed',
+    );
+
+    const found = await next(p);
+    expect(found?.bookingId).toBe(winner);
+    expect(found?.bookingId).not.toBe(later);
+    const [v] = await handle.db
+      .select({ name: venue.name })
+      .from(venue)
+      .where(eq(venue.id, s.venueId));
+    expect(found).toMatchObject({
+      venueName: v?.name,
+      venueSlug: s.slug,
+      coverUrl: null,
+      code: `#AZ-${winner.slice(0, 4).toUpperCase()}`,
+    });
+    expect(found?.when).toMatch(/ · 9h30 às 10h30 · Quadra A$/);
+    // Exact address and phone never reach the card.
+    const raw = JSON.stringify(found);
+    expect(raw).not.toContain('Rua Sigilosa');
+    expect(raw).not.toContain('98765');
+  });
+
+  it('lê as horas no fuso do espaço (Manaus)', async () => {
+    const s = await seedVenue(handle, ownerId);
+    await handle.db
+      .update(venue)
+      .set({ timezone: 'America/Manaus' })
+      .where(eq(venue.id, s.venueId));
+    const p = await newPlayer();
+    const date = spDate(3);
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      new Date(`${date}T10:00:00-04:00`),
+      new Date(`${date}T11:00:00-04:00`),
+      'confirmed',
+    );
+    expect((await next(p))?.when).toMatch(/ · 10h às 11h · Quadra A$/);
+  });
+
+  it('usa a foto de capa, na variante de 800 px quando existe', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const date = spDate(3);
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(date, '09:00'),
+      at(date, '10:00'),
+      'confirmed',
+    );
+    const key = `venues/${s.venueId}/capa.jpg`;
+    await handle.db.insert(venuePhoto).values([
+      { venueId: s.venueId, storageKey: key, position: 0 },
+      {
+        venueId: s.venueId,
+        storageKey: `venues/${s.venueId}/outra.jpg`,
+        position: 1,
+      },
+    ]);
+    expect((await next(p))?.coverUrl).toMatch(/\/capa\.jpg$/);
+
+    await handle.db
+      .update(venuePhoto)
+      .set({ variantWidths: [400, 800] })
+      .where(eq(venuePhoto.storageKey, key));
+    expect((await next(p))?.coverUrl).toMatch(/\/capa\.w800\.webp$/);
   });
 });

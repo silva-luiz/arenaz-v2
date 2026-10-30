@@ -4,6 +4,7 @@ import {
   BOOKING_STATUS_LABELS,
   bookingSchema,
   createBookingInputSchema,
+  nextBookingResponseSchema,
 } from './booking.js';
 
 const ID = '3f0c2b9e-6a4e-4d6b-9a52-1b6e0c7d9f10';
@@ -90,5 +91,38 @@ describe('booking contracts', () => {
       totalCents: 1,
     });
     expect('totalCents' in parsed).toBe(false);
+  });
+});
+
+describe('next booking (hero card)', () => {
+  const next = {
+    bookingId: ID,
+    venueName: 'Arena Vila Madalena',
+    venueSlug: 'arena-vila-madalena',
+    coverUrl: null,
+    when: 'Hoje · 20h às 22h · Quadra 2',
+    code: '#AZ-3F0C',
+  };
+
+  it('aceita a próxima reserva e a ausência dela', () => {
+    expect(nextBookingResponseSchema.parse({ booking: next })).toEqual({
+      booking: next,
+    });
+    expect(nextBookingResponseSchema.parse({ booking: null })).toEqual({
+      booking: null,
+    });
+  });
+
+  it('recusa um id que não é uuid e campos faltando', () => {
+    expect(
+      nextBookingResponseSchema.safeParse({
+        booking: { ...next, bookingId: 'x' },
+      }).success,
+    ).toBe(false);
+    expect(
+      nextBookingResponseSchema.safeParse({
+        booking: { ...next, when: undefined },
+      }).success,
+    ).toBe(false);
   });
 });

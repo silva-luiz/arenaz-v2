@@ -3,11 +3,13 @@ import {
   type Booking,
   type CancelBookingResponse,
   type CreateBookingInput,
+  type NextBookingResponse,
 } from '@arenaz/contracts';
 import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -41,6 +43,13 @@ export class BookingsController {
   @Get('me')
   mine(@CurrentUser() user: AuthUser): Promise<Booking[]> {
     return this.bookings.listMine(user.id);
+  }
+
+  // Player data: never cached on the way.
+  @Header('Cache-Control', 'no-store')
+  @Get('me/next')
+  next(@CurrentUser() user: AuthUser): Promise<NextBookingResponse> {
+    return this.bookings.nextConfirmed(user.id);
   }
 
   @Get(':id')

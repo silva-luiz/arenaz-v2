@@ -71,6 +71,27 @@ export const bookingSchema = z.object({
 });
 export type Booking = z.infer<typeof bookingSchema>;
 
+/**
+ * The player's next confirmed booking, already worded for the home hero card
+ * (no address or phone: the card is decorative).
+ */
+export const nextBookingSchema = z.object({
+  bookingId: z.uuid(),
+  venueName: z.string(),
+  venueSlug: z.string(),
+  coverUrl: z.string().nullable(),
+  /** "Hoje · 20h às 22h · Quadra 2", on the venue's clock. */
+  when: z.string(),
+  /** "#AZ-" and the first 4 characters of the id in upper case. */
+  code: z.string(),
+});
+export type NextBooking = z.infer<typeof nextBookingSchema>;
+
+export const nextBookingResponseSchema = z.object({
+  booking: nextBookingSchema.nullable(),
+});
+export type NextBookingResponse = z.infer<typeof nextBookingResponseSchema>;
+
 /** Answer of the player's cancellation: the message says what happens next. */
 export const cancelBookingResponseSchema = z.object({
   message: z.string(),
