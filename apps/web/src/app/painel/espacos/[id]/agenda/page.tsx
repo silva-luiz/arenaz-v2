@@ -3,10 +3,12 @@ import {
   ownerAgendaSchema,
   ownerVenueSummarySchema,
   venueSchema,
+  type OwnerVenueSummary,
 } from '@arenaz/contracts';
 import { cn } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { unstable_rethrow } from 'next/navigation';
 import { AgendaView } from '@/components/owner/agenda-view';
 import { OwnerIndicators } from '@/components/owner/owner-indicators';
 import { apiGet } from '@/lib/api';
@@ -45,6 +47,29 @@ function pickDate(requested: string | string[] | undefined, today: string) {
 }
 
 /**
+ * The indicators of today, or `null` when they cannot be loaded: they are a
+ * glance at the day, so their failure must not take the agenda down. A
+ * redirect (expired session) or not-found still goes through.
+ */
+async function loadSummary(
+  venueId: string,
+  today: string,
+  here: string,
+): Promise<OwnerVenueSummary | null> {
+  try {
+    return await apiGet(
+      `/owner/venues/${venueId}/summary?date=${today}`,
+      ownerVenueSummarySchema,
+      here,
+    );
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error('Indicadores do painel indisponíveis', error);
+    return null;
+  }
+}
+
+/**
  * The owner's day of one venue (Painel.dc.html "Hoje"): today's date and a
  * greeting at the venue's hour, the indicators of today, and the agenda of
  * the chosen day with its navigation (a week of days, any date from 30 days
@@ -70,11 +95,7 @@ export default async function AgendaPage({
       ownerAgendaSchema,
       here,
     ),
-    apiGet(
-      `/owner/venues/${venueId}/summary?date=${today}`,
-      ownerVenueSummarySchema,
-      here,
-    ),
+    loadSummary(venueId, today, here),
     getSession(),
   ]);
 
@@ -179,7 +200,7 @@ export default async function AgendaPage({
       fields={agenda.fields}
       hours={venue.hours}
       intro={intro}
-      indicators={<OwnerIndicators summary={summary} />}
+      indicators={summary ? <OwnerIndicators summary={summary} /> : null}
       dayNav={dayNav}
     />
   );

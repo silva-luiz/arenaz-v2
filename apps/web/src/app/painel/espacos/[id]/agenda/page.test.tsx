@@ -19,6 +19,11 @@ vi.mock('@/lib/demo', async (importOriginal) => ({
 vi.mock('@/lib/api-client', () => ({ apiSend: vi.fn() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message.startsWith('NEXT_')) {
+      throw error;
+    }
+  },
 }));
 
 const SUMMARY = { occupancyPct: 63, weekRevenueCents: 864000 };
@@ -245,5 +250,38 @@ describe('/painel/espacos/[id]/agenda', () => {
         : Promise.resolve(VENUE),
     );
     await expect(renderPage()).rejects.toThrow('status 500');
+  });
+
+  it('keeps the agenda when only the summary fails, without the indicators', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {
+      // expected: the page logs the failure
+    });
+    mocks.apiGet.mockImplementation((path: string) =>
+      path.includes('/summary')
+        ? Promise.reject(new Error('GET falhou com status 500'))
+        : Promise.resolve(
+            path.includes('/agenda') ? agendaFor('2026-10-29') : VENUE,
+          ),
+    );
+    await renderPage();
+
+    expect(screen.queryByText('Ocupação hoje')).toBeNull();
+    expect(screen.queryByText('Recebido na semana')).toBeNull();
+    expect(
+      screen.getByRole('navigation', { name: 'Dia da agenda' }),
+    ).toBeInTheDocument();
+    expect(error).toHaveBeenCalledTimes(1);
+    error.mockRestore();
+  });
+
+  it('still lets a redirect or not-found from the summary through', async () => {
+    mocks.apiGet.mockImplementation((path: string) =>
+      path.includes('/summary')
+        ? Promise.reject(new Error('NEXT_HTTP_ERROR_FALLBACK;404'))
+        : Promise.resolve(
+            path.includes('/agenda') ? agendaFor('2026-10-29') : VENUE,
+          ),
+    );
+    await expect(renderPage()).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
   });
 });
