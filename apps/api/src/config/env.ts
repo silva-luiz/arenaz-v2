@@ -42,6 +42,17 @@ const envSchema = z
       .max(65535, 'porta inválida')
       .default(4000),
     WEB_ORIGIN: z.url(),
+    /**
+     * More origins Better Auth accepts besides WEB_ORIGIN, comma-separated
+     * (the demo adds http://localhost:3200 next to its tunnel). Absent = none.
+     */
+    AUTH_TRUSTED_ORIGINS: z.preprocess(
+      (value) =>
+        typeof value === 'string' && value.trim() !== ''
+          ? value.split(',').map((origin) => origin.trim())
+          : undefined,
+      z.array(z.url()).optional(),
+    ),
     S3_ENDPOINT: urlWithProtocol(['http:', 'https:'], 'http://localhost:9000'),
     S3_REGION: z.string().min(1, 'não pode ser vazia').default('us-east-1'),
     S3_BUCKET: z.string().min(1, 'não pode ser vazia'),

@@ -73,6 +73,7 @@ test('demoEnv points at the demo database and the public tunnels', () => {
     'postgres://arenaz:arenaz@localhost:5433/arenaz_demo',
   );
   assert.equal(env.WEB_ORIGIN, 'https://site.trycloudflare.com');
+  assert.equal(env.AUTH_TRUSTED_ORIGINS, 'http://localhost:3200');
   assert.equal(env.BETTER_AUTH_URL, 'https://site.trycloudflare.com');
   assert.equal(env.API_URL, 'http://localhost:4200');
   assert.equal(env.WEB_PORT, '3200');

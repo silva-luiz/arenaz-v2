@@ -325,3 +325,41 @@ describe('auth e2e: caminhos com segmentos especiais', () => {
     expect(noTrim.status).toBe(200);
   });
 });
+
+describe('auth e2e com AUTH_TRUSTED_ORIGINS', () => {
+  // The demo: the site is the tunnel, but whoever presents also uses localhost.
+  const extra = 'http://localhost:3200';
+  let demoApp: NestFastifyApplication;
+
+  beforeAll(async () => {
+    demoApp = await createApp({ ...env, AUTH_TRUSTED_ORIGINS: [extra] });
+    await demoApp.init();
+    await demoApp.getHttpAdapter().getInstance().ready();
+  });
+
+  afterAll(async () => {
+    await demoApp.close();
+  });
+
+  const signUpFrom = (origin: string, email: string) =>
+    demoApp.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      payload: { name: 'Demo', email, password: 'Senha@123' },
+      headers: { origin },
+    });
+
+  it('aceita a origem extra e continua aceitando WEB_ORIGIN', async () => {
+    expect((await signUpFrom(extra, 'extra-origin@mail.com')).statusCode).toBe(
+      200,
+    );
+    expect(
+      (await signUpFrom(env.WEB_ORIGIN, 'web-origin@mail.com')).statusCode,
+    ).toBe(200);
+  });
+
+  it('recusa uma origem fora da lista', async () => {
+    const res = await signUpFrom('http://evil.test', 'evil-origin@mail.com');
+    expect(res.statusCode).toBe(403);
+  });
+});

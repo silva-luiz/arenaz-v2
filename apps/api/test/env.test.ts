@@ -188,4 +188,26 @@ describe('loadEnv', () => {
       /GEO_PROVIDER/,
     );
   });
+
+  it('AUTH_TRUSTED_ORIGINS ausente ou vazia = nenhuma origem extra', () => {
+    expect(loadEnv(valid).AUTH_TRUSTED_ORIGINS).toBeUndefined();
+    expect(
+      loadEnv({ ...valid, AUTH_TRUSTED_ORIGINS: '' }).AUTH_TRUSTED_ORIGINS,
+    ).toBeUndefined();
+  });
+
+  it('AUTH_TRUSTED_ORIGINS separa por vírgula', () => {
+    expect(
+      loadEnv({
+        ...valid,
+        AUTH_TRUSTED_ORIGINS: 'http://localhost:3200, https://x.test',
+      }).AUTH_TRUSTED_ORIGINS,
+    ).toEqual(['http://localhost:3200', 'https://x.test']);
+  });
+
+  it('rejeita AUTH_TRUSTED_ORIGINS com item inválido', () => {
+    expect(() =>
+      loadEnv({ ...valid, AUTH_TRUSTED_ORIGINS: 'http://ok.test,nope' }),
+    ).toThrow(/AUTH_TRUSTED_ORIGINS/);
+  });
 });

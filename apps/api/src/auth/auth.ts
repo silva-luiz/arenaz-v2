@@ -16,7 +16,7 @@ export function createAuth(env: Env, db: Db, logger: FastifyBaseLogger) {
     // The browser reaches the API through the web app's same-origin proxy, so
     // the public base URL is the web origin.
     baseURL: env.BETTER_AUTH_URL,
-    trustedOrigins: [env.WEB_ORIGIN],
+    trustedOrigins: [env.WEB_ORIGIN, ...(env.AUTH_TRUSTED_ORIGINS ?? [])],
     // Explicit: Better Auth otherwise skips the origin check when NODE_ENV=test.
     advanced: { disableOriginCheck: false },
     database: drizzleAdapter(db, { provider: 'pg', schema }),
