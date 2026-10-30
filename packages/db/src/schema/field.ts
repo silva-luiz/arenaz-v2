@@ -18,9 +18,7 @@ import { venue } from './venue.js';
 export const field = pgTable(
   'field',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     venueId: uuid('venue_id')
       .notNull()
       .references(() => venue.id, { onDelete: 'cascade' }),
@@ -59,9 +57,7 @@ export const field = pgTable(
 export const priceRule = pgTable(
   'price_rule',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     fieldId: uuid('field_id')
       .notNull()
       .references(() => field.id, { onDelete: 'cascade' }),
@@ -90,9 +86,7 @@ export const priceRule = pgTable(
 export const availabilityBlock = pgTable(
   'availability_block',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     fieldId: uuid('field_id')
       .notNull()
       .references(() => field.id, { onDelete: 'cascade' }),

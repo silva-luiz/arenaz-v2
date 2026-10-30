@@ -2,7 +2,7 @@
 @import '@arenaz/ui/theme.css';
 
 /* Class names used inside the shared package must end up in this stylesheet. */
-@source "../../../../packages/ui/src";
+@source '../../../../packages/ui/src';
 
 /*
  * Font families come from next/font (CSS variables set on <html>). The
@@ -59,7 +59,9 @@ html {
 }
 html:has([data-booking-bar]) {
   scroll-padding-bottom: calc(
-    57px + env(safe-area-inset-bottom) + var(--booking-bar-h)
+    57px +
+    env(safe-area-inset-bottom) +
+    var(--booking-bar-h)
   );
 }
 @media (min-width: 768px) {

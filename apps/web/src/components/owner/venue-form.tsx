@@ -409,7 +409,8 @@ export function VenueForm({ venue }: VenueFormProps) {
           name="location"
           render={({ field }) => {
             const current = field.value as
-              { lat: number; lng: number } | undefined;
+              | { lat: number; lng: number }
+              | undefined;
             const value =
               current &&
               Number.isFinite(current.lat) &&

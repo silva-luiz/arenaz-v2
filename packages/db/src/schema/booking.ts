@@ -25,9 +25,7 @@ export interface PriceBreakdownItem {
 export const booking = pgTable(
   'booking',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     fieldId: uuid('field_id')
       .notNull()
       .references(() => field.id, { onDelete: 'restrict' }),

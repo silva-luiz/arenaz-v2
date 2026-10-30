@@ -6,10 +6,8 @@ import { useId, useState } from 'react';
 
 export const INVALID_MONEY_MESSAGE = 'Valor inválido';
 
-export interface MoneyInputProps extends Omit<
-  InputProps,
-  'value' | 'onChange' | 'type' | 'defaultValue'
-> {
+export interface MoneyInputProps
+  extends Omit<InputProps, 'value' | 'onChange' | 'type' | 'defaultValue'> {
   /** Price in cents; null while empty or invalid. */
   value: number | null;
   onChange: (cents: number | null) => void;

@@ -28,7 +28,12 @@ export interface FieldRules {
 }
 
 export type BookingErrorCode =
-  'past' | 'misaligned' | 'too_short' | 'closed' | 'too_far' | 'busy';
+  | 'past'
+  | 'misaligned'
+  | 'too_short'
+  | 'closed'
+  | 'too_far'
+  | 'busy';
 
 export const DEFAULT_HORIZON_DAYS = 60;
 /** A 24h venue could chain forever; stop after a week of consecutive days. */
