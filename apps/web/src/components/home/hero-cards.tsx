@@ -70,7 +70,11 @@ export function ConfirmedBookingCard({
             <div className="truncate text-[15px] font-semibold text-ink">
               {booking.venueName}
             </div>
-            <div className="mt-0.5 text-[13px] text-muted">{booking.when}</div>
+            {/* Two lines at most: a long field name must not grow the card over
+                the racha card below it. */}
+            <div className="mt-0.5 line-clamp-2 text-[13px] text-muted">
+              {booking.when}
+            </div>
           </div>
           <div className="shrink-0 rounded-lg bg-[#F1F6F3] px-2 py-1.5 font-mono text-[13px] font-semibold text-brand">
             {booking.code}

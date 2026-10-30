@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HERO_SHOWCASE_MOCK } from './hero-showcase';
 import { useHeroShowcase } from './use-hero-showcase';
@@ -13,6 +13,11 @@ const NEXT = {
 };
 
 const fetchMock = vi.fn<typeof fetch>();
+
+/** Lets the hook's fetch, body read and state update all settle. */
+async function settle(): Promise<void> {
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+}
 
 function answer(status: number, body?: unknown): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -87,21 +92,47 @@ describe('useHeroShowcase', () => {
     fetchMock.mockResolvedValue(response());
     const { result } = renderHook(() => useHeroShowcase(true));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-    await Promise.resolve();
+    await settle();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.current).toBe(HERO_SHOWCASE_MOCK);
+  });
+
+  it('goes back to the illustration when the player signs out', async () => {
+    fetchMock.mockResolvedValue(answer(200, { booking: NEXT }));
+    const { result, rerender } = renderHook(
+      ({ signedIn }) => useHeroShowcase(signedIn),
+      { initialProps: { signedIn: true } },
+    );
+    await waitFor(() => {
+      expect(result.current.booking.code).toBe('#AZ-3F0C');
+    });
+
+    rerender({ signedIn: false });
+    expect(result.current).toBe(HERO_SHOWCASE_MOCK);
+  });
+
+  it('drops an answer that arrives after unmount', async () => {
+    let resolve: (response: Response) => void = () => undefined;
+    fetchMock.mockReturnValue(
+      new Promise<Response>((done) => {
+        resolve = done;
+      }),
+    );
+    const { result, unmount } = renderHook(() => useHeroShowcase(true));
+    const last = result.current;
+    unmount();
+    resolve(answer(200, { booking: NEXT }));
+    await settle();
+    expect(last).toBe(HERO_SHOWCASE_MOCK);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   });
 
   it('keeps the illustration when the network fails', async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useHeroShowcase(true));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    });
-    await Promise.resolve();
+    await settle();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.current).toBe(HERO_SHOWCASE_MOCK);
   });
 });

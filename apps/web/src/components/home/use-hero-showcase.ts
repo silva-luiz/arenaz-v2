@@ -1,8 +1,12 @@
 'use client';
 
 import { nextBookingResponseSchema } from '@arenaz/contracts';
-import { useEffect, useState } from 'react';
-import { HERO_SHOWCASE_MOCK, type HeroShowcase } from './hero-showcase';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  HERO_SHOWCASE_MOCK,
+  type HeroBookingShowcase,
+  type HeroShowcase,
+} from './hero-showcase';
 
 /**
  * What the hero cards show: the illustration first (the server HTML, shared by
@@ -14,7 +18,7 @@ import { HERO_SHOWCASE_MOCK, type HeroShowcase } from './hero-showcase';
  * illustration", never "go sign in".
  */
 export function useHeroShowcase(signedIn: boolean): HeroShowcase {
-  const [showcase, setShowcase] = useState(HERO_SHOWCASE_MOCK);
+  const [booking, setBooking] = useState<HeroBookingShowcase | null>(null);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -32,15 +36,13 @@ export function useHeroShowcase(signedIn: boolean): HeroShowcase {
           await response.json(),
         );
         const next = parsed.success ? parsed.data.booking : null;
-        if (!next) return;
-        setShowcase({
-          ...HERO_SHOWCASE_MOCK,
-          booking: {
-            venueName: next.venueName,
-            when: next.when,
-            code: next.code,
-            photoUrl: next.coverUrl ?? HERO_SHOWCASE_MOCK.booking.photoUrl,
-          },
+        // A cleanup that ran while the body was read: this answer is stale.
+        if (!next || controller.signal.aborted) return;
+        setBooking({
+          venueName: next.venueName,
+          when: next.when,
+          code: next.code,
+          photoUrl: next.coverUrl ?? HERO_SHOWCASE_MOCK.booking.photoUrl,
         });
       } catch {
         // Offline, aborted or not JSON: the illustration stays.
@@ -53,5 +55,12 @@ export function useHeroShowcase(signedIn: boolean): HeroShowcase {
     };
   }, [signedIn]);
 
-  return showcase;
+  // Signed out again while mounted: back to the illustration.
+  return useMemo(
+    () =>
+      signedIn && booking
+        ? { ...HERO_SHOWCASE_MOCK, booking }
+        : HERO_SHOWCASE_MOCK,
+    [signedIn, booking],
+  );
 }

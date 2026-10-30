@@ -56,10 +56,10 @@ export const nextBookingResponseSchema = z.object({
 
 **Files:** Modify `packages/contracts/src/booking.ts` (+ teste), `apps/api/src/booking/bookings.controller.ts`, `apps/api/src/booking/bookings.service.ts` (+ teste de integração em `apps/api/test/`).
 
-- [ ] **Step 1: Write failing tests**: contrato aceita/recusa o formato acima; integração: jogador sem reservas → `{ booking: null }`; com uma `held` e uma `confirmed` futura → devolve só a `confirmed`; duas `confirmed` futuras → a que começa antes; `confirmed` já começada ou `cancelled` → ignoradas; reserva de outro jogador nunca aparece; `when` com "Hoje"/"Amanhã"/"Sáb, 31 out" e horas no fuso do espaço (caso de espaço em `America/Manaus`); sem sessão → 401.
-- [ ] **Step 2: Run** `pnpm --filter @arenaz/api test -- bookings` → FAIL.
-- [ ] **Step 3: Implement** `GET /api/bookings/me/next` (declarado antes de `GET /api/bookings/:id` para não colidir) com `AuthGuard`, uma consulta ordenada por início com `LIMIT 1`, relógio do banco (`dbNow`), `Cache-Control: no-store`. O texto de `when` usa os mesmos formatadores de data do web movidos para `packages/contracts` ou duplicados de forma mínima com teste — decida por mover se já houver helper em contracts.
-- [ ] **Step 4: Run** → PASS. **Step 5: Commit** `feat(api): próxima reserva confirmada do jogador`.
+- [x] **Step 1: Write failing tests**: contrato aceita/recusa o formato acima; integração: jogador sem reservas → `{ booking: null }`; com uma `held` e uma `confirmed` futura → devolve só a `confirmed`; duas `confirmed` futuras → a que começa antes; `confirmed` já começada ou `cancelled` → ignoradas; reserva de outro jogador nunca aparece; `when` com "Hoje"/"Amanhã"/"Sáb, 31 out" e horas no fuso do espaço (caso de espaço em `America/Manaus`); sem sessão → 401.
+- [x] **Step 2: Run** `pnpm --filter @arenaz/api test -- bookings` → FAIL.
+- [x] **Step 3: Implement** `GET /api/bookings/me/next` (declarado antes de `GET /api/bookings/:id` para não colidir) com `AuthGuard`, uma consulta ordenada por início com `LIMIT 1`, relógio do banco (`dbNow`), `Cache-Control: no-store`. O texto de `when` usa os mesmos formatadores de data do web movidos para `packages/contracts` ou duplicados de forma mínima com teste — decida por mover se já houver helper em contracts.
+- [x] **Step 4: Run** → PASS. **Step 5: Commit** `feat(api): próxima reserva confirmada do jogador`.
 
 ### Task 2: Web — cartão "Reserva confirmada" com dado real
 
@@ -67,9 +67,9 @@ export const nextBookingResponseSchema = z.object({
 
 **Interfaces:** Consumes Task 1. Produces `useHeroShowcase(): HeroShowcase` — começa com `HERO_SHOWCASE_MOCK`; depois da hidratação chama `apiSend('/api/bookings/me/next')`; se vier `booking`, troca só `showcase.booking` (`venueName`, `when`, `code`, `photoUrl = coverUrl ?? '/home/reserva-confirmada.jpg'`); 401, erro ou `null` mantêm o mock.
 
-- [ ] **Step 1: Write failing tests**: sem sessão (401) → mock; com reserva → o cartão mostra o nome, o `when` e o código reais; erro de rede → mock e nenhum erro na tela; a chamada usa `no-store` e acontece uma vez por montagem.
-- [ ] **Step 2–4:** FAIL → implementar → PASS (unit + `pnpm --filter @arenaz/web e2e` com um caso novo em `e2e/booking.spec.ts`: depois de pagar, a home mostra a reserva no cartão).
-- [ ] **Step 5: Commit** `feat(web): cartão do hero mostra a próxima reserva do jogador`.
+- [x] **Step 1: Write failing tests**: sem sessão (401) → mock; com reserva → o cartão mostra o nome, o `when` e o código reais; erro de rede → mock e nenhum erro na tela; a chamada usa `no-store` e acontece uma vez por montagem.
+- [x] **Step 2–4:** FAIL → implementar → PASS (unit + `pnpm --filter @arenaz/web e2e` com um caso novo em `e2e/booking.spec.ts`: depois de pagar, a home mostra a reserva no cartão).
+- [x] **Step 5: Commit** `feat(web): cartão do hero mostra a próxima reserva do jogador`.
 
 ### Task 3: Racha real no cartão (depende do Plano 5)
 

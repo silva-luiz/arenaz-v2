@@ -1049,6 +1049,21 @@ describe('GET /api/bookings/me/next', () => {
     expect(raw).not.toContain('98765');
   });
 
+  it('escreve o dia pelo relógio do banco ("Amanhã")', async () => {
+    const s = await seedVenue(handle, ownerId);
+    const p = await newPlayer();
+    const tomorrow = spDate(1);
+    await insertBooking(
+      handle,
+      s,
+      p.userId,
+      at(tomorrow, '09:00'),
+      at(tomorrow, '10:00'),
+      'confirmed',
+    );
+    expect((await next(p))?.when).toBe('Amanhã · 9h às 10h · Quadra A');
+  });
+
   it('lê as horas no fuso do espaço (Manaus)', async () => {
     const s = await seedVenue(handle, ownerId);
     await handle.db
@@ -1080,6 +1095,14 @@ describe('GET /api/bookings/me/next', () => {
       at(date, '10:00'),
       'confirmed',
     );
+    // Another venue's cover, older: an uncorrelated subquery would pick it.
+    const elsewhere = await seedVenue(handle, ownerId);
+    await handle.db.insert(venuePhoto).values({
+      venueId: elsewhere.venueId,
+      storageKey: `venues/${elsewhere.venueId}/alheia.jpg`,
+      position: 0,
+      createdAt: new Date(Date.now() - 86_400_000),
+    });
     const key = `venues/${s.venueId}/capa.jpg`;
     await handle.db.insert(venuePhoto).values([
       { venueId: s.venueId, storageKey: key, position: 0 },

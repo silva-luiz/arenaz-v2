@@ -24,6 +24,19 @@ describe('hero cards', () => {
     expect(screen.getByText('#AZ-1002')).toBeInTheDocument();
   });
 
+  it('keeps a long "when" to two lines and the code beside it', () => {
+    const when =
+      'Sáb, 7 nov · 19h30 às 21h · Quadra de Beach Tennis Coberta Principal';
+    render(
+      <ConfirmedBookingCard
+        booking={{ ...HERO_SHOWCASE_MOCK.booking, when }}
+      />,
+    );
+
+    expect(screen.getByText(when)).toHaveClass('line-clamp-2');
+    expect(screen.getByText('#AZ-4821')).toHaveClass('shrink-0');
+  });
+
   it('leaves the booking code out of the compact phone card', () => {
     render(
       <ConfirmedBookingCard compact booking={HERO_SHOWCASE_MOCK.booking} />,

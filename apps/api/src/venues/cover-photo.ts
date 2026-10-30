@@ -13,7 +13,8 @@ export const OUTER_VENUE_ID = sql.raw('"venue"."id"');
 
 /**
  * `column` of the venue's cover photo (position 0, the oldest on a tie), as a
- * correlated subquery of the outer venue row.
+ * correlated subquery of the outer venue row. The query must have the
+ * `venue` table in scope under its own name (not aliased).
  */
 export function coverPhoto<T>(column: AnyPgColumn): SQL<T | null> {
   return sql<T | null>`(select ${column} from ${venuePhoto} where ${venuePhoto.venueId} = ${OUTER_VENUE_ID} order by ${venuePhoto.position}, ${venuePhoto.createdAt} limit 1)`;
