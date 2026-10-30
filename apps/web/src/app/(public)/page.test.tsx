@@ -253,6 +253,17 @@ describe('home page: hero and search', () => {
 });
 
 describe('home page: sports and "livre hoje à noite"', () => {
+  it('never lets Next cache the searches or the availability (free times go stale)', async () => {
+    render(await HomePage());
+
+    const calls = mocks.publicGet.mock.calls as [string, unknown, unknown][];
+    expect(calls.some(([path]) => path.startsWith('/venues?'))).toBe(true);
+    expect(calls.some(([path]) => path.includes('/availability'))).toBe(true);
+    for (const [, , options] of calls) {
+      expect(options).toEqual({ revalidate: 0 });
+    }
+  });
+
   it('shows the sports as toggle buttons with a photo, Society pressed', async () => {
     render(await HomePage());
 
@@ -506,6 +517,7 @@ describe('home page: mobile "Livre agora"', () => {
     expect(mocks.publicGet).toHaveBeenCalledWith(
       '/venues/society-pinheiros/availability?date=2026-10-29',
       expect.anything(),
+      { revalidate: 0 },
     );
 
     const times = within(now).getByRole('list', {

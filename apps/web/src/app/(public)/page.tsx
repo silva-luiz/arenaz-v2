@@ -48,9 +48,12 @@ export const metadata: Metadata = {
 /** One `/venues` page, or `null` when the API cannot be reached. */
 async function loadVenues(query: string): Promise<PublicVenueCard[] | null> {
   try {
+    // revalidate 0: the free times depend on the clock (a cached copy would
+    // offer a time that already passed).
     const result = await publicGet(
       `/venues?${query}`,
       publicSearchResponseSchema,
+      { revalidate: 0 },
     );
     return result ? result.items : null;
   } catch (error) {
@@ -89,6 +92,7 @@ async function loadFreeStarts(
     const availability = await publicGet(
       `/venues/${first.slug}/availability?date=${date}`,
       availabilitySchema,
+      { revalidate: 0 },
     );
     if (!availability) return null;
     return {

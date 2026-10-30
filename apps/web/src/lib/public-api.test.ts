@@ -61,6 +61,15 @@ describe('publicGet', () => {
     expect(init).toMatchObject({ next: { revalidate: 5 } });
   });
 
+  it('keeps revalidate 0 (no caching), not the 60 s default', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { n: 1 }));
+
+    await publicGet('/venues', schema, { revalidate: 0 });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init).toMatchObject({ next: { revalidate: 0 } });
+  });
+
   it('never sends a cookie (public, cacheable data)', async () => {
     mocks.cookies.mockResolvedValue({ toString: () => 'session=abc' });
     fetchMock.mockResolvedValue(jsonResponse(200, { n: 1 }));

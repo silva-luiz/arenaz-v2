@@ -66,7 +66,12 @@ export async function apiSend<T>(
   body?: unknown,
   schema?: ResponseSchema<T>,
 ): Promise<ApiResult<T | undefined>> {
-  const init: RequestInit = { method, credentials: 'same-origin' };
+  // no-store: public reads here carry times that depend on the clock.
+  const init: RequestInit = {
+    method,
+    credentials: 'same-origin',
+    cache: 'no-store',
+  };
   if (body !== undefined) {
     init.headers = { 'content-type': 'application/json' };
     init.body = JSON.stringify(body);

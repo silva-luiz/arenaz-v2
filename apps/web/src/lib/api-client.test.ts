@@ -21,6 +21,7 @@ const passthrough = {
 interface SentInit {
   method?: string;
   credentials?: string;
+  cache?: string;
   body?: unknown;
   headers?: Record<string, string>;
 }
@@ -52,6 +53,14 @@ describe('apiSend', () => {
       method: 'GET',
       credentials: 'same-origin',
     });
+  });
+
+  it('never lets the browser cache a read', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: 1 }));
+
+    await apiSend('GET', '/venues?sport=padel', undefined, passthrough);
+
+    expect(lastInit()).toMatchObject({ cache: 'no-store' });
   });
 
   it('sends no content-type and no body when there is no body', async () => {

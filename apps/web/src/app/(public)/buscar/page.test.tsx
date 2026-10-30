@@ -123,6 +123,12 @@ describe('search page', () => {
   });
 
   describe('API call', () => {
+    it('never lets Next cache the search (free times go stale in minutes)', async () => {
+      await renderPage({ sport: 'padel' });
+
+      expect(mocks.publicGet.mock.calls[0]?.[2]).toEqual({ revalidate: 0 });
+    });
+
     it('forwards the filters and the page', async () => {
       await renderPage({
         q: ' vila   madalena ',

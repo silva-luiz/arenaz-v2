@@ -52,9 +52,12 @@ async function loadResults(
   // know them, and they must not split its cache.
   const query = toSearchParams(apiQuery(params)).toString();
   try {
+    // revalidate 0: `nextFreeTime`/`freeTimes` depend on the clock, so a cached
+    // copy would offer a time that already passed.
     return await publicGet(
       query ? `/venues?${query}` : '/venues',
       publicSearchResponseSchema,
+      { revalidate: 0 },
     );
   } catch (error) {
     unstable_rethrow(error);
