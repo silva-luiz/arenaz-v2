@@ -325,10 +325,9 @@ export const DEMO_VENUES: readonly DemoVenue[] = [
       widthM: 8,
       basePriceCents: 8000,
     },
-    bookings: [
-      { day: 0, start: '17:00', minutes: 60, customer: 'Turma do Beach' },
-      { day: 1, start: '18:00', minutes: 60 },
-    ],
+    // No bookings on purpose: unpublishing is refused while a venue has
+    // upcoming ones, so this is the venue that shows Despublicar live.
+    bookings: [],
   },
   {
     slug: 'saibro-butanta',

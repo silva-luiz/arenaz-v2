@@ -351,4 +351,27 @@ describe('runDemoSeed', () => {
       );
     }
   });
+
+  it('leaves one venue the owner can unpublish live', async () => {
+    app ??= await buildTestApp();
+    const signIn = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      payload: { email: DEMO_OWNER.email, password: PASSWORD },
+      headers: { origin: testEnv.WEB_ORIGIN },
+    });
+    const cookie = signIn.cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+    const [beach] = await db
+      .select({ id: venue.id })
+      .from(venue)
+      .where(eq(venue.slug, 'beach-lapa-sunset'));
+    const send = (action: 'unpublish' | 'publish') =>
+      app?.inject({
+        method: 'POST',
+        url: `/api/owner/venues/${beach?.id ?? ''}/${action}`,
+        headers: { cookie, origin: testEnv.WEB_ORIGIN },
+      });
+    expect((await send('unpublish'))?.statusCode).toBe(200);
+    expect((await send('publish'))?.statusCode).toBe(200);
+  });
 });

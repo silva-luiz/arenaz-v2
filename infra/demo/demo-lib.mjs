@@ -71,6 +71,8 @@ export function demoEnv({ base, siteUrl, photosUrl }) {
     API_URL: `http://localhost:${String(API_PORT)}`,
     WEB_PORT: String(WEB_PORT),
     WEB_ORIGIN: siteUrl,
+    // Whoever presents on this machine signs in on localhost too.
+    AUTH_TRUSTED_ORIGINS: `http://localhost:${String(WEB_PORT)}`,
     BETTER_AUTH_URL: siteUrl,
     NEXT_PUBLIC_SITE_URL: siteUrl,
     NEXT_PUBLIC_DEMO_MODE: 'true',
