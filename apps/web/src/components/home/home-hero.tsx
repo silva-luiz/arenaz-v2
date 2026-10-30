@@ -59,7 +59,7 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
       className="relative -mx-4 -mt-4 h-[352px] [--mx:0] [--my:0] md:mx-0 md:mt-0 md:h-[520px]"
     >
       <div className="absolute inset-0 overflow-hidden rounded-b-[24px] bg-[#0B1A12] shadow-2 md:rounded-section">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
+        {/* biome-ignore lint/performance/noImgElement: static file in /public, already sized for this slot */}
         <img
           src="/home/hero-night.jpg"
           alt="Campo de futebol iluminado por um refletor à noite, com jogadores em campo"

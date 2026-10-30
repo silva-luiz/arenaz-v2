@@ -18,7 +18,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
     "test": "vitest run"
   },
   "dependencies": {
@@ -26,7 +25,6 @@
   },
   "devDependencies": {
     "@arenaz/config": "workspace:*",
-    "eslint": "^10.13.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   }

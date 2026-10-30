@@ -167,13 +167,15 @@ export class AgendaService {
             .map((row) => toItem(row)),
           ...blocks
             .filter((row) => row.fieldId === item.id)
-            .map((row): AgendaItem => ({
-              kind: 'block',
-              id: row.id,
-              startsAt: row.period.startsAt.toISOString(),
-              endsAt: row.period.endsAt.toISOString(),
-              reason: row.reason,
-            })),
+            .map(
+              (row): AgendaItem => ({
+                kind: 'block',
+                id: row.id,
+                startsAt: row.period.startsAt.toISOString(),
+                endsAt: row.period.endsAt.toISOString(),
+                reason: row.reason,
+              }),
+            ),
         ].sort(
           (a, b) =>
             a.startsAt.localeCompare(b.startsAt) || a.id.localeCompare(b.id),

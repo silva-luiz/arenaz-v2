@@ -22,7 +22,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
     "test": "vitest run",
     "generate": "drizzle-kit generate",
     "migrate": "pnpm run build && node --env-file-if-exists=../../.env dist/migrate.js"
@@ -38,7 +37,6 @@
     "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "5.0.5",
     "drizzle-kit": "^0.31.11",
-    "eslint": "^10.13.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.5"
   }

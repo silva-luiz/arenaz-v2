@@ -35,7 +35,6 @@ export type SearchKey = (typeof KEYS)[number];
 const INTENT_KEYS = ['data', 'jogadores'] as const;
 const INTENT = new Set<string>(INTENT_KEYS);
 
-
 /** The search filters as the user typed them: trimmed, never empty. */
 export type SearchParams = Partial<Record<SearchKey, string>>;
 

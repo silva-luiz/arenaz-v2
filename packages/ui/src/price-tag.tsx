@@ -2,10 +2,8 @@ import { formatCents } from '@arenaz/contracts';
 import type { ComponentProps } from 'react';
 import { cn } from './cn';
 
-export interface PriceTagProps extends Omit<
-  ComponentProps<'span'>,
-  'children'
-> {
+export interface PriceTagProps
+  extends Omit<ComponentProps<'span'>, 'children'> {
   cents: number;
   suffix?: string;
   /** Prefixes "a partir de" (the price is the lowest of several). */

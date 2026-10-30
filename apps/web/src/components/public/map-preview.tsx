@@ -32,7 +32,7 @@ export function MapPreview({ venue, href, onClose }: MapPreviewProps) {
           {venue.coverUrl ? (
             // Photos come from the storage host, not a configured Next image
             // domain (same as VenueCard in @arenaz/ui).
-            // eslint-disable-next-line @next/next/no-img-element
+            // biome-ignore lint/performance/noImgElement: API photos carry their own resized variants (srcSet)
             <img
               src={venue.coverUrl}
               // The card is 340px wide (less on a narrow phone).

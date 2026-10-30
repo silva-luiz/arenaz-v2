@@ -100,7 +100,9 @@ describe('/painel layout', () => {
   it('still renders the panel when the venue list fails', async () => {
     mocks.getSession.mockResolvedValue(USER);
     mocks.apiGet.mockRejectedValue(new Error('GET falhou com status 500'));
-    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {
+      // silence the expected error log
+    });
 
     render(await PainelLayout({ children: <p>conteúdo</p> }));
 

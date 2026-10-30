@@ -18,9 +18,7 @@ import { geographyPoint } from './geography.js';
 export const venue = pgTable(
   'venue',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     ownerId: text('owner_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
@@ -44,10 +42,7 @@ export const venue = pgTable(
       .generatedAlwaysAs(
         sql`ST_SnapToGrid(location::geometry, 0.01)::geography`,
       ),
-    amenities: text('amenities')
-      .array()
-      .notNull()
-      .default(sql`'{}'::text[]`),
+    amenities: text('amenities').array().notNull().default(sql`'{}'::text[]`),
     cancellationPolicy: text('cancellation_policy').notNull(),
     // IANA zone (BRAZIL_TIMEZONES in @arenaz/contracts). Wall-clock times of
     // the venue (hours, price rules, bookings) are read in this zone.
@@ -80,9 +75,7 @@ export const venue = pgTable(
 export const venueHours = pgTable(
   'venue_hours',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     venueId: uuid('venue_id')
       .notNull()
       .references(() => venue.id, { onDelete: 'cascade' }),
@@ -108,9 +101,7 @@ export const venueHours = pgTable(
 export const venuePhoto = pgTable(
   'venue_photo',
   {
-    id: uuid('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
     venueId: uuid('venue_id')
       .notNull()
       .references(() => venue.id, { onDelete: 'cascade' }),

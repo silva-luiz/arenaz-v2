@@ -16,10 +16,9 @@ export function toFieldErrors(error: z.ZodError): Record<string, string[]> {
 }
 
 /** Parses a value with a zod schema; failures become a 422 with field errors. */
-export class ZodPipe<T extends z.ZodType> implements PipeTransform<
-  unknown,
-  z.output<T>
-> {
+export class ZodPipe<T extends z.ZodType>
+  implements PipeTransform<unknown, z.output<T>>
+{
   constructor(private readonly schema: T) {}
 
   transform(value: unknown): z.output<T> {

@@ -82,7 +82,7 @@ export function ReviewCard({
     <div className={cn(CARD, 'flex items-center gap-3.5 p-3')}>
       {photo ? (
         <span className="relative h-[72px] w-[88px] shrink-0 overflow-hidden rounded-[14px]">
-          {/* eslint-disable-next-line @next/next/no-img-element -- venue photos are served by the API/storage, already sized */}
+          {/* biome-ignore lint/performance/noImgElement: venue photos are served by the API/storage, already sized */}
           <img
             src={photo.url}
             {...(photo.srcSet ? { srcSet: photo.srcSet, sizes: '88px' } : {})}
@@ -163,7 +163,7 @@ export function ConfirmedHero({
   return (
     <div className="relative flex flex-col gap-3 overflow-hidden rounded-b-[30px] bg-night px-6 pt-[120px] pb-[26px] text-white md:rounded-[30px]">
       {photo ? (
-        // eslint-disable-next-line @next/next/no-img-element -- venue photos are served by the API/storage, already sized
+        // biome-ignore lint/performance/noImgElement: venue photos are served by the API/storage, already sized
         <img
           src={photo.url}
           {...(photo.srcSet

@@ -98,7 +98,6 @@ export function PixPayment({
       lastCheck.current = now;
       startRefresh(() => {
         // Returned on purpose: the transition lasts as long as the refresh.
-        // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
         return routerRef.current.refresh();
       });
     };
@@ -226,7 +225,7 @@ export function PixPayment({
       ) : (
         <>
           <div className="rounded-[26px] border border-line bg-bg p-[18px] shadow-2">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a data URI, nothing for next/image to optimize */}
+            {/* biome-ignore lint/performance/noImgElement: a data URI, nothing for next/image to optimize */}
             <img
               src={qrSource(state.charge.qrCodeSvg)}
               alt="QR code do Pix. Escaneie com o app do seu banco."
