@@ -1,6 +1,10 @@
 'use client';
 
-import type { Availability, BrazilTimezone } from '@arenaz/contracts';
+import {
+  PLAYERS_RANGE,
+  type Availability,
+  type BrazilTimezone,
+} from '@arenaz/contracts';
 import {
   createContext,
   useCallback,
@@ -15,11 +19,8 @@ import {
 import {
   addDaysToDateKey,
   createBooking,
-  DEFAULT_PLAYERS,
   fetchAvailability,
   longDateLabel,
-  MAX_PLAYERS,
-  MIN_PLAYERS,
   pickerDays,
   signInPathFor,
   whenLabel,
@@ -182,7 +183,7 @@ export function isPeak(slot: PickerSlot, field: PickerField): boolean {
 }
 
 function clampPlayers(count: number): number {
-  return Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, count));
+  return Math.min(PLAYERS_RANGE.max, Math.max(PLAYERS_RANGE.min, count));
 }
 
 export interface BookingState {
@@ -286,7 +287,7 @@ export function BookingProvider({
   const [reload, setReload] = useState(0);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [players, setPlayersState] = useState(() =>
-    clampPlayers(initialPlayers ?? DEFAULT_PLAYERS),
+    clampPlayers(initialPlayers ?? PLAYERS_RANGE.default),
   );
   const [split, setSplit] = useState(true);
   const pickerFocusRef = useRef<HTMLButtonElement | null>(null);

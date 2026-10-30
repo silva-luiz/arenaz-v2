@@ -1,10 +1,10 @@
 'use client';
 
+import { PLAYERS_RANGE } from '@arenaz/contracts';
 import { Alert, cn, FOCUS_RING, formatPrice } from '@arenaz/ui';
 import { useId, useSyncExternalStore } from 'react';
 import { useBooking } from '@/components/booking/booking-state';
 import { BookingSummary } from '@/components/booking/booking-summary';
-import { MAX_PLAYERS, MIN_PLAYERS } from '@/lib/booking-client';
 import { isDemoMode } from '@/lib/demo';
 import type { VenuePrice } from '@/lib/price-rule-summary';
 
@@ -72,7 +72,7 @@ function PlayersRow() {
           type="button"
           aria-label="Menos um jogador"
           onClick={() => {
-            setPlayers(Math.max(MIN_PLAYERS, players - 1));
+            setPlayers(Math.max(PLAYERS_RANGE.min, players - 1));
           }}
           className={stepper}
         >
@@ -82,7 +82,7 @@ function PlayersRow() {
           type="button"
           aria-label="Mais um jogador"
           onClick={() => {
-            setPlayers(Math.min(MAX_PLAYERS, players + 1));
+            setPlayers(Math.min(PLAYERS_RANGE.max, players + 1));
           }}
           className={stepper}
         >

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AVAILABILITY_HORIZON_DAYS,
   BOOKING_MAX_MINUTES,
   manualBookingInputSchema,
 } from '@arenaz/contracts';
@@ -14,8 +15,6 @@ import { TIME_OPTIONS } from './time-options';
 const STEP = 30;
 const DEFAULT_START = 18 * 60;
 const DEFAULT_DURATION = 60;
-/** Bookings are accepted up to 60 days ahead. */
-const MAX_DAYS_AHEAD = 60;
 const DATE_MISSING = 'Informe a data';
 const FIELD_MISSING = 'Escolha a quadra';
 
@@ -180,7 +179,7 @@ export function ManualBookingForm({
             <Input
               type="date"
               min={today}
-              max={addDaysToDateKey(today, MAX_DAYS_AHEAD)}
+              max={addDaysToDateKey(today, AVAILABILITY_HORIZON_DAYS)}
               value={date}
               onChange={(event) => {
                 setDate(event.target.value);

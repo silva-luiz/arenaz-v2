@@ -1,6 +1,6 @@
 'use client';
 
-import { SPORT_LABELS, SPORTS } from '@arenaz/contracts';
+import { PLAYERS_RANGE, SPORT_LABELS, SPORTS } from '@arenaz/contracts';
 import { useEffect, useRef, useState, type SubmitEvent } from 'react';
 import { Alert } from './alert';
 import { cn } from './cn';
@@ -36,8 +36,6 @@ const GEOLOCATION_TIMEOUT_MS = 10_000;
 const FALLBACK_TIMEOUT_MS = 12_000;
 
 const DATE_DAYS = 7;
-const MIN_PLAYERS = 2;
-const MAX_PLAYERS = 30;
 
 /** Today in São Paulo, "YYYY-MM-DD" (en-CA formats dates that way). */
 function todayInSaoPaulo(): string {
@@ -93,8 +91,8 @@ function dateOptions(
 }
 
 const PLAYER_COUNTS = Array.from(
-  { length: MAX_PLAYERS - MIN_PLAYERS + 1 },
-  (_, index) => String(MIN_PLAYERS + index),
+  { length: PLAYERS_RANGE.max - PLAYERS_RANGE.min + 1 },
+  (_, index) => String(PLAYERS_RANGE.min + index),
 );
 
 function navigateTo(url: string) {

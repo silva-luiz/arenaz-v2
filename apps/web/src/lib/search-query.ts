@@ -1,5 +1,7 @@
 import {
   AMENITIES,
+  AVAILABILITY_HORIZON_DAYS,
+  PLAYERS_RANGE,
   publicSearchQuerySchema,
   type Amenity,
   type PublicSearchQuery,
@@ -33,10 +35,6 @@ export type SearchKey = (typeof KEYS)[number];
 const INTENT_KEYS = ['data', 'jogadores'] as const;
 const INTENT = new Set<string>(INTENT_KEYS);
 
-/** Farthest day ahead the booking flow accepts. */
-const MAX_DAYS_AHEAD = 60;
-const MIN_PLAYERS = 2;
-const MAX_PLAYERS = 30;
 
 /** The search filters as the user typed them: trimmed, never empty. */
 export type SearchParams = Partial<Record<SearchKey, string>>;
@@ -74,13 +72,13 @@ function addDays(date: string, days: number): string {
     .slice(0, 10);
 }
 
-/** A real day from today to today + 60 (São Paulo), or `undefined`. */
+/** A real day from today to the booking horizon (São Paulo), or `undefined`. */
 function validDate(text: string, now: Date): string | undefined {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return undefined;
   const today = saoPauloDate(now);
   // Round trip rejects 2026-02-30. ISO dates compare as strings.
   if (addDays(text, 0) !== text) return undefined;
-  return text >= today && text <= addDays(today, MAX_DAYS_AHEAD)
+  return text >= today && text <= addDays(today, AVAILABILITY_HORIZON_DAYS)
     ? text
     : undefined;
 }
@@ -89,7 +87,7 @@ function validDate(text: string, now: Date): string | undefined {
 function validPlayers(text: string): string | undefined {
   if (!/^\d{1,2}$/.test(text)) return undefined;
   const count = Number(text);
-  return count >= MIN_PLAYERS && count <= MAX_PLAYERS
+  return count >= PLAYERS_RANGE.min && count <= PLAYERS_RANGE.max
     ? String(count)
     : undefined;
 }

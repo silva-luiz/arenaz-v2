@@ -1,4 +1,4 @@
-import type { PublicVenue } from '@arenaz/contracts';
+import { PLAYERS_RANGE, type PublicVenue } from '@arenaz/contracts';
 import { Gallery } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -13,11 +13,7 @@ import {
   VenueOverview,
   VenueReviews,
 } from '@/components/public/venue-details';
-import {
-  MAX_PLAYERS,
-  MIN_PLAYERS,
-  type BookingIntent,
-} from '@/lib/booking-client';
+import type { BookingIntent } from '@/lib/booking-client';
 import { isDemoMode } from '@/lib/demo';
 import { venuePrice } from '@/lib/price-rule-summary';
 import { loadPublicVenue } from '@/lib/public-venue';
@@ -69,7 +65,9 @@ function parseSearchIntent(params: SearchParams): {
   return {
     ...(date && isCalendarDate(date) ? { date } : {}),
     ...(time && /^([01]\d|2[0-3]):[03]0$/.test(time) ? { time } : {}),
-    ...(count >= MIN_PLAYERS && count <= MAX_PLAYERS ? { players: count } : {}),
+    ...(count >= PLAYERS_RANGE.min && count <= PLAYERS_RANGE.max
+      ? { players: count }
+      : {}),
   };
 }
 

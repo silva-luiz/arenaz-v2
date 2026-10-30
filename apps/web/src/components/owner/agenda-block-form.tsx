@@ -1,6 +1,10 @@
 'use client';
 
-import { blockInputSchema, blockSchema } from '@arenaz/contracts';
+import {
+  AVAILABILITY_HORIZON_DAYS,
+  blockInputSchema,
+  blockSchema,
+} from '@arenaz/contracts';
 import { Alert, Button, Field, Input, Select } from '@arenaz/ui';
 import { useEffect, useState } from 'react';
 import { apiSend } from '@/lib/api-client';
@@ -10,8 +14,6 @@ import { TIME_OPTIONS } from './time-options';
 
 const DEFAULT_START = 18 * 60;
 const DEFAULT_END = 22 * 60;
-/** Bookings are accepted up to 60 days ahead. */
-const MAX_DAYS_AHEAD = 60;
 const DATE_MISSING = 'Informe a data';
 const FIELD_MISSING = 'Escolha a quadra';
 
@@ -138,7 +140,7 @@ export function AgendaBlockForm({
             <Input
               type="date"
               min={today}
-              max={addDaysToDateKey(today, MAX_DAYS_AHEAD)}
+              max={addDaysToDateKey(today, AVAILABILITY_HORIZON_DAYS)}
               value={date}
               onChange={(event) => {
                 setDate(event.target.value);

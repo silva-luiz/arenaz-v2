@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   // @arenaz/ui ships TypeScript source (no build step).
   transpilePackages: ['@arenaz/ui'],
+  // Demo mode is fixed per build: with the variable undefined at build time
+  // Next would leave `process.env.NEXT_PUBLIC_DEMO_MODE` in the client chunks
+  // to be read at runtime, and a server started with another value would
+  // render something the browser then disagrees with (hydration mismatch).
+  // Setting it here always inlines 'true' or 'false', on server and client.
+  env: {
+    NEXT_PUBLIC_DEMO_MODE:
+      process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ? 'true' : 'false',
+  },
   // `next dev` otherwise writes an AGENTS.md when it detects an AI agent.
   agentRules: false,
   rewrites() {

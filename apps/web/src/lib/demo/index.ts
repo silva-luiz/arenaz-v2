@@ -25,8 +25,12 @@ export type {
  * `null`/empty otherwise; the owner numbers and marketing counters are plain
  * constants, so screens must check `isDemoMode` before rendering them.
  *
- * The literal `process.env.NEXT_PUBLIC_DEMO_MODE` access is required: Next
- * inlines `NEXT_PUBLIC_*` at build time only for that exact expression.
+ * The value is fixed when the app is built: `next.config.ts` sets
+ * `env.NEXT_PUBLIC_DEMO_MODE` to 'true' or 'false', and Next replaces the
+ * literal `process.env.NEXT_PUBLIC_DEMO_MODE` below with it in the server and
+ * client bundles alike (so a server started with another value cannot
+ * disagree with the browser). The literal expression is required for that.
+ * Build with `NEXT_PUBLIC_DEMO_MODE=true` for the demo.
  */
 export const isDemoMode: boolean = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 

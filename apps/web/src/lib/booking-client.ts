@@ -113,11 +113,6 @@ export function signInPathFor(
   return `/entrar?next=${encodeURIComponent(bookingNextPath(slug, intent, players))}`;
 }
 
-/** Group size of the booking card: 2 to 30, 14 unless the search said. */
-export const MIN_PLAYERS = 2;
-export const MAX_PLAYERS = 30;
-export const DEFAULT_PLAYERS = 14;
-
 /** Each player's share of `totalCents`, rounded up to the cent. */
 export function perPersonCents(totalCents: number, players: number): number {
   return Math.ceil(totalCents / players);

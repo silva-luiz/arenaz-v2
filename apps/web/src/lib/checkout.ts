@@ -1,4 +1,5 @@
-import { MAX_PLAYERS, MIN_PLAYERS, whenLabel } from './booking-client';
+import { PLAYERS_RANGE } from '@arenaz/contracts';
+import { whenLabel } from './booking-client';
 import { formatZonedTime, zonedDateKey } from './zoned-time';
 
 /** What the API enforces: a paid booking is cancelled up to this long before. */
@@ -15,7 +16,9 @@ export function parsePlayersParam(
 ): number | undefined {
   if (typeof value !== 'string' || !/^[1-9]\d?$/.test(value)) return undefined;
   const count = Number(value);
-  return count >= MIN_PLAYERS && count <= MAX_PLAYERS ? count : undefined;
+  return count >= PLAYERS_RANGE.min && count <= PLAYERS_RANGE.max
+    ? count
+    : undefined;
 }
 
 /** The booking page, with the group size when the venue page told it. */
