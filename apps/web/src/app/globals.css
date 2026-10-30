@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+@import '@arenaz/ui/theme.css';
+
+/* Class names used inside the shared package must end up in this stylesheet. */
+@source "../../../../packages/ui/src";
+
+/*
+ * Font families come from next/font (CSS variables set on <html>). The
+ * fallbacks matter for global-error, which replaces the root layout and so has
+ * no font classes: it falls back to the system font instead of a broken var().
+ */
+@theme inline {
+  --font-sans: var(--font-geist, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(
+    --font-geist-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace
+  );
+  --font-wordmark: var(--font-bricolage, ui-sans-serif, system-ui, sans-serif);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+}
+
+/*
+ * Focus and anchors must not land under the sticky header or the fixed mobile
+ * tab bar (header 64px + 1px border, bar 56px + 1px border; from 768px up the
+ * header is 84px, borderless, and there is no bar).
+ */
+html {
+  scroll-padding-top: 65px;
+  scroll-padding-bottom: calc(57px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 84px;
+    scroll-padding-bottom: 0;
+  }
+}
+
+/*
+ * Venue page: the booking bar sticks to the bottom of the viewport below `lg`
+ * (above the tab bar until `md`), so focus and anchors must not land under it
+ * either. The bar has the fixed height `--booking-bar-h` (booking-card.tsx);
+ * while the page has one, that height is added to the scroll padding. `:has()`
+ * (Chromium 105, Safari 15.4, Firefox 121) keeps this in CSS, without script;
+ * where it is missing the padding is just the tab bar's, as on other pages.
+ * From `lg` up the card is in the right column and nothing is added.
+ */
+:root {
+  --booking-bar-h: 4.5rem;
+}
+html:has([data-booking-bar]) {
+  scroll-padding-bottom: calc(
+    57px + env(safe-area-inset-bottom) + var(--booking-bar-h)
+  );
+}
+@media (min-width: 768px) {
+  html:has([data-booking-bar]) {
+    scroll-padding-bottom: var(--booking-bar-h);
+  }
+}
+@media (min-width: 1024px) {
+  html:has([data-booking-bar]) {
+    scroll-padding-bottom: 0;
+  }
+}
+
+/*
+ * Maps. Leaflet's zoom buttons are 30px (34 on touch): too small for a thumb,
+ * so they are 44px, white, with the prototype's rounded block and shadow.
+ * The (focusable) price pins have no box of their own: the label inside them
+ * draws the focus ring (map-pin.tsx), not the 0x0 element.
+ */
+.leaflet-container .leaflet-bar {
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+.leaflet-container .leaflet-bar a[role='button'] {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 20px;
+  color: var(--color-ink);
+  border-bottom-color: var(--color-line);
+}
+.leaflet-container .leaflet-bar a[role='button']:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: -4px;
+}
+.leaflet-marker-icon:focus-visible {
+  outline: none;
+}
+
+/*
+ * Height of the search page's sticky header (bar + filter row + border), so
+ * the map beside the list can start right under it and fill the rest of the
+ * screen. The bar is 64px (84px from md), the filter row 60px, the border 1px
+ * (public-header.tsx / search-header.tsx).
+ */
+:root {
+  --search-header-h: 125px;
+}
+@media (min-width: 768px) {
+  :root {
+    --search-header-h: 145px;
+  }
+}
+
+/*
+ * The search page's sticky header (bar + filter row) is 125px tall, 145px from
+ * md, not the 65 / 84px of the other pages: focus and anchors must not land
+ * under it (WCAG 2.4.11). `data-search-page` is set on <main> by
+ * layout/public-main.tsx; the rule is more specific than the `html` ones above.
+ */
+html:has([data-search-page]) {
+  scroll-padding-top: var(--search-header-h);
+}
+
+/*
+ * Venue page: its header (Quadra.dc.html) keeps the border from md, so it is
+ * 85px tall there (84px bar + 1px), not 84px. On a phone it is the usual 65px.
+ */
+@media (min-width: 768px) {
+  html:has([data-venue-page]) {
+    scroll-padding-top: 85px;
+  }
+}
+
+/*
+ * Checkout (/reservas/[id], `data-checkout`): a flow of its own, as in
+ * Checkout.dc.html. The account shell's main is a 448px centered card; the
+ * checkout takes the whole column (up to 480px, hero and bottom buttons
+ * included) and starts at the top. On a phone the site header gives way to
+ * the screen's own back arrow and title (the tab bar stays for navigation);
+ * from 768px up the header is kept. `:has()`: where it is missing the page
+ * is merely a bit narrower and keeps the header.
+ */
+#conteudo:has([data-checkout]) {
+  max-width: 480px;
+  justify-content: flex-start;
+  padding: 0 0 24px;
+}
+@media (min-width: 768px) {
+  #conteudo:has([data-checkout]) {
+    padding: 24px 0 40px;
+  }
+}
+@media (max-width: 767px) {
+  [data-account-shell]:has([data-checkout]) > header {
+    display: none;
+  }
+  html:has([data-checkout]) {
+    scroll-padding-top: 0;
+  }
+}

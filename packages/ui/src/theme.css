@@ -1,0 +1,103 @@
+/*
+ * ArenaZ design tokens, straight from docs/design/prototipo-v2.md (approved
+ * prototype). Imported by apps via `@import '@arenaz/ui/theme.css'`; font
+ * families stay in each app because they are loaded through next/font.
+ */
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f5;
+  --color-ink: #161616;
+  --color-muted: #6a6a6a;
+  --color-line: #ebebeb;
+  --color-line-strong: #dddddd;
+  /*
+   * Deviation from the prototype: form-control borders. The prototype draws
+   * them with --color-line-strong (#ddd, about 1.4:1 on white), which fails
+   * WCAG 2.2 AA 1.4.11 (3:1 for the boundary of a UI component). The spec
+   * outranks the prototype, so Input/Textarea/Select/Checkbox use this token:
+   * #949494 is the lightest neutral gray that reaches 3:1 on white (3.03:1).
+   * --color-line-strong stays for pills and dividers.
+   */
+  --color-line-control: #949494;
+  --color-brand: #0b7a4b;
+  --color-night: #0e2018;
+  --color-live: #3ddc84;
+  --color-free: #12a150;
+  --color-fav: #ff385c;
+  /*
+   * Venue page (Quadra.dc.html): the "· nobre" price of a peak time, and the
+   * soft green box of "Por pessoa". All pass 4.5:1 for their text.
+   */
+  --color-peak: #9a4a00;
+  --color-brand-soft: #eef7f1;
+  --color-brand-deep: #0b5a38;
+
+  --shadow-1:
+    0 1px 2px rgba(8, 36, 24, 0.08), 0 10px 22px -12px rgba(8, 36, 24, 0.32);
+  --shadow-2:
+    0 2px 6px rgba(8, 36, 24, 0.1), 0 26px 48px -20px rgba(8, 36, 24, 0.48);
+  --shadow-3:
+    0 2px 4px rgba(0, 0, 0, 0.08), 0 18px 40px -14px rgba(0, 0, 0, 0.38),
+    0 48px 90px -30px rgba(0, 0, 0, 0.45);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Pulsing "ao vivo" dot (hero counter, open games). */
+  --animate-live: az-pulse 2.4s ease-out infinite;
+  @keyframes az-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(61, 220, 132, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(61, 220, 132, 0);
+    }
+  }
+
+  --radius-photo: 20px;
+  --radius-card: 24px;
+  --radius-section: 32px;
+  --radius-button: 14px;
+}
+
+/*
+ * Visual utilities of the prototype (docs/design/prototipo/*.dc.html).
+ *
+ * .az-glass       frosted white chip over a photo (seals, badges).
+ * .az-glass-dark  frosted dark chip over the night hero and the dark band.
+ * .az-lift        card that rises on hover; the motion is dropped under
+ *                 prefers-reduced-motion (the shadow still changes, which is
+ *                 not movement).
+ */
+@utility az-glass {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+}
+
+@utility az-glass-dark {
+  background: rgba(14, 26, 20, 0.55);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+
+@utility az-lift {
+  transition:
+    transform 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: box-shadow 0.4s var(--ease-out);
+
+    &:hover {
+      transform: none;
+    }
+  }
+}

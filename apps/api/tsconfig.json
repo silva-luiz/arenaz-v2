@@ -1,0 +1,11 @@
+{
+  "extends": "@arenaz/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src", "test", "scripts", "vitest.config.ts"]
+}

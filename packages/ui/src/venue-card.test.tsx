@@ -1,0 +1,453 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  VenueCard,
+  formatDistanceKm,
+  formatFreeTime,
+  type VenueCardProps,
+} from './venue-card';
+
+const BASE: VenueCardProps = {
+  href: '/espacos/arena-vila',
+  name: 'Arena Vila Madalena',
+  imageUrl: 'https://cdn.example.com/capa.jpg',
+  imageAlt: 'Campo society iluminado à noite',
+  meta: 'Society · Futsal · 1,2 km',
+  priceCents: 18000,
+};
+
+describe('VenueCard', () => {
+  it('is a single link named after the venue', () => {
+    render(<VenueCard {...BASE} />);
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName('Arena Vila Madalena');
+    expect(links[0]).toHaveAttribute('href', '/espacos/arena-vila');
+  });
+
+  it('shows the meta line and the price as description text', () => {
+    const { container } = render(<VenueCard {...BASE} />);
+    expect(screen.getByText('Society · Futsal · 1,2 km')).toBeVisible();
+    expect(container).toHaveTextContent('R$ 180 / hora');
+    expect(container).not.toHaveTextContent('a partir de');
+    expect(screen.getByRole('link')).toHaveAccessibleDescription(
+      /Society · Futsal · 1,2 km.*R\$ 180 \/ hora/,
+    );
+  });
+
+  it('says "a partir de" when the price is the lowest of several', () => {
+    const { container } = render(<VenueCard {...BASE} priceFrom />);
+    expect(container).toHaveTextContent('a partir de R$ 180 / hora');
+  });
+
+  it('renders no badge, rating or button without nextFreeTime, rating and favorite', () => {
+    const { container } = render(<VenueCard {...BASE} />);
+    expect(screen.queryByText(/Livre às/)).toBeNull();
+    expect(
+      container.querySelector('[data-testid="venue-card-rating"]'),
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="venue-card-badge"]'),
+    ).toBeNull();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('renders the photo with the given alt text, lazy', () => {
+    const { container } = render(<VenueCard {...BASE} />);
+    const img = container.querySelector('img');
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/capa.jpg');
+    expect(img).toHaveAttribute('alt', 'Campo society iluminado à noite');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
+  });
+
+  it('uses the 20:19 photo with the 20 px radius', () => {
+    const { container } = render(<VenueCard {...BASE} />);
+    const frame = container.querySelector('img')?.parentElement;
+    expect(frame?.className).toContain('aspect-[20/19]');
+    expect(frame?.className).toContain('rounded-photo');
+  });
+
+  it('offers the cover variants with the sizes of its layout', () => {
+    const srcSet =
+      'https://cdn.example.com/capa.w400.webp 400w, https://cdn.example.com/capa.w800.webp 800w';
+    const { container } = render(
+      <VenueCard
+        {...BASE}
+        imageSrcSet={srcSet}
+        imageSizes="(min-width: 1024px) 300px, 100vw"
+      />,
+    );
+    const img = container.querySelector('img');
+    expect(img).toHaveAttribute('srcset', srcSet);
+    expect(img).toHaveAttribute('sizes', '(min-width: 1024px) 300px, 100vw');
+    // The original stays as the fallback.
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/capa.jpg');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
+  });
+
+  it('defaults the sizes to a card of a responsive grid', () => {
+    const { container } = render(
+      <VenueCard {...BASE} imageSrcSet="/capa.w400.webp 400w" />,
+    );
+    expect(container.querySelector('img')).toHaveAttribute(
+      'sizes',
+      '(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw',
+    );
+  });
+
+  it('serves only the original while the variants are pending', () => {
+    const { container } = render(
+      <VenueCard {...BASE} imageSrcSet={null} imageSizes="100vw" />,
+    );
+    const img = container.querySelector('img');
+    expect(img).not.toHaveAttribute('srcset');
+    expect(img).not.toHaveAttribute('sizes');
+  });
+
+  it('can use the square photo of the home rails', () => {
+    const { container } = render(<VenueCard {...BASE} square />);
+    const frame = container.querySelector('img')?.parentElement;
+    expect(frame).toHaveClass('aspect-square');
+    expect(frame?.className).not.toContain('aspect-[20/19]');
+  });
+
+  it('falls back to a neutral tile with the logo glyph without a photo', () => {
+    const { container } = render(<VenueCard {...BASE} imageUrl={null} />);
+    expect(container.querySelector('img')).toBeNull();
+    const tile = screen.getByTestId('venue-card-fallback');
+    expect(tile).toHaveClass('bg-surface');
+    expect(tile.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('formats distances in pt-BR', () => {
+    expect(formatDistanceKm(1.2)).toBe('1,2 km');
+    expect(formatDistanceKm(0)).toBe('0,0 km');
+  });
+
+  describe('free time seal', () => {
+    it('formats HH:MM like the prototype: whole hours drop the minutes', () => {
+      expect(formatFreeTime('20:00')).toBe('20h');
+      expect(formatFreeTime('19:30')).toBe('19h30');
+      expect(formatFreeTime('07:00')).toBe('7h');
+      expect(formatFreeTime('00:00')).toBe('0h');
+      expect(formatFreeTime('09:05')).toBe('9h05');
+    });
+
+    it('shows "Livre às 19h30" with the free dot', () => {
+      render(<VenueCard {...BASE} nextFreeTime="19:30" />);
+      const seal = screen.getByText('Livre às 19h30');
+      expect(seal).toBeVisible();
+      expect(seal.closest('.az-glass')).not.toBeNull();
+      expect(
+        seal.querySelector('[data-testid="venue-card-free-dot"]'),
+      ).toHaveClass('bg-free');
+    });
+
+    it('shows "Livre às 20h" for 20:00', () => {
+      render(<VenueCard {...BASE} nextFreeTime="20:00" />);
+      expect(screen.getByText('Livre às 20h')).toBeVisible();
+    });
+
+    it('is part of the link description', () => {
+      render(<VenueCard {...BASE} nextFreeTime="20:00" />);
+      expect(screen.getByRole('link')).toHaveAccessibleDescription(
+        /Livre às 20h/,
+      );
+    });
+
+    it('is absent when nextFreeTime is null', () => {
+      render(<VenueCard {...BASE} nextFreeTime={null} />);
+      expect(screen.queryByText(/Livre às/)).toBeNull();
+    });
+  });
+
+  describe('rating and badge', () => {
+    it('shows the rating next to the name only when given', () => {
+      render(<VenueCard {...BASE} rating="4,92" />);
+      const rating = screen.getByTestId('venue-card-rating');
+      expect(rating).toHaveTextContent('4,92');
+      expect(rating.querySelector('svg')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+      expect(screen.getByRole('link')).toHaveAccessibleDescription(/Nota 4,92/);
+    });
+
+    it('shows the badge as a glass pill on the photo', () => {
+      render(<VenueCard {...BASE} badge="Preferido da galera" />);
+      const badge = screen.getByText('Preferido da galera');
+      expect(badge).toBeVisible();
+      expect(badge).toHaveClass('az-glass');
+    });
+  });
+
+  describe('favorite button', () => {
+    it('is a button outside the link, named "Salvar nos favoritos"', () => {
+      render(
+        <VenueCard
+          {...BASE}
+          favorite={{ pressed: false, onToggle: vi.fn() }}
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'Salvar nos favoritos',
+      });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('link')).not.toContainElement(button);
+      expect(screen.getAllByRole('link')).toHaveLength(1);
+    });
+
+    it('is named "Remover dos favoritos" and pressed when saved', () => {
+      render(
+        <VenueCard {...BASE} favorite={{ pressed: true, onToggle: vi.fn() }} />,
+      );
+      expect(
+        screen.getByRole('button', { name: 'Remover dos favoritos' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('calls onToggle on click and does not follow the link', async () => {
+      const onToggle = vi.fn();
+      render(<VenueCard {...BASE} favorite={{ pressed: false, onToggle }} />);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Salvar nos favoritos' }),
+      );
+
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('is reachable and activatable by keyboard', async () => {
+      const onToggle = vi.fn();
+      render(<VenueCard {...BASE} favorite={{ pressed: false, onToggle }} />);
+
+      await userEvent.tab(); // the link
+      await userEvent.tab(); // the heart
+      expect(
+        screen.getByRole('button', { name: 'Salvar nos favoritos' }),
+      ).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a 44 px target', () => {
+      render(
+        <VenueCard
+          {...BASE}
+          favorite={{ pressed: false, onToggle: vi.fn() }}
+        />,
+      );
+      const button = screen.getByRole('button');
+      expect(button.className).toContain('size-11');
+    });
+  });
+
+  describe('review count', () => {
+    it('shows "(318)" after the rating, with the count spoken in full', () => {
+      render(<VenueCard {...BASE} rating="4,92" reviewsCount={318} />);
+
+      const rating = screen.getByTestId('venue-card-rating');
+      expect(rating).toHaveTextContent('Nota 4,92(318), 318 avaliações');
+      expect(within(rating).getByText('(318)')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
+    it('writes thousands the Brazilian way', () => {
+      render(<VenueCard {...BASE} rating="4,9" reviewsCount={1204} />);
+
+      expect(screen.getByText('(1.204)')).toBeInTheDocument();
+    });
+
+    it('is absent without the count, and never shown without a rating', () => {
+      const { rerender } = render(<VenueCard {...BASE} rating="4,92" />);
+      expect(screen.queryByText(/\(/)).toBeNull();
+
+      rerender(<VenueCard {...BASE} reviewsCount={318} />);
+      expect(screen.queryByTestId('venue-card-rating')).toBeNull();
+      expect(screen.queryByText('(318)')).toBeNull();
+    });
+  });
+
+  describe('free time slots (search grid)', () => {
+    const slots = [
+      { time: '20:00', href: '/espacos/arena?data=2026-10-30&hora=20%3A00' },
+      { time: '21:00', href: '/espacos/arena?data=2026-10-30&hora=21%3A00' },
+    ];
+
+    it('lists them as links in a labelled list, named with the time and the venue', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const list = screen.getByRole('list', {
+        name: 'Horários livres hoje em Arena Vila Madalena',
+      });
+      const links = within(list).getAllByRole('link');
+      expect(links.map((link) => link.textContent)).toEqual(['20:00', '21:00']);
+      expect(links[0]).toHaveAccessibleName('20:00, Arena Vila Madalena');
+      expect(links[0]).toHaveAttribute(
+        'href',
+        '/espacos/arena?data=2026-10-30&hora=20%3A00',
+      );
+      // Not inside the card link (links cannot nest).
+      expect(
+        screen.getByRole('link', { name: 'Arena Vila Madalena' }),
+      ).not.toContainElement(links[0] ?? null);
+    });
+
+    it('uses the mono font, a 44px target on a phone and a compact one from md', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const link = screen.getByRole('link', {
+        name: '20:00, Arena Vila Madalena',
+      });
+      expect(link).toHaveClass('font-mono', 'min-h-11', 'md:min-h-8');
+    });
+
+    it('moves the price under the chips, out of the card link, and the link still describes it', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const card = screen.getByRole('link', { name: 'Arena Vila Madalena' });
+      expect(card).not.toHaveTextContent('R$');
+      expect(card).toHaveAccessibleDescription(/R\$ 180/);
+      const list = screen.getByRole('list', { name: /Horários livres/ });
+      const price = screen.getByText('R$ 180');
+      expect(
+        list.compareDocumentPosition(price) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('with an empty list there is no list at all, but the price moves the same', () => {
+      render(<VenueCard {...BASE} slots={[]} />);
+
+      expect(screen.queryByRole('list')).toBeNull();
+      expect(screen.getByRole('link')).not.toHaveTextContent('R$');
+      expect(screen.getByText('R$ 180')).toBeInTheDocument();
+    });
+
+    it('without the prop nothing changes: the price stays in the link', () => {
+      render(<VenueCard {...BASE} />);
+
+      expect(screen.getByRole('link')).toHaveTextContent('R$ 180');
+      expect(screen.queryByRole('list')).toBeNull();
+    });
+  });
+
+  describe('show on map button (search results)', () => {
+    const showOnMap = (pressed: boolean, onToggle = vi.fn()) => ({
+      pressed,
+      label: 'Mostrar Arena Vila Madalena no mapa',
+      onToggle,
+    });
+
+    it('is a pressed-state button outside the link, with the given name', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      const button = screen.getByRole('button', {
+        name: 'Mostrar Arena Vila Madalena no mapa',
+      });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('link')).not.toContainElement(button);
+    });
+
+    it('is pressed when the venue is the selected one, and rings the photo', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(true)} />);
+      expect(screen.getByRole('button', { name: /no mapa/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByTestId('venue-card-photo').className).toContain(
+        '0_0_0_5px_#161616',
+      );
+    });
+
+    it('does not ring the photo while not selected', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      expect(screen.getByTestId('venue-card-photo').className).not.toContain(
+        '0_0_0_5px_#161616',
+      );
+    });
+
+    it('calls onToggle on click without following the link', async () => {
+      const onToggle = vi.fn();
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false, onToggle)} />);
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /no mapa/ }));
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a 44 px target', () => {
+      render(<VenueCard {...BASE} showOnMap={showOnMap(false)} />);
+      const { className } = screen.getByRole('button', { name: /no mapa/ });
+      expect(className).toContain('size-11');
+    });
+
+    it('takes the corner of the heart: with both, only the map button shows', () => {
+      render(
+        <VenueCard
+          {...BASE}
+          showOnMap={showOnMap(false)}
+          favorite={{ pressed: false, onToggle: vi.fn() }}
+        />,
+      );
+      expect(screen.getAllByRole('button')).toHaveLength(1);
+    });
+  });
+
+  it('lifts on hover and scales the photo, all disabled under reduced motion', () => {
+    const { container } = render(<VenueCard {...BASE} />);
+    const wrapper = screen.getByRole('link').parentElement;
+    expect(wrapper?.className).toContain('hover:-translate-y-1');
+    expect(wrapper?.className).toContain('motion-reduce:hover:translate-y-0');
+    expect(wrapper?.className).toContain('motion-reduce:transition-none');
+    const img = container.querySelector('img');
+    expect(img?.className).toContain('group-hover:scale-105');
+    expect(img?.className).toContain('motion-reduce:group-hover:scale-100');
+  });
+
+  describe('long names', () => {
+    const LONG =
+      'Complexo Esportivo Arena Society e Futsal Vila Madalena Premium';
+
+    it('clamps a 40+ character name to two lines and keeps the rating aligned to the top', () => {
+      expect(LONG.length).toBeGreaterThan(40);
+      render(<VenueCard {...BASE} name={LONG} rating="4,92" />);
+
+      const name = screen.getByText(LONG);
+      expect(name).toHaveClass('line-clamp-2');
+      expect(name).not.toHaveClass('truncate');
+      expect(name.parentElement).toHaveClass('items-start');
+      expect(screen.getByRole('link')).toHaveAccessibleName(LONG);
+    });
+
+    it('stays plain with a long name, no photo, no seal, no rating and no heart', () => {
+      const { container } = render(
+        <VenueCard {...BASE} name={LONG} imageUrl={null} nextFreeTime={null} />,
+      );
+
+      expect(screen.getByTestId('venue-card-fallback')).toBeVisible();
+      expect(container.querySelector('img')).toBeNull();
+      expect(screen.queryByText(/Livre às/)).toBeNull();
+      expect(screen.queryByTestId('venue-card-rating')).toBeNull();
+      expect(screen.queryAllByRole('button')).toHaveLength(0);
+      expect(screen.getByText(LONG)).toHaveClass('line-clamp-2');
+    });
+  });
+
+  it('puts className on the outer element', () => {
+    const { container } = render(<VenueCard {...BASE} className="w-72" />);
+    expect(container.firstElementChild).toHaveClass('w-72');
+  });
+
+  it('uses the injected link component', () => {
+    function Custom(props: React.ComponentProps<'a'>) {
+      return <a data-custom="yes" {...props} />;
+    }
+    render(<VenueCard {...BASE} linkComponent={Custom} />);
+    expect(screen.getByRole('link')).toHaveAttribute('data-custom', 'yes');
+  });
+});

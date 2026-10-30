@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>ArenaZ — Painel do dono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&amp;family=Geist:wght@400..700&amp;family=Geist+Mono:wght@500..600&amp;display=swap">
+<style>
+body{margin:0;background:#F7F7F5;color:#161616;font-family:'Geist',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#161616}a:hover{color:#000000}
+button:focus-visible,a:focus-visible{outline:2px solid #161616;outline-offset:3px}
+:root{--sh-1:0 1px 2px rgba(8,36,24,.08),0 10px 22px -12px rgba(8,36,24,.32);--sh-2:0 2px 6px rgba(8,36,24,.10),0 26px 48px -20px rgba(8,36,24,.48);--sh-3:0 2px 4px rgba(0,0,0,.08),0 18px 40px -14px rgba(0,0,0,.38),0 48px 90px -30px rgba(0,0,0,.45);--ease:cubic-bezier(.2,.7,.2,1)}
+.az-glass{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(14px) saturate(1.6);backdrop-filter:blur(14px) saturate(1.6)}
+.az-lift{transition:transform .4s var(--ease),box-shadow .4s var(--ease)}.az-lift:hover{transform:translateY(-3px);box-shadow:var(--sh-2) !important}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+.az-side a:hover{background:#F2F2F2}
+.az-bk:hover{filter:brightness(.97)}
+@media (max-width:760px){.az-wrap{padding-left:16px !important;padding-right:16px !important}}
+</style>
+</helmet>
+<div style="background: #F7F7F5; min-height: 100vh; display: flex; flex-wrap: wrap;">
+
+<nav class="az-side" aria-label="Painel" style="flex: 1 1 240px; max-width: 100%; background: #FFFFFF; border-right: 1px solid #EBEBEB; padding: 22px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
+<a href="Main.dc.html" aria-label="ArenaZ, início" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: {{brand}}; padding: 0 10px 22px;">
+<svg width="30" height="30" viewBox="0 0 34 34" fill="none" aria-hidden="true"><rect width="34" height="34" rx="10" fill="{{brand}}"></rect><rect x="7" y="10" width="20" height="14" rx="2" stroke="#FFFFFF" stroke-width="1.8"></rect><line x1="17" y1="10" x2="17" y2="24" stroke="#FFFFFF" stroke-width="1.8"></line><circle cx="17" cy="17" r="3.2" stroke="#FFFFFF" stroke-width="1.8"></circle></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.045em;">arenaz</span>
+<span style="font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; background: #161616; color: #FFFFFF; letter-spacing: 0.04em;">DONO</span>
+</a>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="Painel.dc.html" aria-current="{{n.current}}" style="{{n.style}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>{{n.label}}</a>
+</sc-for>
+<div style="margin-top: auto; padding: 14px; border-radius: 16px; background: #F7F7F5; display: flex; align-items: center; gap: 12px;">
+<img src="/_blob/cd41929848ab8e46f5639b54a8c84853" alt="" style="width: 44px; height: 44px; border-radius: 12px; object-fit: cover;">
+<span style="font-size: 13px;"><strong style="display: block; font-weight: 650;">Arena Vila Madalena</strong><span style="color: #6A6A6A;">3 quadras · Marcos</span></span>
+</div>
+</nav>
+
+<main class="az-wrap" style="flex: 999 1 640px; min-width: 0; padding: 28px 40px 48px; display: flex; flex-direction: column; gap: 24px;">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
+<div>
+<p style="margin: 0; font-size: 14px; color: #6A6A6A;">Quarta, 28 de outubro</p>
+<h1 style="margin: 4px 0 0; font-size: 30px; font-weight: 650; letter-spacing: -0.025em;">Boa noite, Marcos</h1>
+</div>
+<div style="display: flex; gap: 8px;">
+<button style="height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #DDDDDD; background: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: #161616;">Bloquear horário</button>
+<button style="height: 44px; padding: 0 16px; border-radius: 12px; border: none; background: {{brand}}; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">+ Reserva manual</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px;">
+<div class="az-lift" style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 20px; padding: 18px 20px; box-shadow: var(--sh-1);"><p style="margin: 0; font-size: 13px; color: #6A6A6A;">Ocupação hoje</p><p style="margin: 8px 0 0; font-size: 30px; font-weight: 650; letter-spacing: -0.03em;">{{occupancy}}</p><span style="display: block; margin-top: 12px; height: 6px; border-radius: 6px; background: #EBEBEB;"><span style="{{occBar}}"></span></span></div>
+<div class="az-lift" style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 20px; padding: 18px 20px; box-shadow: var(--sh-1);"><p style="margin: 0; font-size: 13px; color: #6A6A6A;">Recebido na semana</p><p style="margin: 8px 0 0; font-size: 30px; font-weight: 650; letter-spacing: -0.03em;">R$ 8.640</p><p style="margin: 8px 0 0; font-size: 13px; color: #0B5A38; font-weight: 600;">Tudo já pago no Pix</p></div>
+<div class="az-lift" style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 20px; padding: 18px 20px; box-shadow: var(--sh-1);"><p style="margin: 0; font-size: 13px; color: #6A6A6A;">Repasse de sexta</p><p style="margin: 8px 0 0; font-size: 30px; font-weight: 650; letter-spacing: -0.03em;">R$ 3.120</p><p style="margin: 8px 0 0; font-size: 13px; color: #6A6A6A;">Cai na conta 30/10</p></div>
+<div class="az-lift" style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 20px; padding: 18px 20px; box-shadow: var(--sh-1);"><p style="margin: 0; font-size: 13px; color: #6A6A6A;">Mensalistas ativos</p><p style="margin: 8px 0 0; font-size: 30px; font-weight: 650; letter-spacing: -0.03em;">12 times</p><p style="margin: 8px 0 0; font-size: 13px; color: #6A6A6A;">2 renovam esta semana</p></div>
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 24px; padding: 20px 22px 22px; box-shadow: var(--sh-2);">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;">
+<h2 style="margin: 0; font-size: 19px; font-weight: 650;">Agenda</h2>
+<div role="group" aria-label="Dia" style="display: flex; padding: 4px; border-radius: 12px; background: #F2F2F2;">
+<sc-for list="{{dayTabs}}" as="d" hint-placeholder-count="3"><button onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="{{d.style}}">{{d.label}}</button></sc-for>
+</div>
+<div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #6A6A6A;">
+<span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #DDF0E5; border: 1px solid #8CC9A6;"></span>Pelo app</span>
+<span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #E3E9FB; border: 1px solid #9DB0EC;"></span>Mensalista</span>
+<span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #F2F2F2; border: 1px solid #C4C4C4;"></span>Manual</span>
+<span style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #FFF1DD; border: 1px solid #E9B566;"></span>Partida aberta</span>
+</div>
+</div>
+<div style="overflow-x: auto;">
+<div style="min-width: 760px;">
+<div style="display: grid; grid-template-columns: 170px repeat(8, minmax(0, 1fr)); font-family: 'Geist Mono', monospace; font-size: 12px; color: #6A6A6A; padding-bottom: 8px;">
+<span></span>
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="8"><span style="border-left: 1px solid #EBEBEB; padding-left: 6px;">{{h}}</span></sc-for>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: 170px repeat(8, minmax(0, 1fr)); grid-template-rows: 64px; border-top: 1px solid #EBEBEB; align-items: stretch;">
+<span style="grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600;"><img src="{{r.img}}" alt="" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover;">{{r.name}}</span>
+<sc-for list="{{r.bookings}}" as="b" hint-placeholder-count="2">
+<button class="az-bk" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" style="{{b.style}}"><strong style="display: block; font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{b.who}}</strong><span style="font-size: 12px; opacity: 0.8;">{{b.range}}</span></button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<sc-if value="{{sel}}" hint-placeholder-val="{{ true }}">
+<section style="background: #FFFFFF; border: 1px solid #EBEBEB; border-radius: 24px; padding: 20px 22px; box-shadow: var(--sh-1); display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+<span style="flex: 1 1 260px;"><span style="display: block; font-size: 13px; color: #6A6A6A;">{{sel.court}} · {{sel.range}}</span><strong style="display: block; margin-top: 4px; font-size: 18px; font-weight: 650;">{{sel.who}}</strong><span style="display: block; margin-top: 4px; font-size: 14px; color: #6A6A6A;">{{sel.detail}}</span></span>
+<span style="padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 650; background: #EEF7F1; color: #0B5A38;">{{sel.status}}</span>
+<button style="height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #DDDDDD; background: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: #161616;">Mandar mensagem</button>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"brand":{"editor":"color","default":"#0B7A4B","options":["#0B7A4B","#161616","#1F4FD8","#E2502B"]},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { day: 'hoje', sel: 's1-20' };
+  }
+  renderVals() {
+    const brand = this.props.brand ?? '#0B7A4B';
+    const navDefs = [
+      ['Hoje', 'M3 12l9-8 9 8M5 10v10h14V10', true], ['Agenda', 'M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2zM3 9.5h18M8 2.5v4M16 2.5v4', false],
+      ['Quadras', 'M3 6h18v12H3zM12 6v12M12 9.5a2.5 2.5 0 1 1 0 5', false], ['Mensalistas', 'M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c.6-3.6 3.3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M17 12a2.5 2.5 0 1 0 0-5M16 14.6c2.7.1 4.8 1.8 5.5 4.9', false],
+      ['Financeiro', 'M3 7h18v10H3zM12 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 10v4M18 10v4', false], ['Avaliações', 'M12 2l3.1 6.6 6.9.7-5.2 4.7 1.4 7-6.2-3.7-6.2 3.7 1.4-7L2 9.3l6.9-.7z', false]
+    ];
+    const nav = navDefs.map(([label, icon, on]) => ({ label, icon, current: on ? 'page' : 'false',
+      style: 'display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; text-decoration: none; font-size: 15px; ' + (on ? 'background: #F2F2F2; font-weight: 650; color: #161616;' : 'font-weight: 500; color: #4A4A4A;') }));
+    const day = this.state.day;
+    const dayTabs = [['hoje', 'Hoje'], ['amanha', 'Amanhã'], ['semana', 'Semana']].map(([id, label]) => {
+      const on = day === id;
+      return { label, pressed: on ? 'true' : 'false', pick: () => this.setState({ day: id, sel: null }),
+        style: 'height: 34px; padding: 0 14px; border-radius: 9px; border: none; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #161616; box-shadow: 0 1px 3px rgba(0,0,0,0.12);' : 'background: transparent; color: #6A6A6A;') };
+    });
+    const hours = ['16h', '17h', '18h', '19h', '20h', '21h', '22h', '23h'];
+    const kinds = {
+      app: 'background: #DDF0E5; border: 1px solid #8CC9A6; color: #0B4A2E;',
+      mensal: 'background: #E3E9FB; border: 1px solid #9DB0EC; color: #1E3478;',
+      manual: 'background: #F2F2F2; border: 1px solid #C4C4C4; color: #333333;',
+      aberta: 'background: #FFF1DD; border: 1px solid #E9B566; color: #6B4300;'
+    };
+    const statusOf = { app: 'Pago no Pix', mensal: 'Mensalidade em dia', manual: 'Pagar no local', aberta: '10 de 14 pagaram' };
+    const detailOf = { app: '14 jogadores · reserva instantânea', mensal: 'Toda quarta · desde maio', manual: 'Criada por você por telefone', aberta: 'Partida aberta · faltam 4 jogadores' };
+    const today = [
+      { id: 's1', name: 'Society 1', img: '/_blob/cd41929848ab8e46f5639b54a8c84853', bk: [[17, 1, 'Escolinha Sub-13', 'manual'], [19, 1, 'Racha do Rafa', 'mensal'], [20, 2, 'Time do Gabriel', 'app'], [22, 2, 'Fut feminino', 'aberta']] },
+      { id: 's2', name: 'Society 2', img: '/_blob/19c7b1941420120db2f5244eb8a285dc', bk: [[18, 2, 'Firma Contábil FC', 'mensal'], [21, 1, 'Pedro & cia', 'app'], [23, 1, 'Galera do bar', 'app']] },
+      { id: 'fs', name: 'Futsal', img: '/_blob/eef9d4700072422f7e86d7f7b7f4eb48', bk: [[16, 1, 'Aula particular', 'manual'], [19, 2, 'Pacaembu Old Boys', 'mensal'], [21, 2, 'Racha da quarta', 'aberta']] }
+    ];
+    const tomorrow = [
+      { id: 's1', name: 'Society 1', img: '/_blob/cd41929848ab8e46f5639b54a8c84853', bk: [[19, 2, 'Society de quinta', 'aberta'], [21, 1, 'Racha do Rafa', 'mensal']] },
+      { id: 's2', name: 'Society 2', img: '/_blob/19c7b1941420120db2f5244eb8a285dc', bk: [[20, 2, 'Time do Léo', 'app']] },
+      { id: 'fs', name: 'Futsal', img: '/_blob/eef9d4700072422f7e86d7f7b7f4eb48', bk: [[18, 1, 'Aula particular', 'manual'], [22, 1, 'Futsal pós-trampo', 'app']] }
+    ];
+    const src = day === 'amanha' ? tomorrow : today;
+    let booked = 0;
+    let selected = null;
+    const fmt = (h) => String(h).padStart(2, '0') + ':00';
+    const rows = src.map((r) => ({
+      name: r.name, img: r.img,
+      bookings: r.bk.map(([start, len, who, kind]) => {
+        booked += len;
+        const id = r.id + '-' + start;
+        const on = this.state.sel === id;
+        const range = fmt(start) + '–' + fmt(start + len);
+        if (on) selected = { who, range, court: r.name, status: statusOf[kind], detail: detailOf[kind] };
+        return {
+          who, range, pressed: on ? 'true' : 'false', pick: () => this.setState({ sel: id }),
+          style: 'grid-row: 1; grid-column: ' + (start - 16 + 2) + ' / span ' + len + '; margin: 6px 3px; padding: 6px 10px; border-radius: 10px; text-align: left; font: inherit; cursor: pointer; min-width: 0; overflow: hidden; ' + kinds[kind] + (on ? ' box-shadow: 0 0 0 2px #161616, 0 12px 24px -10px rgba(0,0,0,0.45); transform: translateY(-2px);' : ' box-shadow: 0 1px 2px rgba(0,0,0,0.08);')
+        };
+      })
+    }));
+    const pct = Math.round((booked / (src.length * 8)) * 100);
+    return {
+      brand, nav, dayTabs, hours, rows, sel: selected,
+      occupancy: pct + '%',
+      occBar: 'display: block; height: 6px; border-radius: 6px; background: ' + brand + '; width: ' + pct + '%;'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+import {
+  defaultTimezoneForUf,
+  fieldSummarySchema,
+  venueSchema,
+  venueSummarySchema,
+  type FieldSummary,
+  type Venue,
+  type VenueHours,
+  type VenueInput,
+  type VenueSummary,
+  type VenueUpdate,
+} from '@arenaz/contracts';
+import {
+  schema,
+  type Db,
+  type Field,
+  type NewVenue,
+  type VenuePhoto,
+  type VenueHours as VenueHoursRow,
+  type Venue as VenueRow,
+} from '@arenaz/db';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { asc, count, desc, eq, or, sql } from 'drizzle-orm';
+import {
+  VENUE_HAS_BOOKINGS,
+  VENUE_HAS_PAID_HISTORY,
+  VENUE_TIMEZONE_LOCKED,
+} from '../booking/booking-errors.js';
+import { hasPaidHistory, hasUpcomingActiveBooking } from '../booking/busy.js';
+import { dbNow } from '../common/db-clock.js';
+import { VENUE_NOT_FOUND } from '../common/not-found.js';
+import { textOrNull } from '../common/text.js';
+import { DB, type DbHandle } from '../db/db.module.js';
+import {
+  photoObjectKeys,
+  photoUrls,
+  type PhotoUrls,
+} from '../storage/photo-objects.js';
+import {
+  deleteQuietly,
+  STORAGE,
+  type StoragePort,
+} from '../storage/storage.port.js';
+import { coverPhoto, OUTER_VENUE_ID } from './cover-photo.js';
+import { findOwnedVenue } from './owner.js';
+import {
+  assertPublishedStaysComplete,
+  lockVenueFields,
+  lockVenueStatus,
+  missingForPublish,
+  PUBLISH_INCOMPLETE_MESSAGE,
+} from './publishing.js';
+import { slugify } from './slug.js';
+
+const { venue, venueHours, venuePhoto, field, priceRule, booking } = schema;
+
+/** Attempts at a unique slug when concurrent creates keep colliding. */
+const SLUG_ATTEMPTS = 10;
+
+// --------------------------------------------------------------- mapping ----
+
+/** `numeric(5,1)` comes back from the driver as a string: number, or null. */
+export function toMeters(value: string | null): number | null {
+  return value === null ? null : Number(value);
+}
+
+/** DB field row (+ its price rule count) → the contract's `FieldSummary`. */
+export function toFieldSummary(
+  row: Field,
+  priceRulesCount: number,
+): FieldSummary {
+  return fieldSummarySchema.parse({
+    id: row.id,
+    name: row.name,
+    sports: row.sports,
+    surface: row.surface,
+    format: row.format,
+    lengthM: toMeters(row.lengthM),
+    widthM: toMeters(row.widthM),
+    minSlotMinutes: row.minSlotMinutes,
+    basePriceCentsPerHour: row.basePriceCentsPerHour,
+    isActive: row.isActive,
+    priceRulesCount,
+  });
+}
+
+/**
+ * DB rows → `Venue`, the one response mapper for owner venues. Hours are
+ * sorted by weekday then opening minute, photos by position (URLs and
+ * `srcSet` from `urlsOf`, i.e. the storage's public URLs), timestamps are ISO
+ * strings, and
+ * the result is validated with the contract schema before it leaves the API.
+ */
+export function toVenue(
+  row: VenueRow,
+  hours: VenueHoursRow[],
+  photos: VenuePhoto[],
+  fields: { field: Field; priceRulesCount: number }[],
+  urlsOf: (photo: VenuePhoto) => PhotoUrls,
+): Venue {
+  return venueSchema.parse({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    phone: row.phone,
+    address: {
+      cep: row.cep,
+      street: row.street,
+      number: row.number,
+      complement: row.complement,
+      neighborhood: row.neighborhood,
+      city: row.city,
+      state: row.state,
+    },
+    location: row.location,
+    amenities: row.amenities,
+    cancellationPolicy: row.cancellationPolicy,
+    timezone: row.timezone,
+    status: row.status,
+    hours: hours
+      .map(({ weekday, openMinute, closeMinute }) => ({
+        weekday,
+        openMinute,
+        closeMinute,
+      }))
+      .sort((a, b) => a.weekday - b.weekday || a.openMinute - b.openMinute),
+    photos: [...photos]
+      .sort((a, b) => a.position - b.position)
+      .map((photo) => ({
+        id: photo.id,
+        ...urlsOf(photo),
+        position: photo.position,
+      })),
+    fields: fields.map((item) =>
+      toFieldSummary(item.field, item.priceRulesCount),
+    ),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  });
+}
+
+/** True for a Postgres unique violation (23505) on a constraint naming `column`. */
+function isUniqueViolationOn(error: unknown, column: string): boolean {
+  // Drizzle wraps the driver error and keeps it in `cause`.
+  let current: unknown = error;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (typeof current !== 'object' || current === null) return false;
+    const { code, constraint, cause } = current as {
+      code?: unknown;
+      constraint?: unknown;
+      cause?: unknown;
+    };
+    if (code === '23505') {
+      return typeof constraint === 'string' && constraint.includes(column);
+    }
+    current = cause;
+  }
+  return false;
+}
+
+// --------------------------------------------------------------- service ----
+
+@Injectable()
+export class VenuesService {
+  private readonly logger = new Logger(VenuesService.name);
+
+  constructor(
+    @Inject(DB) private readonly handle: DbHandle,
+    @Inject(STORAGE) private readonly storage: StoragePort,
+  ) {}
+
+  async list(userId: string): Promise<VenueSummary[]> {
+    const rows = await this.handle.db
+      .select({
+        id: venue.id,
+        slug: venue.slug,
+        name: venue.name,
+        status: venue.status,
+        city: venue.city,
+        fieldsCount: sql<number>`(select count(*)::int from ${field} where ${field.venueId} = ${OUTER_VENUE_ID})`,
+        coverKey: coverPhoto<string>(venuePhoto.storageKey),
+        coverWidths: coverPhoto<number[]>(venuePhoto.variantWidths),
+      })
+      .from(venue)
+      .where(eq(venue.ownerId, userId))
+      .orderBy(desc(venue.createdAt), asc(venue.id));
+    return rows.map(({ coverKey, coverWidths, ...rest }) => {
+      const cover =
+        coverKey === null
+          ? null
+          : photoUrls(this.storage, coverKey, coverWidths);
+      return venueSummarySchema.parse({
+        ...rest,
+        coverUrl: cover?.url ?? null,
+        coverSrcSet: cover?.srcSet ?? null,
+      });
+    });
+  }
+
+  async create(userId: string, input: VenueInput): Promise<Venue> {
+    const { address } = input;
+    for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt += 1) {
+      const slug = await this.uniqueSlug(input.name);
+      try {
+        const [created] = await this.handle.db
+          .insert(venue)
+          .values({
+            ownerId: userId,
+            slug,
+            name: input.name,
+            description: textOrNull(input.description),
+            phone: input.phone,
+            cep: address.cep,
+            street: address.street,
+            number: address.number,
+            complement: textOrNull(address.complement),
+            neighborhood: address.neighborhood,
+            city: address.city,
+            state: address.state,
+            location: input.location,
+            amenities: input.amenities,
+            cancellationPolicy: input.cancellationPolicy,
+            // Omitted: the usual zone of the state.
+            timezone: input.timezone ?? defaultTimezoneForUf(address.state),
+          })
+          .returning({ id: venue.id });
+        if (!created) throw new Error('insert do espaço não retornou a linha');
+        return await this.load(created.id);
+      } catch (error) {
+        // Another request took the slug between our check and the insert.
+        if (!isUniqueViolationOn(error, 'slug')) throw error;
+      }
+    }
+    throw new ConflictException(
+      'Não foi possível gerar um endereço único para o espaço. Tente novamente',
+    );
+  }
+
+  async get(userId: string, venueId: string): Promise<Venue> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    return this.load(owned.id);
+  }
+
+  /** The slug never changes after creation, even when the name does. */
+  async update(
+    userId: string,
+    venueId: string,
+    input: VenueUpdate,
+  ): Promise<Venue> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    const changes: Partial<NewVenue> = {};
+    if (input.name !== undefined) changes.name = input.name;
+    if (input.description !== undefined) {
+      changes.description = textOrNull(input.description);
+    }
+    if (input.phone !== undefined) changes.phone = input.phone;
+    if (input.address !== undefined) {
+      const { address } = input;
+      changes.cep = address.cep;
+      changes.street = address.street;
+      changes.number = address.number;
+      changes.neighborhood = address.neighborhood;
+      changes.city = address.city;
+      changes.state = address.state;
+      if (address.complement !== undefined) {
+        changes.complement = textOrNull(address.complement);
+      }
+    }
+    if (input.location !== undefined) changes.location = input.location;
+    if (input.amenities !== undefined) changes.amenities = input.amenities;
+    if (input.cancellationPolicy !== undefined) {
+      changes.cancellationPolicy = input.cancellationPolicy;
+    }
+    // Only an explicit timezone changes it: moving the state does not.
+    if (input.timezone !== undefined) changes.timezone = input.timezone;
+
+    if (Object.keys(changes).length > 0) {
+      await this.handle.db.transaction(async (tx) => {
+        // Lock order venue -> fields, like every other owner mutation.
+        if ((await lockVenueStatus(tx, owned.id)) === undefined) {
+          throw new NotFoundException(VENUE_NOT_FOUND);
+        }
+        if (changes.timezone !== undefined) {
+          const [current] = await tx
+            .select({ timezone: venue.timezone })
+            .from(venue)
+            .where(eq(venue.id, owned.id));
+          // Bookings are stored as instants but read in the venue's zone: a
+          // new zone would shift every future booking against the hours.
+          if (current && current.timezone !== changes.timezone) {
+            await lockVenueFields(tx, owned.id);
+            if (
+              await hasUpcomingActiveBooking(
+                tx,
+                { venueId: owned.id },
+                await dbNow(tx),
+              )
+            ) {
+              throw new ConflictException(VENUE_TIMEZONE_LOCKED);
+            }
+          }
+        }
+        await tx
+          .update(venue)
+          .set({ ...changes, updatedAt: sql`now()` })
+          .where(eq(venue.id, owned.id));
+      });
+    }
+    return this.load(owned.id);
+  }
+
+  /**
+   * Deletes the venue (fields, hours and photo rows go with it, ON DELETE
+   * CASCADE) and, once that is committed, its photo objects (originals and
+   * variants). The keys are read
+   * under the venue lock, so a photo confirmed meanwhile is not missed; a
+   * storage failure only leaves orphan objects and is logged.
+   */
+  async remove(userId: string, venueId: string): Promise<void> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    const keys = await this.handle.db.transaction(async (tx) => {
+      // A concurrent delete already removed it: same 404 as the other mutations.
+      if ((await lockVenueStatus(tx, owned.id)) === undefined) {
+        throw new NotFoundException(VENUE_NOT_FOUND);
+      }
+      await this.assertNoUpcomingBookings(tx, owned.id);
+      const photos = await tx
+        .select({ storageKey: venuePhoto.storageKey })
+        .from(venuePhoto)
+        .where(eq(venuePhoto.venueId, owned.id));
+      if (await hasPaidHistory(tx, { venueId: owned.id })) {
+        throw new ConflictException(VENUE_HAS_PAID_HISTORY);
+      }
+      // Only unpaid rows are left; bookings reference field and venue with
+      // RESTRICT, so they go with the venue.
+      await tx.delete(booking).where(eq(booking.venueId, owned.id));
+      await tx.delete(venue).where(eq(venue.id, owned.id));
+      return photos.flatMap((photo) => photoObjectKeys(photo.storageKey));
+    });
+    await deleteQuietly(this.storage, keys, this.logger);
+  }
+
+  /**
+   * Replaces all opening intervals at once, in a single transaction. A
+   * weekday may have several (the schema already refused overlaps).
+   */
+  async replaceHours(
+    userId: string,
+    venueId: string,
+    hours: VenueHours,
+  ): Promise<Venue> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    await this.handle.db.transaction(async (tx) => {
+      // Touching the venue first takes its row lock, so two concurrent
+      // replacements run one after the other (each deletes and re-inserts the
+      // whole set, so interleaving them would mix intervals).
+      await tx
+        .update(venue)
+        .set({ updatedAt: sql`now()` })
+        .where(eq(venue.id, owned.id));
+      await tx.delete(venueHours).where(eq(venueHours.venueId, owned.id));
+      if (hours.length > 0) {
+        await tx.insert(venueHours).values(
+          hours.map((hour) => ({
+            venueId: owned.id,
+            weekday: hour.weekday,
+            openMinute: hour.openMinute,
+            closeMinute: hour.closeMinute,
+          })),
+        );
+      }
+      // Clearing the hours of a published venue is rejected (rolls back).
+      await assertPublishedStaysComplete(tx, owned.id);
+    });
+    return this.load(owned.id);
+  }
+
+  /** Needs opening hours, an active field and a photo; says what is missing. */
+  async publish(userId: string, venueId: string): Promise<Venue> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    await this.handle.db.transaction(async (tx) => {
+      await lockVenueStatus(tx, owned.id);
+      const errors = await missingForPublish(tx, owned.id);
+      if (Object.keys(errors).length > 0) {
+        throw new UnprocessableEntityException({
+          message: PUBLISH_INCOMPLETE_MESSAGE,
+          errors,
+        });
+      }
+      await tx
+        .update(venue)
+        .set({ status: 'published', updatedAt: sql`now()` })
+        .where(eq(venue.id, owned.id));
+    });
+    return this.load(owned.id);
+  }
+
+  async unpublish(userId: string, venueId: string): Promise<Venue> {
+    const owned = await findOwnedVenue(this.handle.db, venueId, userId);
+    await this.handle.db.transaction(async (tx) => {
+      // venue -> fields: no booking write can interleave with the check.
+      const status = await lockVenueStatus(tx, owned.id);
+      if (status === undefined) throw new NotFoundException(VENUE_NOT_FOUND);
+      if (status === 'published') {
+        await this.assertNoUpcomingBookings(tx, owned.id);
+      }
+      await tx
+        .update(venue)
+        .set({ status: 'draft', updatedAt: sql`now()` })
+        .where(eq(venue.id, owned.id));
+    });
+    return this.load(owned.id);
+  }
+
+  /** 409 when any field of the venue has an upcoming active booking. */
+  private async assertNoUpcomingBookings(
+    tx: Pick<Db, 'select' | 'execute'>,
+    venueId: string,
+  ): Promise<void> {
+    await lockVenueFields(tx, venueId);
+    if (await hasUpcomingActiveBooking(tx, { venueId }, await dbNow(tx))) {
+      throw new ConflictException(VENUE_HAS_BOOKINGS);
+    }
+  }
+
+  /**
+   * First free slug for `name`: the plain slug, then `-2`, `-3`... Two
+   * concurrent calls can still pick the same one; `create` retries on the
+   * unique constraint.
+   */
+  async uniqueSlug(name: string): Promise<string> {
+    const base = slugify(name);
+    const rows = await this.handle.db
+      .select({ slug: venue.slug })
+      .from(venue)
+      .where(
+        // `base` only has [a-z0-9-], so it is safe inside a regex.
+        or(eq(venue.slug, base), sql`${venue.slug} ~ ${`^${base}-[0-9]+$`}`),
+      );
+    const taken = new Set(rows.map((row) => row.slug));
+    if (!taken.has(base)) return base;
+    for (let suffix = 2; ; suffix += 1) {
+      const candidate = `${base}-${String(suffix)}`;
+      if (!taken.has(candidate)) return candidate;
+    }
+  }
+
+  /**
+   * The full `Venue` response for an id, with no ownership check: callers
+   * (Tasks 4-5 too) must have verified it with `findOwnedVenue` already.
+   */
+  async load(venueId: string): Promise<Venue> {
+    const { db } = this.handle;
+    const [row] = await db.select().from(venue).where(eq(venue.id, venueId));
+    if (!row) throw new NotFoundException(VENUE_NOT_FOUND);
+    const [hours, photos, fields] = await Promise.all([
+      db.select().from(venueHours).where(eq(venueHours.venueId, venueId)),
+      db.select().from(venuePhoto).where(eq(venuePhoto.venueId, venueId)),
+      db
+        .select({
+          field,
+          priceRulesCount: count(priceRule.id),
+        })
+        .from(field)
+        .leftJoin(priceRule, eq(priceRule.fieldId, field.id))
+        .where(eq(field.venueId, venueId))
+        .groupBy(field.id)
+        .orderBy(asc(field.createdAt), asc(field.id)),
+    ]);
+    return toVenue(row, hours, photos, fields, (photo) =>
+      photoUrls(this.storage, photo.storageKey, photo.variantWidths),
+    );
+  }
+}
