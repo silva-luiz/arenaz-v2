@@ -1,5 +1,27 @@
 # Dados de demonstração
 
+## Demo com link público: `pnpm demo`
+
+Um comando sobe tudo nesta máquina e imprime um link público:
+
+```bash
+pnpm demo          # usa o banco arenaz_demo; cria e preenche se não existir
+pnpm demo --seed   # refaz os dados de demonstração antes de subir
+```
+
+O que ele faz: sobe Postgres, Redis e MinIO; abre dois túneis do Cloudflare
+(site na porta 3200, que também repassa `/api` para a API, e fotos no MinIO,
+porta 9000, porque o navegador baixa as fotos direto do bucket); compila com
+esses endereços; liga API (4200), worker e site; espera o link responder.
+Ctrl+C desliga tudo o que ele ligou.
+
+Precisa de Docker e do `cloudflared` (`winget install Cloudflare.cloudflared`,
+ou `CLOUDFLARED_BIN` apontando para o binário). O link muda a cada execução e
+a demo cai quando a máquina desliga. A senha das contas fica em
+`infra/demo/.env.demo` (criada na primeira vez, fora do git).
+
+## Seed manual
+
 Preenche um banco **separado** (`arenaz_demo`) com os 13 espaços e as fotos do
 protótipo aprovado, para ver as telas com dados realistas sem mexer no banco de
 desenvolvimento.

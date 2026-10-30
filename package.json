@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "db:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "db:migrate": "pnpm --filter @arenaz/db migrate",
+    "demo": "node infra/demo/demo.mjs",
     "e2e": "turbo run e2e",
     "format": "prettier --write ."
   },
