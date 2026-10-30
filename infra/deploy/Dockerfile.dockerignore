@@ -1,0 +1,14 @@
+# Build context of infra/deploy/Dockerfile (the repository root).
+.git
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+**/next-env.d.ts
+.env
+**/.env.demo
+*.md
