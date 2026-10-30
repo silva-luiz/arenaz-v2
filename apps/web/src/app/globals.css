@@ -135,3 +135,31 @@ html:has([data-search-page]) {
     scroll-padding-top: 85px;
   }
 }
+
+/*
+ * Checkout (/reservas/[id], `data-checkout`): a flow of its own, as in
+ * Checkout.dc.html. The account shell's main is a 448px centered card; the
+ * checkout takes the whole column (up to 480px, hero and bottom buttons
+ * included) and starts at the top. On a phone the site header gives way to
+ * the screen's own back arrow and title (the tab bar stays for navigation);
+ * from 768px up the header is kept. `:has()`: where it is missing the page
+ * is merely a bit narrower and keeps the header.
+ */
+#conteudo:has([data-checkout]) {
+  max-width: 480px;
+  justify-content: flex-start;
+  padding: 0 0 24px;
+}
+@media (min-width: 768px) {
+  #conteudo:has([data-checkout]) {
+    padding: 24px 0 40px;
+  }
+}
+@media (max-width: 767px) {
+  [data-account-shell]:has([data-checkout]) > header {
+    display: none;
+  }
+  html:has([data-checkout]) {
+    scroll-padding-top: 0;
+  }
+}

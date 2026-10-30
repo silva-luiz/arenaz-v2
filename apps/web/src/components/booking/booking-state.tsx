@@ -27,6 +27,7 @@ import {
   type BookingIntent,
   type PickerDay,
 } from '@/lib/booking-client';
+import { bookingPath } from '@/lib/checkout';
 import { navigate } from '@/lib/navigate';
 import { GENERIC_ERROR } from '@/lib/problem';
 import {
@@ -482,7 +483,7 @@ export function BookingProvider({
     });
     if (result.ok) {
       // Stays "busy" until the page changes.
-      navigate(`/reservas/${result.data.id}`);
+      navigate(bookingPath(result.data.id, players));
       return;
     }
     setSubmitting(false);

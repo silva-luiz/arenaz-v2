@@ -685,7 +685,9 @@ describe('SlotPicker', () => {
         durationMinutes: 120,
       });
       await waitFor(() => {
-        expect(mocks.navigate).toHaveBeenCalledWith(`/reservas/${BOOKING_ID}`);
+        expect(mocks.navigate).toHaveBeenCalledWith(
+          `/reservas/${BOOKING_ID}?jogadores=14`,
+        );
       });
     });
 

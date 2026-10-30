@@ -34,7 +34,8 @@ export interface CountdownProps {
 
 /**
  * Time left to pay, against the server's deadline (never a client-side
- * 10-minute guess). The digits tick every second but are hidden from screen
+ * 10-minute guess), as in the prototype's Pix step ("Seu horário está
+ * reservado por 09:52"). The digits tick every second but are hidden from screen
  * readers; a polite status region speaks only when the minute changes and at
  * the end. No animation, so nothing to reduce for `prefers-reduced-motion`.
  */
@@ -67,21 +68,23 @@ export function Countdown({ expiresAt, serverNow, onExpire }: CountdownProps) {
     }
   }, [seconds, expired, onExpire]);
 
-  if (seconds === null) return <div className="min-h-12" />;
+  if (seconds === null) return <div className="min-h-[4.5rem]" />;
 
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
   const clock = `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
 
   return (
-    <div className="min-h-12">
+    <div className="flex min-h-[4.5rem] flex-col items-center text-center">
       {expired ? null : (
-        <p className="text-sm text-muted" aria-hidden="true">
-          Pague em{' '}
-          <span className="font-mono text-2xl font-semibold text-ink">
+        <div aria-hidden="true">
+          <p className="text-[15px] text-muted">
+            Seu horário está reservado por
+          </p>
+          <p className="font-mono text-[34px] leading-[1.2] font-semibold tracking-[-0.02em] text-ink">
             {clock}
-          </span>
-        </p>
+          </p>
+        </div>
       )}
       <p
         role="status"

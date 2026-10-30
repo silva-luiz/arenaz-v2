@@ -6,6 +6,7 @@ import {
   formatZonedTime,
   todayInZone,
   toZonedIso,
+  zonedDateKey,
 } from './zoned-time';
 
 const SP = 'America/Sao_Paulo';
@@ -213,5 +214,14 @@ describe('formatZonedDay', () => {
     expect(
       formatZonedDay('2026-11-03T05:00:00.000Z', 'America/Sao_Paulo'),
     ).toBe('Ter, 03/11');
+  });
+});
+
+describe('zonedDateKey', () => {
+  it('is the calendar day of the instant on the wall clock of the zone', () => {
+    // 01:00Z is still the evening before in São Paulo.
+    expect(zonedDateKey('2026-11-03T01:00:00.000Z', SP)).toBe('2026-11-02');
+    expect(zonedDateKey('2026-11-03T05:00:00.000Z', SP)).toBe('2026-11-03');
+    expect(zonedDateKey('2026-11-03T01:00:00.000Z', MANAUS)).toBe('2026-11-02');
   });
 });

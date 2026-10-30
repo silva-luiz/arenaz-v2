@@ -2,9 +2,11 @@ import {
   DEMO_MARKETING_COUNTERS,
   DEMO_OPEN_GAMES,
   DEMO_OWNER_STATS,
+  DEMO_SQUAD,
   DEMO_VENUE_EXTRAS,
   type DemoOpenGame,
   type DemoOwnerStats,
+  type DemoSquadMember,
   type DemoVenueExtras,
 } from './fixtures';
 
@@ -12,6 +14,7 @@ export type {
   DemoOpenGame,
   DemoOwnerStats,
   DemoReview,
+  DemoSquadMember,
   DemoSubRating,
   DemoVenueExtras,
 } from './fixtures';
@@ -54,3 +57,8 @@ export const demoMarketingCounters = DEMO_MARKETING_COUNTERS;
 export function missingLabel(count: number): string {
   return count === 1 ? 'Falta 1' : `Faltam ${String(count)}`;
 }
+
+/** "Racha do time" of the checkout: empty outside the demo mode. */
+export const demoSquad: readonly DemoSquadMember[] = isDemoMode
+  ? DEMO_SQUAD
+  : [];

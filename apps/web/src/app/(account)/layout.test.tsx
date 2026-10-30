@@ -36,6 +36,19 @@ describe('(account) layout', () => {
     ).toBeNull();
   });
 
+  it('marks the shell, so the checkout can adjust it in CSS', async () => {
+    mocks.getSession.mockResolvedValue(null);
+
+    const { container } = render(
+      await AccountLayout({ children: <p>página</p> }),
+    );
+
+    expect(container.firstElementChild).toHaveAttribute('data-account-shell');
+    expect(
+      container.querySelector('[data-account-shell] > header'),
+    ).not.toBeNull();
+  });
+
   it('makes <main> the target of the skip link', async () => {
     mocks.getSession.mockResolvedValue(null);
 

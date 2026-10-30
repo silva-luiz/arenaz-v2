@@ -1,11 +1,12 @@
 'use client';
 
 import {
+  formatCents,
   paymentChargeSchema,
   paymentResultSchema,
   type PaymentCharge,
 } from '@arenaz/contracts';
-import { Alert, Button, buttonClasses } from '@arenaz/ui';
+import { Alert, Button, buttonClasses, cn } from '@arenaz/ui';
 import { AppLink } from '@/components/ui/next-link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,6 +18,8 @@ export interface PixPaymentProps {
   /** The server's deadline for this hold. */
   holdExpiresAt: string;
   venueSlug: string;
+  /** What the QR charges (the booking total, centavos). */
+  totalCents: number;
   /** The server's clock at render time; see `Countdown`. */
   serverNow?: string | undefined;
 }
@@ -34,11 +37,15 @@ function qrSource(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+const FOCUS =
+  'focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink';
+
 /** Pix payment of a held booking: QR, "copia e cola", countdown, simulation. */
 export function PixPayment({
   bookingId,
   holdExpiresAt,
   venueSlug,
+  totalCents,
   serverNow,
 }: PixPaymentProps) {
   const router = useRouter();
@@ -49,7 +56,9 @@ export function PixPayment({
   const stamp = `${holdExpiresAt}|${serverNow ?? ''}`;
   const [expiredStamp, setExpiredStamp] = useState<string | null>(null);
   const expired = expiredStamp === stamp;
-  const [copyMessage, setCopyMessage] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [showCode, setShowCode] = useState(false);
   const [payError, setPayError] = useState<string | undefined>();
   const [paying, setPaying] = useState(false);
   // StrictMode runs effects twice; one charge per page view is enough.
@@ -93,12 +102,15 @@ export function PixPayment({
 
   async function copy(code: string) {
     // Clear first, so repeating the copy is announced again.
-    setCopyMessage('');
+    setCopied(false);
+    setCopyError('');
     try {
       await navigator.clipboard.writeText(code);
-      setCopyMessage('Código copiado');
+      setCopied(true);
     } catch {
-      setCopyMessage(
+      // The code opens, so it can be selected and copied by hand.
+      setShowCode(true);
+      setCopyError(
         'Não foi possível copiar. Selecione o código e copie manualmente.',
       );
     }
@@ -124,7 +136,16 @@ export function PixPayment({
   }
 
   return (
-    <section aria-label="Pagamento com Pix" className="flex flex-col gap-4">
+    <section
+      aria-labelledby="pagamento-pix"
+      className="flex flex-col items-center gap-[18px] border-t border-line px-5 pt-6 pb-6 text-center"
+    >
+      <h2
+        id="pagamento-pix"
+        className="font-wordmark text-[22px] font-bold tracking-[-0.02em]"
+      >
+        Pague com Pix
+      </h2>
       <Countdown
         key={stamp}
         expiresAt={holdExpiresAt}
@@ -135,7 +156,10 @@ export function PixPayment({
       {expired ? (
         <AppLink
           href={`/espacos/${encodeURIComponent(venueSlug)}`}
-          className={buttonClasses({ variant: 'primary' })}
+          className={buttonClasses({
+            variant: 'primary',
+            className: 'w-full',
+          })}
         >
           Escolher outro horário
         </AppLink>
@@ -144,59 +168,107 @@ export function PixPayment({
           Gerando o Pix…
         </p>
       ) : state.status === 'error' ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex w-full flex-col items-center gap-3 text-left">
           <Alert tone="error">{state.message}</Alert>
-          <Button
-            variant="secondary"
-            className="self-start"
-            onClick={() => {
-              void load();
-            }}
-          >
+          <Button variant="secondary" onClick={() => void load()}>
             Tentar de novo
           </Button>
         </div>
       ) : (
         <>
-          <div className="flex flex-col items-center gap-4">
+          <div className="rounded-[26px] border border-line bg-bg p-[18px] shadow-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- a data URI, nothing for next/image to optimize */}
             <img
               src={qrSource(state.charge.qrCodeSvg)}
               alt="QR code do Pix. Escaneie com o app do seu banco."
-              width={208}
-              height={208}
-              className="size-52 rounded-photo border border-line bg-white p-2"
+              width={220}
+              height={220}
+              className="block size-[220px]"
             />
-            <p className="text-sm text-muted">Ou use o Pix copia e cola:</p>
-            <code className="w-full rounded-button bg-surface px-3 py-2 text-center font-mono text-sm break-all select-all">
-              {state.charge.copyPaste}
-            </code>
           </div>
-          <Button
-            variant="secondary"
+          <p className="font-wordmark text-[28px] font-bold tracking-[-0.03em]">
+            {formatCents(totalCents)}
+          </p>
+          <button
+            type="button"
             onClick={() => {
               void copy(state.charge.copyPaste);
             }}
+            className={cn(
+              'flex h-[52px] w-full items-center justify-center gap-2.5 rounded-2xl border border-ink bg-bg text-[15px] font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
+              FOCUS,
+            )}
           >
-            Copiar código
-          </Button>
-          <p role="status" className="min-h-5 text-sm text-ink">
-            {copyMessage}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+            </svg>
+            {copied ? 'Código copiado' : 'Copiar código'}
+          </button>
+          {/* Always in the page, so a change of text is spoken. */}
+          <p
+            role="status"
+            className={copyError ? 'text-sm text-ink' : 'sr-only'}
+          >
+            {copyError || (copied ? 'Código copiado' : '')}
+          </p>
+          <details
+            open={showCode}
+            onToggle={(event) => {
+              setShowCode(event.currentTarget.open);
+            }}
+            className="w-full text-sm text-muted"
+          >
+            <summary
+              className={cn(
+                'mx-auto flex min-h-11 w-fit cursor-pointer items-center rounded-button px-2 underline underline-offset-2',
+                FOCUS,
+              )}
+            >
+              Ver o código copia e cola
+            </summary>
+            <code className="mt-1 block w-full rounded-button bg-surface px-3 py-2 text-center font-mono text-sm break-all text-ink select-all">
+              {state.charge.copyPaste}
+            </code>
+          </details>
+          <p className="flex items-center gap-2.5 text-sm text-muted">
+            <span
+              aria-hidden="true"
+              className="size-2 rounded-full bg-[#e3a008] shadow-[0_0_0_4px_rgba(227,160,8,0.18)]"
+            />
+            Aguardando pagamento…
           </p>
           {state.charge.simulatable ? (
-            <div className="flex flex-col gap-3 border-t border-line pt-4">
+            <div className="flex w-full flex-col gap-3 pt-2">
               <p className="text-sm text-muted">
                 Ambiente de teste: nenhum dinheiro de verdade é movimentado.
               </p>
               <Alert tone="error">{payError}</Alert>
-              <Button
-                loading={paying}
+              <button
+                type="button"
+                disabled={paying}
+                aria-busy={paying ? true : undefined}
                 onClick={() => {
                   void simulate(state.charge.chargeId);
                 }}
+                className={cn(
+                  'h-[52px] w-full rounded-2xl border border-dashed border-line-control bg-transparent text-sm font-medium text-muted transition-colors duration-150 enabled:hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none',
+                  FOCUS,
+                )}
               >
                 Simular pagamento
-              </Button>
+                {paying ? <span className="sr-only">, Aguarde…</span> : null}
+              </button>
             </div>
           ) : null}
         </>

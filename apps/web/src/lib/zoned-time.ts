@@ -199,3 +199,8 @@ export function formatZonedDay(instant: string, timeZone: string): string {
   const clock = wallClock(instant, timeZone);
   return `${clock.weekday}, ${clock.dayMonth}`;
 }
+
+/** "2026-11-02": the calendar day of an instant on the wall clocks of `timeZone`. */
+export function zonedDateKey(instant: string, timeZone: string): string {
+  return wallClock(instant, timeZone).dateKey;
+}

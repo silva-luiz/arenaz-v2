@@ -44,6 +44,7 @@ function renderPix() {
       bookingId={ID}
       holdExpiresAt={holdExpiresAt}
       venueSlug="arena"
+      totalCents={46200}
     />,
   );
 }
@@ -61,14 +62,38 @@ describe('PixPayment', () => {
     const { container } = renderPix();
     const qr = await screen.findByRole('img', { name: /QR code do Pix/ });
     expect(qr.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
-    expect(container.querySelector('svg')).toBeNull();
-    expect(screen.getByText('ARENAZ-FAKE-1')).toBeVisible();
+    // An <img>, not markup: the only inline <svg> are the button's icons.
+    expect(qr.tagName).toBe('IMG');
+    expect(container.querySelector('svg:not([aria-hidden="true"])')).toBeNull();
+    expect(qr).toHaveAttribute('width', '220');
     expect(mocks.apiSend).toHaveBeenCalledWith(
       'POST',
       `/bookings/${ID}/payment`,
       undefined,
       expect.anything(),
     );
+  });
+
+  it('is the prototype Pix step: title, countdown, amount and waiting line', async () => {
+    mockCharge();
+    renderPix();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Pague com Pix' }),
+    ).toBeVisible();
+    expect(screen.getByText('Seu horário está reservado por')).toBeVisible();
+    await screen.findByRole('img', { name: /QR code do Pix/ });
+    expect(screen.getByText(/R\$\s462,00/)).toBeVisible();
+    expect(screen.getByText('Aguardando pagamento…')).toBeVisible();
+  });
+
+  it('keeps the copy and paste code one tap away, closed by default', async () => {
+    mockCharge();
+    const user = userEvent.setup();
+    renderPix();
+    await screen.findByRole('img', { name: /QR code do Pix/ });
+    expect(screen.getByText('ARENAZ-FAKE-1')).not.toBeVisible();
+    await user.click(screen.getByText('Ver o código copia e cola'));
+    expect(screen.getByText('ARENAZ-FAKE-1')).toBeVisible();
   });
 
   it('copies the code with the clipboard and announces it', async () => {
@@ -80,7 +105,13 @@ describe('PixPayment', () => {
       await screen.findByRole('button', { name: 'Copiar código' }),
     );
     expect(writeText).toHaveBeenCalledWith('ARENAZ-FAKE-1');
-    expect(await screen.findByText('Código copiado')).toBeVisible();
+    // The button itself says it (prototype), and the status region speaks.
+    expect(
+      await screen.findByRole('button', { name: 'Código copiado' }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('status').at(-1)).toHaveTextContent(
+      'Código copiado',
+    );
   });
 
   it('says so when the code could not be copied', async () => {
@@ -94,6 +125,8 @@ describe('PixPayment', () => {
       await screen.findByRole('button', { name: 'Copiar código' }),
     );
     expect(await screen.findByText(/Não foi possível copiar/)).toBeVisible();
+    // Failing to copy opens the code, so it can be selected by hand.
+    expect(screen.getByText('ARENAZ-FAKE-1')).toBeVisible();
   });
 
   it('has no "Simular pagamento" when the charge is not simulatable', async () => {
@@ -202,6 +235,7 @@ describe('PixPayment', () => {
         bookingId={ID}
         holdExpiresAt={holdExpiresAt}
         venueSlug="arena"
+        totalCents={46200}
         serverNow={new Date(NOW.getTime() + 11 * 60_000).toISOString()}
       />,
     );
@@ -215,6 +249,7 @@ describe('PixPayment', () => {
         bookingId={ID}
         holdExpiresAt={holdExpiresAt}
         venueSlug="arena"
+        totalCents={46200}
         serverNow={new Date(NOW.getTime() + 11 * 60_000 + 500).toISOString()}
       />,
     );
@@ -297,11 +332,16 @@ describe('PixPayment', () => {
     });
     await user.click(button);
     release();
-    expect(await screen.findByText('Código copiado')).toBeVisible();
-    await user.click(button);
-    expect(screen.queryByText('Código copiado')).toBeNull();
+    const status = () => screen.getAllByRole('status').at(-1);
+    await waitFor(() => {
+      expect(status()).toHaveTextContent('Código copiado');
+    });
+    await user.click(screen.getByRole('button', { name: 'Código copiado' }));
+    expect(status()).toBeEmptyDOMElement();
     release();
-    expect(await screen.findByText('Código copiado')).toBeVisible();
+    await waitFor(() => {
+      expect(status()).toHaveTextContent('Código copiado');
+    });
   });
 
   describe('clock skew', () => {
@@ -311,6 +351,7 @@ describe('PixPayment', () => {
           bookingId={ID}
           holdExpiresAt={holdExpiresAt}
           venueSlug="arena"
+          totalCents={46200}
           serverNow={serverNow}
         />,
       );
@@ -367,6 +408,7 @@ describe('PixPayment', () => {
           bookingId={ID}
           holdExpiresAt={holdExpiresAt}
           venueSlug="arena"
+          totalCents={46200}
           serverNow={new Date(NOW.getTime() + 8 * 60_000).toISOString()}
         />,
       );

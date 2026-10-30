@@ -355,7 +355,27 @@ describe('BookingCard', () => {
 
       await waitFor(() => {
         expect(mocks.navigate).toHaveBeenCalledWith(
-          '/reservas/33333333-3333-4333-8333-333333333333',
+          '/reservas/33333333-3333-4333-8333-333333333333?jogadores=14',
+        );
+      });
+    });
+
+    it('hands the checkout the group size it was booked for', async () => {
+      mocks.createBooking.mockResolvedValue({
+        ok: true,
+        data: { id: '33333333-3333-4333-8333-333333333333' },
+      });
+      const user = userEvent.setup();
+      renderBooking({ initialPlayers: 12 });
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+      await user.click(
+        within(card()).getByRole('button', { name: 'Reservar' }),
+      );
+
+      await waitFor(() => {
+        expect(mocks.navigate).toHaveBeenCalledWith(
+          '/reservas/33333333-3333-4333-8333-333333333333?jogadores=12',
         );
       });
     });

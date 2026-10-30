@@ -24,6 +24,12 @@ describe('Countdown', () => {
     expect(screen.getByText('02:00')).toBeVisible();
   });
 
+  it('says what the clock is for, as the prototype does', () => {
+    render(<Countdown expiresAt={inSeconds(125)} />);
+    expect(screen.getByText('Seu horário está reservado por')).toBeVisible();
+    expect(screen.getByText('02:05')).toHaveClass('font-mono');
+  });
+
   it('reaches zero, says the deadline is over and calls onExpire once', () => {
     const onExpire = vi.fn();
     render(<Countdown expiresAt={inSeconds(3)} onExpire={onExpire} />);

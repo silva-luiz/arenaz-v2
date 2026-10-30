@@ -108,11 +108,27 @@ describe('demo mode on', () => {
   });
 });
 
+describe('demo squad', () => {
+  it('is the six players of the prototype checkout, three of them paid', async () => {
+    const { demoSquad } = await loadDemo('true');
+    expect(demoSquad.map((member) => member.name)).toEqual([
+      'Você (GR)',
+      'Rafael L.',
+      'Camila A.',
+      'Bruno M.',
+      'Luiz H.',
+      'João P.',
+    ]);
+    expect(demoSquad.filter((member) => member.paid)).toHaveLength(3);
+  });
+});
+
 describe('demo mode off', () => {
   it('invents nothing', async () => {
     const demo = await loadDemo(undefined);
     expect(demo.demoVenueExtras('arena-vila-madalena')).toBeNull();
     expect(demo.demoOpenGames).toEqual([]);
+    expect(demo.demoSquad).toEqual([]);
   });
 
   it('stays off for "false"', async () => {

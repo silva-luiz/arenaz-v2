@@ -29,6 +29,35 @@ const test = base.extend<{ published: SeededVenue }>({
   },
 });
 
+/**
+ * The checkout at 375px: the page does not scroll sideways and every control
+ * in it is a 44px target (the global skip link, hidden until focused, apart).
+ */
+async function expectPhoneFit(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  const small = await page.evaluate(() =>
+    [
+      ...document.querySelectorAll(
+        '#conteudo a, #conteudo button, #conteudo summary',
+      ),
+    ]
+      .map((element) => ({
+        name: (element.textContent || '').trim().slice(0, 40),
+        box: element.getBoundingClientRect(),
+      }))
+      .filter(({ box }) => box.width > 0 && box.height > 0)
+      .filter(({ box }) => box.height < 44 || box.width < 44)
+      .map(
+        ({ name, box }) =>
+          `${name}: ${String(box.width)}x${String(box.height)}`,
+      ),
+  );
+  expect(small, 'alvos de toque menores que 44px').toEqual([]);
+}
+
 async function seriousViolations(page: Page) {
   // Buttons and chips transition their colors; axe must not read them midway.
   await page.waitForFunction(() => document.getAnimations().length === 0);
@@ -79,11 +108,23 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
   await page.getByRole('button', { name: 'Reservar' }).click();
 
   // Checkout: held, with the QR, the code and the countdown.
-  await expect(page).toHaveURL(/\/reservas\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/reservas\/[0-9a-f-]{36}(\?jogadores=\d+)?$/);
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Pague para garantir' }),
+    page.getByRole('heading', { level: 1, name: 'Confirmar e pagar' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Pague com Pix' }),
+  ).toBeVisible();
+  await expect(page.getByText('Seu horário está reservado por')).toBeVisible();
+  await expect(page.getByText('Total', { exact: true })).toBeVisible();
+  await expect(
+    // The first free time may be today (inside 24h): the note says so.
+    page.getByText(
+      /^(Cancelamento grátis até 24h antes|Esta reserva começa em menos de 24h)/,
+    ),
   ).toBeVisible();
   await expect(page.getByRole('img', { name: /QR code do Pix/ })).toBeVisible();
+  await expect(page.getByText('Aguardando pagamento…')).toBeVisible();
   await expect(page.getByText(/^\d{2}:\d{2}$/)).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Copiar código' }),
@@ -94,6 +135,7 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
     expect(heldText).not.toContain(secret);
   }
   expect(await seriousViolations(page), 'violações no checkout').toEqual([]);
+  await expectPhoneFit(page);
   await page.screenshot({
     path: 'e2e/test-results/captures/checkout-375.png',
     fullPage: true,
@@ -102,7 +144,7 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
   // "Simular pagamento": the page reloads as a confirmed booking.
   await page.getByRole('button', { name: 'Simular pagamento' }).click();
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Quadra garantida' }),
+    page.getByRole('heading', { level: 1, name: 'Quadra garantida.' }),
   ).toBeVisible();
   await expect(page.getByText(PRIVATE.street)).toBeVisible();
   await expect(page.getByText(PRIVATE.number, { exact: false })).toBeVisible();
@@ -111,13 +153,14 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
     page.getByRole('button', { name: 'Cancelar reserva' }),
   ).toBeVisible();
   expect(await seriousViolations(page), 'violações na reserva').toEqual([]);
+  await expectPhoneFit(page);
   await page.screenshot({
     path: 'e2e/test-results/captures/confirmada-375.png',
     fullPage: true,
   });
 
   // The list shows it under "Próximas", and the tab bar marks "Reservas".
-  await page.getByRole('link', { name: 'Reservas' }).click();
+  await page.getByRole('link', { name: 'Reservas', exact: true }).click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Minhas reservas' }),
   ).toBeVisible();
@@ -237,14 +280,16 @@ test('anônimo escolhe 2 horários, entra, paga e o dono vê na agenda', async (
     ).toContainText('R$ 360');
     await page.getByRole('button', { name: 'Reservar' }).click();
 
-    await expect(page).toHaveURL(/\/reservas\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(
+      /\/reservas\/[0-9a-f-]{36}(\?jogadores=\d+)?$/,
+    );
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Pague para garantir' }),
+      page.getByRole('heading', { level: 1, name: 'Confirmar e pagar' }),
     ).toBeVisible();
     expect(await seriousViolations(page), 'violações no checkout').toEqual([]);
     await page.getByRole('button', { name: 'Simular pagamento' }).click();
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Quadra garantida' }),
+      page.getByRole('heading', { level: 1, name: 'Quadra garantida.' }),
     ).toBeVisible();
     await expect(page.getByText(PRIVATE.street)).toBeVisible();
 
@@ -302,7 +347,7 @@ test('dois jogadores disputam o mesmo horário: só um reserva', async ({
     const outcome = async (page: Page): Promise<'won' | 'lost'> =>
       Promise.race([
         page
-          .waitForURL(/\/reservas\/[0-9a-f-]{36}$/)
+          .waitForURL(/\/reservas\/[0-9a-f-]{36}(\?jogadores=\d+)?$/)
           .then(() => 'won' as const),
         page
           .getByText('Esse horário acabou de ser reservado')

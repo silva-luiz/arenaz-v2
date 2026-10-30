@@ -190,3 +190,25 @@ export const DEMO_MARKETING_COUNTERS = {
   freeCourtsToday: 312,
   openGames: 27,
 } as const;
+
+/** A player of the demo "Racha do time" (Checkout.dc.html `roster`). */
+export interface DemoSquadMember {
+  id: string;
+  name: string;
+  /** Initials shown in the avatar. */
+  initials: string;
+  /** Avatar background; darker than the prototype's so white text passes 4.5:1. */
+  color: string;
+  /** Already paid when the page opens. */
+  paid: boolean;
+}
+
+/** The people of the "Racha do time" list (6 of the group, the first 3 paid). */
+export const DEMO_SQUAD: readonly DemoSquadMember[] = [
+  { id: 'gr', name: 'Você (GR)', initials: 'GR', color: '#161616', paid: true },
+  { id: 'rl', name: 'Rafael L.', initials: 'RL', color: '#3F67A6', paid: true },
+  { id: 'ca', name: 'Camila A.', initials: 'CA', color: '#A15A3F', paid: true },
+  { id: 'bm', name: 'Bruno M.', initials: 'BM', color: '#6B49A8', paid: false },
+  { id: 'lh', name: 'Luiz H.', initials: 'LH', color: '#2F7F63', paid: false },
+  { id: 'jp', name: 'João P.', initials: 'JP', color: '#A8466B', paid: false },
+];

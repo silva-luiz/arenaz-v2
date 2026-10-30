@@ -1,108 +1,79 @@
-import { bookingSchema, type Booking } from '@arenaz/contracts';
-import { Alert, Card, buttonClasses, formatPrice } from '@arenaz/ui';
+import { bookingSchema, type PublicVenue } from '@arenaz/contracts';
+import { Alert, buttonClasses } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { BookingStatusBadge } from '@/components/booking/booking-status';
+import {
+  AddressCard,
+  BookingFacts,
+  CancelNote,
+  CheckoutHeader,
+  ConfirmedHero,
+  PriceCard,
+  ReviewCard,
+  type CheckoutPhoto,
+} from '@/components/booking/checkout-parts';
+import { formatDuration } from '@/components/booking/booking-summary';
 import { CancelBooking } from '@/components/booking/cancel-booking';
 import { PixPayment } from '@/components/booking/pix-payment';
+import { SplitOption, SquadRacha } from '@/components/booking/team-split';
 import { AppLink } from '@/components/ui/next-link';
 import { apiGet } from '@/lib/api';
-import { formatCep, formatPhoneBr } from '@/lib/format-br';
-import { formatZonedDay, formatZonedRange } from '@/lib/zoned-time';
+import { whenLabel } from '@/lib/booking-client';
+import {
+  cancelDeadline,
+  isPeakBooking,
+  parsePlayersParam,
+} from '@/lib/checkout';
+import { isDemoMode } from '@/lib/demo';
+import { loadPublicVenue } from '@/lib/public-venue';
+import { absoluteUrl } from '@/lib/site';
+import { formatZonedRange, zonedDateKey } from '@/lib/zoned-time';
 
 export const metadata: Metadata = { title: 'Reserva' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// What the API enforces (see the cancellation rule of the bookings service).
-const CANCEL_POLICY =
-  'Cancelamento só é possível com pelo menos 24 horas de antecedência.';
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-2">
-      <dt className="text-sm text-muted">{label}</dt>
-      <dd className="text-right text-sm font-medium text-ink">{children}</dd>
-    </div>
-  );
+/** The venue's public data, or nothing: the photo and "nobre" are extras. */
+async function venueOrNull(slug: string): Promise<PublicVenue | null> {
+  try {
+    return await loadPublicVenue(slug);
+  } catch {
+    return null;
+  }
 }
 
-function Summary({ booking }: { booking: Booking }) {
-  const { venue } = booking;
-  return (
-    <dl className="divide-y divide-line">
-      <Row label="Espaço">
-        <AppLink
-          href={`/espacos/${venue.slug}`}
-          className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          {venue.name}
-        </AppLink>
-        {booking.address ? null : (
-          <span className="block font-normal text-muted">
-            {venue.neighborhood}, {venue.city}
-          </span>
-        )}
-      </Row>
-      <Row label="Quadra">{booking.field.name}</Row>
-      <Row label="Quando">
-        {formatZonedDay(booking.startsAt, venue.timezone)}
-        <span className="block font-mono">
-          {formatZonedRange(booking.startsAt, booking.endsAt, venue.timezone)}
-        </span>
-      </Row>
-      <Row label="Total">{formatPrice(booking.totalCents)}</Row>
-    </dl>
-  );
+function coverOf(venue: PublicVenue | null): CheckoutPhoto | null {
+  const first = venue?.photos.toSorted((a, b) => a.position - b.position)[0];
+  return first ? { url: first.url, srcSet: first.srcSet } : null;
 }
 
 function ChooseAnother({ slug }: { slug: string }) {
   return (
     <AppLink
       href={`/espacos/${slug}`}
-      className={buttonClasses({ variant: 'primary' })}
+      className={buttonClasses({ variant: 'primary', className: 'w-full' })}
     >
       Escolher outro horário
     </AppLink>
   );
 }
 
-function Address({ booking }: { booking: Booking }) {
-  const { address } = booking;
-  if (!address) return null;
-  const line = [address.street, address.number].join(', ');
+/** Mobile: the prototype's 390px screen; desktop: the same, up to 480px. */
+function Screen({ children }: { children: ReactNode }) {
   return (
-    <section
-      aria-labelledby="endereco"
-      className="flex flex-col gap-1 rounded-button bg-surface p-4"
-    >
-      <h2 id="endereco" className="text-base font-semibold">
-        Como chegar
-      </h2>
-      <p className="text-sm">
-        {address.complement ? `${line} - ${address.complement}` : line}
-        <br />
-        {booking.venue.neighborhood}, {booking.venue.city} · CEP{' '}
-        {formatCep(address.cep)}
-      </p>
-      <p className="text-sm">
-        Telefone do espaço:{' '}
-        <a
-          href={`tel:${address.phone}`}
-          className="font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-        >
-          {formatPhoneBr(address.phone)}
-        </a>
-      </p>
-    </section>
+    <div data-checkout className="flex flex-1 flex-col">
+      {children}
+    </div>
   );
 }
 
 export default async function BookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
   // The API would answer 404 as well; no need to ask it about nonsense.
@@ -112,69 +83,147 @@ export default async function BookingPage({
     bookingSchema,
     `/reservas/${id}`,
   );
+  // Where the venue page left the group size (the booking itself has none).
+  const players = parsePlayersParam((await searchParams).jogadores);
 
   const now = new Date();
   const started = new Date(booking.startsAt).getTime() <= now.getTime();
+  const { venue } = booking;
+  const venueData =
+    booking.status === 'held' || booking.status === 'confirmed'
+      ? await venueOrNull(venue.slug)
+      : null;
+  const photo = coverOf(venueData);
+  const when = whenLabel(zonedDateKey(booking.startsAt, venue.timezone));
+  const range = formatZonedRange(
+    booking.startsAt,
+    booking.endsAt,
+    venue.timezone,
+  );
+  const deadline = cancelDeadline(booking.startsAt, venue.timezone, now);
+  const backHref = `/espacos/${venue.slug}`;
 
-  const heading =
-    booking.status === 'held'
-      ? 'Pague para garantir'
-      : booking.status === 'confirmed'
-        ? 'Quadra garantida'
-        : booking.status === 'cancelled'
-          ? 'Reserva cancelada'
-          : 'Reserva expirada';
+  if (booking.status === 'held') {
+    const minutes =
+      (new Date(booking.endsAt).getTime() -
+        new Date(booking.startsAt).getTime()) /
+      60_000;
+    const base = venueData?.fields.find(
+      (field) => field.id === booking.field.id,
+    )?.basePriceCentsPerHour;
+    const peak =
+      base !== undefined &&
+      isPeakBooking(booking.totalCents, booking.startsAt, booking.endsAt, base);
 
-  return (
-    <Card className="flex flex-col gap-6">
-      <div className="flex flex-col items-start gap-2">
-        <BookingStatusBadge status={booking.status} />
-        <h1 className="text-2xl font-bold tracking-tight">{heading}</h1>
-      </div>
+    return (
+      <Screen>
+        <CheckoutHeader backHref={backHref} title="Confirmar e pagar" />
+        <div className="flex flex-col gap-3.5 px-5 pt-2.5 pb-5">
+          <ReviewCard
+            venueName={venue.name}
+            photo={photo}
+            when={when}
+            range={range}
+            detail={
+              players === undefined
+                ? booking.field.name
+                : `${booking.field.name} · ${String(players)} jogadores`
+            }
+          />
+          <PriceCard
+            durationLabel={formatDuration(minutes)}
+            peak={peak}
+            totalCents={booking.totalCents}
+          />
+          {isDemoMode && players !== undefined ? (
+            <SplitOption totalCents={booking.totalCents} players={players} />
+          ) : null}
+          <CancelNote deadline={deadline} paid={false} />
+        </div>
+        {booking.holdExpiresAt ? (
+          <PixPayment
+            bookingId={booking.id}
+            holdExpiresAt={booking.holdExpiresAt}
+            venueSlug={venue.slug}
+            totalCents={booking.totalCents}
+            serverNow={now.toISOString()}
+          />
+        ) : null}
+        <div className="flex justify-center px-5 pb-6">
+          <CancelBooking bookingId={booking.id} status="held" />
+        </div>
+      </Screen>
+    );
+  }
 
-      <Summary booking={booking} />
-
-      {booking.status === 'held' ? (
-        <>
-          <p className="text-sm text-muted">{CANCEL_POLICY}</p>
-          {booking.holdExpiresAt ? (
-            <PixPayment
-              bookingId={booking.id}
-              holdExpiresAt={booking.holdExpiresAt}
-              venueSlug={booking.venue.slug}
-              serverNow={now.toISOString()}
+  if (booking.status === 'confirmed') {
+    return (
+      <Screen>
+        <ConfirmedHero
+          venueName={venue.name}
+          photo={photo}
+          when={when}
+          range={range}
+        />
+        <div className="flex flex-col gap-3.5 px-5 pt-[22px]">
+          <BookingFacts
+            fieldName={booking.field.name}
+            totalCents={booking.totalCents}
+          />
+          {booking.address ? (
+            <AddressCard
+              address={booking.address}
+              neighborhood={venue.neighborhood}
+              city={venue.city}
             />
           ) : null}
-          <CancelBooking bookingId={booking.id} status="held" />
-        </>
-      ) : null}
-
-      {booking.status === 'confirmed' ? (
-        <>
-          <Address booking={booking} />
-          <p className="text-sm text-muted">{CANCEL_POLICY}</p>
+          {isDemoMode && players !== undefined ? (
+            <SquadRacha
+              players={players}
+              totalCents={booking.totalCents}
+              shareMessage={`Bora jogar! ${venue.name}, ${when}, ${range}. ${absoluteUrl(backHref)}`}
+            />
+          ) : null}
+          <CancelNote deadline={deadline} paid />
           {started ? null : (
-            <CancelBooking bookingId={booking.id} status="confirmed" />
+            <div className="flex justify-center">
+              <CancelBooking bookingId={booking.id} status="confirmed" />
+            </div>
           )}
-        </>
-      ) : null}
+        </div>
+        <div className="mt-auto flex gap-2.5 px-5 pt-[18px] pb-[22px]">
+          <AppLink
+            href="/"
+            className="flex h-[52px] flex-1 items-center justify-center rounded-2xl border border-ink text-[15px] font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink"
+          >
+            Início
+          </AppLink>
+          <AppLink
+            href="/reservas"
+            className="flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-ink text-[15px] font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ink"
+          >
+            Minhas reservas
+          </AppLink>
+        </div>
+      </Screen>
+    );
+  }
 
-      {booking.status === 'expired' ? (
-        <>
-          <Alert tone="info">O prazo para pagamento acabou.</Alert>
-          <ChooseAnother slug={booking.venue.slug} />
-        </>
-      ) : null}
-
-      {booking.status === 'cancelled' ? (
-        <>
-          <Alert tone="info">
-            Reserva cancelada. Se havia um pagamento, o reembolso é tratado pelo
-            suporte.
-          </Alert>
-          <ChooseAnother slug={booking.venue.slug} />
-        </>
-      ) : null}
-    </Card>
+  const expired = booking.status === 'expired';
+  return (
+    <Screen>
+      <CheckoutHeader
+        backHref={backHref}
+        title={expired ? 'Reserva expirada' : 'Reserva cancelada'}
+      />
+      <div className="flex flex-col gap-3.5 px-5 pt-2.5 pb-6">
+        <Alert tone="info">
+          {expired
+            ? 'O prazo para pagamento acabou.'
+            : 'Reserva cancelada. Se havia um pagamento, o reembolso é tratado pelo suporte.'}
+        </Alert>
+        <ChooseAnother slug={venue.slug} />
+      </div>
+    </Screen>
   );
 }

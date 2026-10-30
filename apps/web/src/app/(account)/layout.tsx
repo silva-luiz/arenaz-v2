@@ -12,6 +12,8 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 /**
  * Shell of sign-in, sign-up and `/conta`: the same header and footer as the
  * public pages, no tab bar, and the page's card centered in the middle.
+ * `data-account-shell` lets a page that is a flow of its own (the checkout,
+ * `data-checkout`) adjust the shell in globals.css.
  */
 export default async function AccountLayout({
   children,
@@ -21,7 +23,7 @@ export default async function AccountLayout({
   const user = await currentUser();
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div data-account-shell className="flex min-h-dvh flex-col">
       <SkipLink />
       <SiteHeader user={user} linkComponent={AppLink} />
       {/* tabIndex -1: the skip link moves focus here; no ring for that. */}
