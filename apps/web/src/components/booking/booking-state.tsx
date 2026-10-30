@@ -362,15 +362,28 @@ export function BookingProvider({
       const time = pendingTime.current;
       if (time !== undefined) {
         pendingTime.current = undefined;
-        setSelection(
-          selectionAt(toGrid(ready, fieldId, midnight).day, time, timezone),
-        );
+        // The API builds `freeTimes` over every court, so the time may be
+        // free only on a later one: pick the first court that has it.
+        let picked: { fieldId: string; selection: Selection } | null = null;
+        for (const candidate of fields) {
+          const found = selectionAt(
+            toGrid(ready, candidate.id, midnight).day,
+            time,
+            timezone,
+          );
+          if (found) {
+            picked = { fieldId: candidate.id, selection: found };
+            break;
+          }
+        }
+        if (picked) setFieldId(picked.fieldId);
+        setSelection(picked?.selection ?? null);
       }
     })();
     return () => {
       controller.abort();
     };
-    // `fieldId` only matters for `?hora`, applied to the first grid; a court
+    // `fields` only matters for `?hora`, applied to the first grid; a court
     // change never needs a new request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, date, requestKey, timezone]);

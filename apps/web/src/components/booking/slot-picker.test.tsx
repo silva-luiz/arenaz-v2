@@ -1071,8 +1071,32 @@ describe('SlotPicker', () => {
       ).toHaveTextContent('19:00–20:00');
     });
 
-    it('just opens the day when the ?hora is taken', async () => {
+    it('picks the first court that has the ?hora free (the API counts every court)', async () => {
       serveAvailability({ field1: ['19:00'] });
+      renderPicker({ initialDate: '2026-11-06', initialTime: '19:00' });
+
+      await waitFor(() => {
+        expect(slot('19:00')).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(
+        screen.getByRole('status', { name: 'Resumo da reserva' }),
+      ).toHaveTextContent(/Quadra 2.*19:00–19:30/);
+    });
+
+    it('keeps the first court when it has the ?hora free', async () => {
+      serveAvailability({ field2: ['19:00'] });
+      renderPicker({ initialDate: '2026-11-06', initialTime: '19:00' });
+
+      await waitFor(() => {
+        expect(slot('19:00')).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(
+        screen.getByRole('status', { name: 'Resumo da reserva' }),
+      ).toHaveTextContent(/Quadra 1.*19:00–20:00/);
+    });
+
+    it('just opens the day when no court has the ?hora free', async () => {
+      serveAvailability({ field1: ['19:00'], field2: ['19:00'] });
       renderPicker({ initialDate: '2026-11-06', initialTime: '19:00' });
       await loaded();
 
