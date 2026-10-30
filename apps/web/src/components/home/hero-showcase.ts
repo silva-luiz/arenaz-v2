@@ -2,11 +2,10 @@
  * What the two floating cards of the home hero show: a confirmed booking and
  * a team splitting the bill ("racha") in Pix.
  *
- * Today both come from {@link HERO_SHOWCASE_MOCK}, an illustration with no
- * data about a real booking. The plan
- * `docs/superpowers/plans/2026-10-30-arenaz-v2-hero-showcase.md` replaces the
- * booking with the signed-in player's next confirmed booking and the racha
- * with real split payments (Plano 5); the cards only read this shape.
+ * {@link HERO_SHOWCASE_MOCK} is the illustration everyone sees first. For a
+ * signed-in player `useHeroShowcase` swaps the booking for their next
+ * confirmed one; the racha stays the illustration until real split payments
+ * exist (Plano 5). The cards only read this shape.
  */
 export interface HeroBookingShowcase {
   venueName: string;

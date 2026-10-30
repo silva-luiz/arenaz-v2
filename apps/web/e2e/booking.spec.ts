@@ -109,6 +109,7 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
 
   // Checkout: held, with the QR, the code and the countdown.
   await expect(page).toHaveURL(/\/reservas\/[0-9a-f-]{36}(\?jogadores=\d+)?$/);
+  const bookingId = /\/reservas\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
   await expect(
     page.getByRole('heading', { level: 1, name: 'Confirmar e pagar' }),
   ).toBeVisible();
@@ -172,6 +173,18 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
     path: 'e2e/test-results/captures/reservas-375.png',
     fullPage: true,
   });
+
+  // The home hero's booking card turns into this booking (desktop shows the
+  // code; the phone's compact card, the venue name).
+  const hero = page.getByRole('region', { name: 'Bora jogar hoje à noite?' });
+  await page.goto('/');
+  await expect(
+    hero.getByText(published.name).filter({ visible: true }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(
+    hero.getByText(`#AZ-${bookingId.slice(0, 4).toUpperCase()}`),
+  ).toBeVisible();
 });
 
 test('anônimo é levado à entrada', async ({ page }) => {

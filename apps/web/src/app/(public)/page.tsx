@@ -23,6 +23,7 @@ import {
   pickTonight,
   type FreeStarts,
 } from '@/components/home/tonight';
+import { currentUser } from '@/lib/current-user';
 import { publicGet } from '@/lib/public-api';
 import { todayInZone } from '@/lib/zoned-time';
 
@@ -117,15 +118,18 @@ export default async function HomePage() {
   // but Next renders layout and page side by side while prerendering: wait for
   // a real request so `next build` never calls the API.
   await connection();
-  const [tonight, weekend] = await Promise.all([
+  const [tonight, weekend, user] = await Promise.all([
     loadVenues(homeSportQuery(DEFAULT_HOME_SPORT)),
     loadWeekend(),
+    // Already read by the layout (memoized): only whether to ask the browser
+    // for the player's next booking; nothing of theirs goes in this HTML.
+    currentUser(),
   ]);
   const starts = await loadFreeStarts(tonight);
 
   return (
     <div className="flex flex-col pb-12 md:-mt-6">
-      <HomeHero />
+      <HomeHero signedIn={user !== null} />
       <HomeTonight initialItems={tonight} initialStarts={starts} />
       <div className="mt-7 flex flex-col gap-7 md:mt-[60px] md:gap-[60px]">
         <OpenGames />

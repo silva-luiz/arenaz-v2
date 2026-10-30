@@ -6,12 +6,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   publicGet: vi.fn(),
   apiSend: vi.fn(),
+  currentUser: vi.fn(),
   demo: { on: false },
 }));
 // `connection()` only works inside a real request.
 vi.mock('next/server', () => ({ connection: () => Promise.resolve() }));
 vi.mock('@/lib/public-api', () => ({ publicGet: mocks.publicGet }));
 vi.mock('@/lib/api-client', () => ({ apiSend: mocks.apiSend }));
+vi.mock('@/lib/current-user', () => ({ currentUser: mocks.currentUser }));
 // The demo mode is read at import time; a getter lets each test pick it.
 vi.mock('@/lib/demo', async () => {
   const fixtures = await import('@/lib/demo/fixtures');
@@ -114,6 +116,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(NOW);
   mocks.demo.on = false;
+  mocks.currentUser.mockResolvedValue(null);
   society = [
     card('arena-vila-madalena', {
       name: 'Arena Vila Madalena',
@@ -230,6 +233,53 @@ describe('home page: hero and search', () => {
     // One pair floats over the desktop hero, the compact pair over the phone banner.
     expect(screen.getAllByText('Reserva confirmada')).toHaveLength(2);
     expect(screen.getAllByText('Racha no Pix')).toHaveLength(2);
+  });
+
+  it('signed in, the booking cards show the next booking the browser reads', async () => {
+    mocks.currentUser.mockResolvedValue({ id: 'u1', name: 'Joana' });
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          booking: {
+            bookingId: '3f0c2b9e-6a4e-4d6b-9a52-1b6e0c7d9f10',
+            venueName: 'Arena do Próximo Jogo',
+            venueSlug: 'arena-do-proximo-jogo',
+            coverUrl: null,
+            when: 'Amanhã · 19h às 20h · Quadra 1',
+            code: '#AZ-3F0C',
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      render(await HomePage());
+
+      // Desktop card and compact phone card.
+      expect(await screen.findByText('#AZ-3F0C')).toBeInTheDocument();
+      expect(screen.getAllByText('Arena do Próximo Jogo')).toHaveLength(2);
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/bookings/me/next',
+        expect.anything(),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('signed out, the hero never asks for a booking', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      render(await HomePage());
+      expect(screen.getAllByText('Arena Vila Madalena').length).toBeGreaterThan(
+        0,
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('shows the "312 quadras" counter only in the demo mode', async () => {

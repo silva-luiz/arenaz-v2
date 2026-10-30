@@ -4,8 +4,8 @@ import { SearchBar } from '@arenaz/ui';
 import { useRef, type MouseEvent } from 'react';
 import { demoMarketingCounters, isDemoMode } from '@/lib/demo';
 import { ConfirmedBookingCard, RachaCard } from './hero-cards';
-import { HERO_SHOWCASE_MOCK, type HeroShowcase } from './hero-showcase';
 import { LiveDot } from './live-dot';
+import { useHeroShowcase } from './use-hero-showcase';
 
 function setPointer(element: HTMLElement, x: string, y: string) {
   element.style.setProperty('--mx', x);
@@ -20,20 +20,17 @@ function setPointer(element: HTMLElement, x: string, y: string) {
  * same photo and title under two half-width compact cards, without the
  * search.
  *
- * The two floating cards read a {@link HeroShowcase} (today the illustration
- * {@link HERO_SHOWCASE_MOCK}, with no data about a real booking), so they show
- * in every mode from md; between md and 1100px they shrink beside a smaller
+ * The floating cards read {@link useHeroShowcase}: the illustration, and for
+ * a signed-in player the booking card turns into their next confirmed
+ * booking once the browser has it. They show in every mode from md; between md and 1100px they shrink beside a smaller
  * title. The 1100px step is written in rem (68.8125rem) like the other home
  * rails: a px breakpoint would sort before `lg` and lose to it. The hero is
  * 520px tall, lower than the prototype's 580px, so the search pill stays in
  * view on a 768px-tall laptop. The "312 quadras" counter shows only in the
  * demo mode.
  */
-export function HomeHero({
-  showcase = HERO_SHOWCASE_MOCK,
-}: {
-  showcase?: HeroShowcase;
-}) {
+export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
+  const showcase = useHeroShowcase(signedIn);
   const heroRef = useRef<HTMLElement>(null);
 
   function onMove(event: MouseEvent<HTMLElement>) {
