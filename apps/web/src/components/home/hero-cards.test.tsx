@@ -24,6 +24,27 @@ describe('hero cards', () => {
     expect(screen.getByText('#AZ-1002')).toBeInTheDocument();
   });
 
+  it('leaves the booking code out of the compact phone card', () => {
+    render(
+      <ConfirmedBookingCard compact booking={HERO_SHOWCASE_MOCK.booking} />,
+    );
+
+    expect(screen.getByText('Reserva confirmada')).toBeInTheDocument();
+    expect(screen.getByText('Arena Vila Madalena')).toBeInTheDocument();
+    expect(
+      screen.getByText('Hoje · 20h às 22h · quadra 2'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('#AZ-4821')).not.toBeInTheDocument();
+  });
+
+  it('keeps the whole racha in the compact phone card', () => {
+    render(<RachaCard compact racha={HERO_SHOWCASE_MOCK.racha} />);
+
+    expect(screen.getByText('9 de 14 pagaram')).toBeInTheDocument();
+    expect(screen.getByTestId('racha-progress')).toHaveStyle({ width: '64%' });
+    expect(screen.getByText('+4')).toBeInTheDocument();
+  });
+
   it('draws the racha progress from paid and total', () => {
     render(<RachaCard racha={HERO_SHOWCASE_MOCK.racha} />);
 

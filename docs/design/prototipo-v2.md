@@ -14,7 +14,7 @@
 | `Busca.dc.html` | Busca com mapa | grade de cards + mapa fixo com preço no pino; pino selecionado escuro; preview flutuante da quadra |
 | `Quadra.dc.html` | Página da quadra | galeria de 5 fotos, seletor de dia/horário com horários seguidos, preço de horário nobre, card de reserva fixo com "Dividir com o time" e valor por pessoa |
 | `Checkout.dc.html` | Checkout mobile | revisão → Pix (QR + copia e cola) → "Quadra garantida" com lista do racha |
-| `MobileHome.dc.html` | Home mobile | busca "Bora jogar?", card grande "Livre agora", "Falta gente", tab bar |
+| `MobileHome.dc.html` | Home mobile | banner noturno com reserva e racha compactos, busca "Bora jogar?", card grande "Livre agora", "Falta gente", tab bar |
 | `Painel.dc.html` | Painel do dono | agenda quadra × hora colorida por tipo (app, mensalista, manual, partida aberta), indicadores, detalhe da reserva |
 
 ## Tokens

@@ -227,8 +227,9 @@ describe('home page: hero and search', () => {
   it('keeps the floating marketing cards (no fake data about a venue)', async () => {
     render(await HomePage());
 
-    expect(screen.getByText('Reserva confirmada')).toBeInTheDocument();
-    expect(screen.getByText('Racha no Pix')).toBeInTheDocument();
+    // One pair floats over the desktop hero, the compact pair over the phone banner.
+    expect(screen.getAllByText('Reserva confirmada')).toHaveLength(2);
+    expect(screen.getAllByText('Racha no Pix')).toHaveLength(2);
   });
 
   it('shows the "312 quadras" counter only in the demo mode', async () => {

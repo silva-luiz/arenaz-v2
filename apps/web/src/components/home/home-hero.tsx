@@ -15,8 +15,10 @@ function setPointer(element: HTMLElement, x: string, y: string) {
 /**
  * The night hero of Main.dc.html (desktop): photo with a subtle parallax,
  * the title, two floating marketing cards and the search pill overlapping its
- * bottom edge. Below md it is a shorter banner above the "Bora jogar?" pill:
- * the same photo and title, without the cards or the search.
+ * bottom edge. Below md it is a shorter banner above the "Bora jogar?" pill
+ * (MobileHome.dc.html), edge to edge (it undoes the page's 16px gutter): the
+ * same photo and title under two half-width compact cards, without the
+ * search.
  *
  * The two floating cards read a {@link HeroShowcase} (today the illustration
  * {@link HERO_SHOWCASE_MOCK}, with no data about a real booking), so they show
@@ -57,9 +59,9 @@ export function HomeHero({
       aria-labelledby="hero-titulo"
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="relative h-[244px] [--mx:0] [--my:0] md:h-[520px]"
+      className="relative -mx-4 -mt-4 h-[352px] [--mx:0] [--my:0] md:mx-0 md:mt-0 md:h-[520px]"
     >
-      <div className="absolute inset-0 overflow-hidden rounded-[24px] bg-[#0B1A12] shadow-2 md:rounded-section">
+      <div className="absolute inset-0 overflow-hidden rounded-b-[24px] bg-[#0B1A12] shadow-2 md:rounded-section">
         {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
         <img
           src="/home/hero-night.jpg"
@@ -102,6 +104,18 @@ export function HomeHero({
       <ConfirmedBookingCard
         booking={showcase.booking}
         className="absolute top-8 right-8 w-[240px] [transform:translate(calc(var(--mx)*22px),calc(var(--my)*16px))_rotate(1.5deg)] max-md:hidden lg:top-10 lg:right-10 lg:w-[260px] min-[68.8125rem]:top-12 min-[68.8125rem]:right-14 min-[68.8125rem]:w-[300px]"
+      />
+
+      <RachaCard
+        compact
+        racha={showcase.racha}
+        className="absolute top-6 left-4 w-[calc(50%-18px)] [transform:rotate(-2deg)] md:hidden"
+      />
+
+      <ConfirmedBookingCard
+        compact
+        booking={showcase.booking}
+        className="absolute top-4 right-4 w-[calc(50%-18px)] [transform:rotate(1.5deg)] md:hidden"
       />
 
       <div className="absolute -bottom-10 left-1/2 z-10 w-[calc(100%-112px)] max-w-[940px] -translate-x-1/2 max-md:hidden">
