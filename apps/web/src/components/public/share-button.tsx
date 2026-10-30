@@ -93,7 +93,7 @@ export function ShareButton({ title }: { title: string }) {
   }
 
   return (
-    <div className="relative md:-mr-3">
+    <div className="relative">
       <button
         ref={buttonRef}
         type="button"
@@ -101,7 +101,7 @@ export function ShareButton({ title }: { title: string }) {
           void share();
         }}
         className={cn(
-          'inline-flex h-11 items-center gap-2 rounded-button px-3 text-sm font-semibold underline underline-offset-4 transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
+          'inline-flex h-11 items-center gap-2 rounded-[10px] px-3 text-sm font-semibold underline underline-offset-[3px] transition-colors duration-150 hover:bg-surface motion-reduce:transition-none md:h-10',
           FOCUS_RING,
         )}
       >

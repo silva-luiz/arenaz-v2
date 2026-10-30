@@ -3,6 +3,7 @@ import {
   formatClock,
   lowestPriceCents,
   summarizePriceRule,
+  venuePrice,
 } from './price-rule-summary';
 
 function rule(
@@ -134,5 +135,48 @@ describe('lowestPriceCents', () => {
         priceRules: rules(12000, 9000),
       }),
     ).toBe(9000);
+  });
+});
+
+describe('venuePrice', () => {
+  const field = (base: number, ...rulePrices: number[]) => ({
+    basePriceCentsPerHour: base,
+    priceRules: rulePrices.map((price) => rule([5], 1140, 1380, price)),
+  });
+
+  it('is null without courts', () => {
+    expect(venuePrice([])).toBeNull();
+  });
+
+  it('is the base price "fora de pico" when the peak hours cost more', () => {
+    expect(venuePrice([field(18000, 22000)])).toEqual({
+      cents: 18000,
+      from: false,
+      offPeak: true,
+    });
+  });
+
+  it('is the plain base price when there is a single price', () => {
+    expect(venuePrice([field(18000), field(18000, 18000)])).toEqual({
+      cents: 18000,
+      from: false,
+      offPeak: false,
+    });
+  });
+
+  it('is "a partir de" the lowest price when a rule is cheaper', () => {
+    expect(venuePrice([field(18000, 9000)])).toEqual({
+      cents: 9000,
+      from: true,
+      offPeak: false,
+    });
+  });
+
+  it('is "a partir de" the lowest price when the courts differ', () => {
+    expect(venuePrice([field(18000), field(12050, 30000)])).toEqual({
+      cents: 12050,
+      from: true,
+      offPeak: false,
+    });
   });
 });

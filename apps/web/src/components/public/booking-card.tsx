@@ -1,19 +1,12 @@
 'use client';
 
-import type { BrazilTimezone } from '@arenaz/contracts';
-import { Button, PriceTag } from '@arenaz/ui';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-  type RefObject,
-} from 'react';
-import { SlotPicker, type PickerField } from '@/components/booking/slot-picker';
-import type { BookingIntent } from '@/lib/booking-client';
+import { Alert, cn, FOCUS_RING, formatPrice } from '@arenaz/ui';
+import { useId, useSyncExternalStore } from 'react';
+import { useBooking } from '@/components/booking/booking-state';
+import { BookingSummary } from '@/components/booking/booking-summary';
+import { MAX_PLAYERS, MIN_PLAYERS } from '@/lib/booking-client';
+import { isDemoMode } from '@/lib/demo';
+import type { VenuePrice } from '@/lib/price-rule-summary';
 
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
@@ -41,100 +34,195 @@ function useIsDesktop(): boolean {
   return useSyncExternalStore(subscribeDesktop, desktopSnapshot, () => false);
 }
 
-function subscribeNever(): () => void {
-  return () => undefined;
-}
-
-/** `false` on the server and during hydration, `true` after. */
-function useHydrated(): boolean {
-  return useSyncExternalStore(
-    subscribeNever,
-    () => true,
-    () => false,
-  );
-}
-
 /**
- * Bottom sheet on the native `<dialog>` (`showModal()`): the browser gives
- * the top layer, the inert page behind and the focus trap. Mount it to open,
- * unmount it to close. Esc and "Fechar" call `onClose`; the focus goes to
- * "Fechar" on open and back to the trigger on close.
+ * Copy of the switch: the prototype's only in the demo. Outside it nothing
+ * charges each player (the racha is Plano 5), so it promises nothing.
  */
-function BookingSheet({
-  onClose,
-  returnFocusRef,
-  children,
-}: {
-  onClose: () => void;
-  returnFocusRef: RefObject<HTMLElement | null>;
-  children: ReactNode;
-}) {
-  const titleId = useId();
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    // Kept in a ref so a StrictMode re-run does not overwrite the real opener.
-    openerRef.current ??=
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    if (!dialog.open) dialog.showModal();
-    closeRef.current?.focus();
-    const returnTo = returnFocusRef.current ?? openerRef.current;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !event.defaultPrevented) {
-        event.preventDefault();
-        onClose();
+function splitCopy(): { title: string; description: string } {
+  return isDemoMode
+    ? {
+        title: 'Dividir com o time',
+        description: 'Cada um paga a sua parte no Pix',
       }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      returnTo?.focus();
-    };
-    // Mount/unmount only: the focus target is captured once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    : {
+        title: 'Mostrar valor por pessoa',
+        description: 'Divide o total pelo número de jogadores',
+      };
+}
 
+const LABEL = 'block text-[10px] font-bold tracking-[0.04em] uppercase';
+
+/** "Jogadores · 14 pessoas" with the − and + buttons (2 to 30). */
+function PlayersRow() {
+  const { players, setPlayers } = useBooking();
+  const stepper = cn(
+    'grid size-11 place-items-center rounded-full border border-line-control bg-bg text-lg text-ink transition-colors duration-150 hover:border-ink motion-reduce:transition-none',
+    FOCUS_RING,
+  );
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onClose={onClose}
-      className="m-0 mt-auto h-[min(92dvh,48rem)] max-h-none w-full max-w-none overscroll-contain rounded-t-section bg-bg p-0 text-ink shadow-3 backdrop:bg-night/60 open:flex open:flex-col"
-    >
-      <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-3">
-        <h2 id={titleId} className="text-lg font-bold tracking-tight">
-          Escolha o horário
-        </h2>
-        <Button ref={closeRef} variant="ghost" size="sm" onClick={onClose}>
-          Fechar
-        </Button>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-4">
-        {children}
-      </div>
-    </dialog>
+    <div className="flex items-center justify-between gap-3 py-1.5 pr-2 pl-3.5">
+      <span>
+        <span className={LABEL}>Jogadores</span>
+        <span aria-live="polite" className="mt-0.5 block text-sm">
+          {`${String(players)} pessoas`}
+        </span>
+      </span>
+      <span className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="Menos um jogador"
+          onClick={() => {
+            setPlayers(Math.max(MIN_PLAYERS, players - 1));
+          }}
+          className={stepper}
+        >
+          <span aria-hidden="true">−</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Mais um jogador"
+          onClick={() => {
+            setPlayers(Math.min(MAX_PLAYERS, players + 1));
+          }}
+          className={stepper}
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      </span>
+    </div>
   );
 }
 
 /**
- * Booking box of the venue page.
+ * "Dividir com o time": a real switch, but all it does is show each player's
+ * share under the total (the racha itself is Plano 5).
+ */
+function SplitSwitch() {
+  const { split, setSplit } = useBooking();
+  const titleId = useId();
+  const descriptionId = useId();
+  const copy = splitCopy();
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={split}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      onClick={() => {
+        setSplit(!split);
+      }}
+      className={cn(
+        'flex items-center gap-3 rounded-[12px] border border-line-strong bg-bg px-3.5 py-3 text-left text-ink',
+        FOCUS_RING,
+      )}
+    >
+      <span className="flex-1">
+        <strong id={titleId} className="block text-sm font-[650]">
+          {copy.title}
+        </strong>
+        <span id={descriptionId} className="text-[13px] text-muted">
+          {copy.description}
+        </span>
+      </span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex h-[26px] w-11 shrink-0 rounded-full p-[3px] transition-colors duration-150 motion-reduce:transition-none',
+          split ? 'justify-end bg-brand' : 'justify-start bg-line-control',
+        )}
+      >
+        <span className="size-5 rounded-full bg-white" />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The call to action: "Escolher horário" (takes the focus to the days) until
+ * a time is chosen, then "Reservar". Busy while the booking is on its way.
+ */
+function BookingAction({ compact }: { compact: boolean }) {
+  const { choice, reserve, submitting, focusPicker } = useBooking();
+  const shape = compact
+    ? 'h-11 shrink-0 rounded-button px-4 text-sm font-semibold'
+    : 'h-[52px] w-full rounded-[12px] text-base font-[650]';
+  const base = cn(
+    'inline-flex items-center justify-center text-white transition-colors duration-150 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60',
+    FOCUS_RING,
+    shape,
+  );
+  if (!choice) {
+    return (
+      <button
+        type="button"
+        onClick={focusPicker}
+        className={cn(base, 'bg-ink hover:bg-black')}
+      >
+        Escolher horário
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled={submitting}
+      aria-busy={submitting ? true : undefined}
+      onClick={() => {
+        void reserve();
+      }}
+      className={cn(
+        base,
+        'bg-brand enabled:hover:bg-[color-mix(in_oklab,var(--color-brand)_88%,black)]',
+      )}
+    >
+      Reservar
+      {submitting ? <span className="sr-only">{', Aguarde…'}</span> : null}
+    </button>
+  );
+}
+
+/** "R$ 180 / hora fora de pico" ("a partir de" when it is the lowest of many). */
+function PriceLine({ price, large }: { price: VenuePrice; large: boolean }) {
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-1.5">
+      {price.from ? (
+        <span className="text-sm text-muted">a partir de</span>
+      ) : null}
+      <span
+        className={cn('font-[650] text-ink', large ? 'text-2xl' : 'text-base')}
+      >
+        {formatPrice(price.cents)}
+      </span>{' '}
+      <span className={cn('text-muted', large ? 'text-[15px]' : 'text-sm')}>
+        {price.offPeak ? '/ hora fora de pico' : '/ hora'}
+      </span>
+    </p>
+  );
+}
+
+const NO_COURTS = 'Este espaço ainda não tem quadras para reservar.';
+
+export interface BookingCardProps {
+  /** Price of the card; `null` when the venue has no court. */
+  price: VenuePrice | null;
+}
+
+/**
+ * Booking box of the venue page, on the state of `BookingProvider`.
  *
- * One element, two shapes. Below `lg` it is a bar that sticks to the bottom
- * of the page content, above the mobile tab bar (the tab bar is 56px + 1px
- * border + the device safe area; from `md` there is none): the price and an
- * "Escolher horário" button that opens the picker in a sheet. It is `sticky`,
- * not `fixed`: it is the last thing in the page's flow, so when the page ends
- * it settles above the footer and never covers content. From `lg` it is the
- * card of the right column, sticky below the header (81px), and the picker
- * sits in it. Render it as a direct child of the page's content wrapper:
- * `sticky` only moves inside its parent, and on a phone that must be the
- * whole page content.
+ * One element, two shapes. From `lg` it is the card of the right column
+ * (Quadra.dc.html), sticky below the header (84px + 24px): price, "Quando"
+ * (a link to the picker), the group size, "Dividir com o time", the call to
+ * action and the total. Below `lg` it is a bar that sticks to the bottom of
+ * the page content, above the mobile tab bar (56px + 1px border + the device
+ * safe area; from `md` there is none): the price or the chosen stretch and
+ * its total, and the call to action; the rest of the card sits under the
+ * picker (`BookingPanel`). It is `sticky`, not `fixed`: it is the last thing
+ * in the page's flow, so when the page ends it settles above the footer and
+ * never covers content. Render it as a direct child of the page's content
+ * wrapper: `sticky` only moves inside its parent, and on a phone that must be
+ * the whole page content.
  *
  * Focus must not hide under the bar (WCAG 2.4.11): the bar has a FIXED height,
  * the `--booking-bar-h` variable of `globals.css`, and the same variable feeds
@@ -142,92 +230,92 @@ function BookingSheet({
  * element is shown (`html:has([data-booking-bar])`, below `lg`). The text may
  * wrap, but never grows the bar.
  */
-export function BookingCard({
-  slug,
-  timezone,
-  fields,
-  minPriceCentsPerHour,
-  signedIn,
-  initial,
-}: {
-  slug: string;
-  timezone: BrazilTimezone;
-  fields: PickerField[];
-  /** Lowest price among the courts (base or rule); `null` if there is none. */
-  minPriceCentsPerHour: number | null;
-  signedIn: boolean;
-  /** A choice made before signing in; opens the sheet on a phone. */
-  initial?: BookingIntent | undefined;
-}) {
+export function BookingCard({ price }: BookingCardProps) {
   const desktop = useIsDesktop();
-  // `null`: the person has not touched the sheet yet. Back from sign in with a
-  // choice it then opens by itself, but only once the viewport is known (the
-  // server and the first render are always the phone one), so a desktop never
-  // mounts the dialog and its picker for a moment.
-  const [chosenOpen, setChosenOpen] = useState<boolean | null>(null);
-  const hydrated = useHydrated();
-  const sheetOpen =
-    chosenOpen ?? (hydrated && signedIn && initial !== undefined);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const closeSheet = useCallback(() => {
-    setChosenOpen(false);
-  }, []);
-
+  const { fields, choice, days, date, players, split, submitError } =
+    useBooking();
   const bookable = fields.length > 0;
-  const picker = (
-    <SlotPicker
-      slug={slug}
-      timezone={timezone}
-      fields={fields}
-      signedIn={signedIn}
-      initial={initial}
-    />
-  );
+  const when = choice
+    ? `${choice.whenLabel} · ${choice.timeRange}`
+    : `${days.find((day) => day.date === date)?.whenLabel ?? date} · escolha um horário`;
 
   return (
     <aside
       aria-label="Reserva"
       data-booking-bar=""
-      className="h-(--booking-bar-h) lg:h-auto sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-30 -mx-4 border-t border-line bg-bg px-4 py-2 shadow-1 md:-mx-10 md:bottom-0 md:px-10 lg:col-start-2 lg:row-start-1 lg:top-28 lg:bottom-auto lg:mx-0 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:rounded-card lg:border lg:p-6 lg:shadow-3"
+      className="sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-30 -mx-4 h-(--booking-bar-h) border-t border-line bg-bg px-4 py-2 shadow-1 md:bottom-0 md:-mx-10 md:px-10 lg:top-28 lg:bottom-auto lg:col-start-2 lg:row-start-1 lg:mx-0 lg:h-auto lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:rounded-card lg:border lg:p-[26px] lg:shadow-3"
     >
-      <div className="flex h-full items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:gap-4">
-        <div className="min-w-0">
-          {minPriceCentsPerHour === null ? null : (
-            <PriceTag
-              cents={minPriceCentsPerHour}
-              from
-              className="text-base lg:text-2xl"
-            />
-          )}
-          {bookable ? null : (
-            <p className="text-xs text-muted lg:text-sm">
-              Este espaço ainda não tem quadras para reservar.
-            </p>
+      {desktop ? (
+        <div className="flex flex-col gap-4">
+          {price ? <PriceLine price={price} large /> : null}
+          {bookable ? (
+            <>
+              <div className="overflow-hidden rounded-[12px] border border-line-control">
+                <a
+                  href="#horarios"
+                  className={cn(
+                    'block border-b border-line-control px-3.5 py-2.5 text-ink no-underline hover:bg-surface',
+                    FOCUS_RING,
+                    'focus-visible:-outline-offset-2',
+                  )}
+                >
+                  <span className={LABEL}>Quando</span>
+                  <span className="mt-0.5 block text-sm">{when}</span>
+                </a>
+                <PlayersRow />
+              </div>
+              <SplitSwitch />
+              <BookingAction compact={false} />
+              <BookingSummary choice={choice} players={players} split={split} />
+              <Alert tone="error">{submitError}</Alert>
+            </>
+          ) : (
+            <p className="text-sm text-muted">{NO_COURTS}</p>
           )}
         </div>
-
-        {!bookable ? null : desktop ? (
-          picker
-        ) : (
-          <Button
-            ref={triggerRef}
-            size="sm"
-            aria-haspopup="dialog"
-            onClick={() => {
-              setChosenOpen(true);
-            }}
-            className="shrink-0"
-          >
-            Escolher horário
-          </Button>
-        )}
-      </div>
-
-      {bookable && !desktop && sheetOpen ? (
-        <BookingSheet onClose={closeSheet} returnFocusRef={triggerRef}>
-          {picker}
-        </BookingSheet>
-      ) : null}
+      ) : (
+        <div className="flex h-full items-center justify-between gap-4">
+          <div className="min-w-0">
+            {choice ? (
+              <>
+                <p className="text-base font-[650] text-ink">
+                  {formatPrice(choice.totalCents)}
+                </p>
+                <p className="truncate text-xs text-muted">
+                  {`${choice.whenLabel} · ${choice.timeRange}`}
+                </p>
+              </>
+            ) : price ? (
+              <PriceLine price={price} large={false} />
+            ) : null}
+            {bookable ? null : (
+              <p className="text-xs text-muted">{NO_COURTS}</p>
+            )}
+          </div>
+          {bookable ? <BookingAction compact /> : null}
+        </div>
+      )}
     </aside>
+  );
+}
+
+/**
+ * The rest of the booking card on a phone, under the picker: the group size,
+ * the switch, the total and any refusal. Nothing from `lg` up (the card has
+ * them) or when the venue has no court.
+ */
+export function BookingPanel() {
+  const desktop = useIsDesktop();
+  const { fields, choice, players, split, submitError } = useBooking();
+  if (desktop || fields.length === 0) return null;
+  return (
+    <section aria-label="Sua reserva" className="mt-6 flex flex-col gap-4">
+      <div className="overflow-hidden rounded-[12px] border border-line-control">
+        <PlayersRow />
+      </div>
+      <SplitSwitch />
+      <BookingSummary choice={choice} players={players} split={split} />
+      <Alert tone="error">{submitError}</Alert>
+    </section>
   );
 }

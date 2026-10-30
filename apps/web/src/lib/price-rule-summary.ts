@@ -91,3 +91,41 @@ export function lowestPriceCents(
     ...field.priceRules.map((rule) => rule.priceCentsPerHour),
   );
 }
+
+/** The price of a venue's booking card. */
+export interface VenuePrice {
+  cents: number;
+  /** "a partir de": the lowest of prices that differ by court or rule. */
+  from: boolean;
+  /** "fora de pico": the usual price, with dearer peak hours. */
+  offPeak: boolean;
+}
+
+/**
+ * The booking card's price: when every court has the same base price and no
+ * rule is cheaper, that base price, "fora de pico" if some rule is dearer;
+ * otherwise the lowest price of all, "a partir de". `null` without courts.
+ */
+export function venuePrice(
+  fields: Pick<PublicField, 'basePriceCentsPerHour' | 'priceRules'>[],
+): VenuePrice | null {
+  const [first] = fields;
+  if (!first) return null;
+  const base = first.basePriceCentsPerHour;
+  const rules = fields.flatMap((field) => field.priceRules);
+  const usual =
+    fields.every((field) => field.basePriceCentsPerHour === base) &&
+    rules.every((rule) => rule.priceCentsPerHour >= base);
+  if (usual) {
+    return {
+      cents: base,
+      from: false,
+      offPeak: rules.some((rule) => rule.priceCentsPerHour > base),
+    };
+  }
+  return {
+    cents: Math.min(...fields.map(lowestPriceCents)),
+    from: true,
+    offPeak: false,
+  };
+}

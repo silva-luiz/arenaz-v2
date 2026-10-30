@@ -5,9 +5,13 @@ vi.mock('./api-client', () => ({ apiSend: mocks.apiSend }));
 
 import {
   addDaysToDateKey,
+  bookingNextPath,
   createBooking,
   dateChips,
   fetchAvailability,
+  perPersonCents,
+  pickerDays,
+  withinHorizon,
 } from './booking-client';
 
 const FIELD_ID = '11111111-1111-4111-8111-111111111111';
@@ -169,5 +173,77 @@ describe('dates', () => {
     expect(chips[0]?.ariaLabel).toBe('Hoje, quinta-feira, 5 de novembro');
     expect(chips[1]?.ariaLabel).toBe('Amanhã, sexta-feira, 6 de novembro');
     expect(chips[2]?.ariaLabel).toBe('Sáb 7, sábado, 7 de novembro');
+  });
+});
+
+describe('venue page day buttons', () => {
+  it('shows today and the next 13 days as a weekday and a day number', () => {
+    // 2026-10-28 is a Wednesday.
+    const days = pickerDays('2026-10-28');
+
+    expect(days).toHaveLength(14);
+    expect(days[0]).toMatchObject({
+      date: '2026-10-28',
+      weekday: 'Hoje',
+      dayOfMonth: 28,
+      whenLabel: 'Qua, 28 out',
+    });
+    expect(days[1]).toMatchObject({ weekday: 'Qui', dayOfMonth: 29 });
+    expect(days[4]).toMatchObject({
+      date: '2026-11-01',
+      weekday: 'Dom',
+      dayOfMonth: 1,
+      whenLabel: 'Dom, 1 nov',
+    });
+  });
+
+  it('names each button with its visible text first and the full date after', () => {
+    const days = pickerDays('2026-10-28');
+
+    expect(days[0]?.ariaLabel).toBe('Hoje 28, quarta-feira, 28 de outubro');
+    expect(days[1]?.ariaLabel).toBe('Qui 29, quinta-feira, 29 de outubro');
+  });
+
+  it('runs up to a later day asked for, within the 60 day horizon', () => {
+    const days = pickerDays('2026-10-28', '2026-12-01');
+
+    expect(days).toHaveLength(35);
+    expect(days.at(-1)?.date).toBe('2026-12-01');
+    expect(pickerDays('2026-10-28', '2026-10-30')).toHaveLength(14);
+  });
+
+  it('knows the bookable horizon: today up to 60 days ahead', () => {
+    expect(withinHorizon('2026-10-28', '2026-10-28')).toBe(true);
+    expect(withinHorizon('2026-10-28', '2026-12-27')).toBe(true);
+    expect(withinHorizon('2026-10-28', '2026-12-28')).toBe(false);
+    expect(withinHorizon('2026-10-28', '2026-10-27')).toBe(false);
+  });
+});
+
+describe('perPersonCents', () => {
+  it('divides the total and rounds up to the cent', () => {
+    expect(perPersonCents(44000, 14)).toBe(3143);
+    expect(perPersonCents(36000, 12)).toBe(3000);
+    expect(perPersonCents(1000, 3)).toBe(334);
+  });
+});
+
+describe('bookingNextPath', () => {
+  const intent = {
+    date: '2026-11-06',
+    fieldId: FIELD_ID,
+    startsAt: '2026-11-06T18:00:00.000-03:00',
+    durationMinutes: 60,
+  };
+
+  it('keeps the group size when there is one', () => {
+    const url = new URL(bookingNextPath('arena-x', intent, 12), 'http://x');
+    expect(url.searchParams.get('jogadores')).toBe('12');
+    expect(url.searchParams.get('duracao')).toBe('60');
+  });
+
+  it('leaves the group size out otherwise', () => {
+    const url = new URL(bookingNextPath('arena-x', intent), 'http://x');
+    expect(url.searchParams.has('jogadores')).toBe(false);
   });
 });

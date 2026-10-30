@@ -15,7 +15,10 @@ vi.mock('@/lib/booking-client', async (importActual) => ({
   createBooking: mocks.createBooking,
 }));
 vi.mock('@/lib/navigate', () => ({ navigate: mocks.navigate }));
+vi.mock('@/lib/demo', () => ({ isDemoMode: false }));
 
+import { BookingCard } from '@/components/public/booking-card';
+import { BookingProvider, type BookingProviderProps } from './booking-state';
 import { SlotPicker } from './slot-picker';
 
 const FIELD_1 = '11111111-1111-4111-8111-111111111111';
@@ -23,8 +26,18 @@ const FIELD_2 = '11111111-1111-4111-8111-111111111112';
 const BOOKING_ID = '33333333-3333-4333-8333-333333333333';
 
 const FIELDS = [
-  { id: FIELD_1, name: 'Quadra 1', minSlotMinutes: 60 },
-  { id: FIELD_2, name: 'Quadra 2', minSlotMinutes: 30 },
+  {
+    id: FIELD_1,
+    name: 'Quadra 1',
+    minSlotMinutes: 60,
+    basePriceCentsPerHour: 18000,
+  },
+  {
+    id: FIELD_2,
+    name: 'Quadra 2',
+    minSlotMinutes: 30,
+    basePriceCentsPerHour: 18000,
+  },
 ];
 
 /** "18:00" on 2026-11-0X in Brasília time. */
@@ -41,18 +54,20 @@ function slotsOf(
   block: number,
   busy: string[] = [],
   starts = ['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'],
+  peak: string[] = [],
 ) {
   return starts.map((start) => ({
     startsAt: iso(date, start),
     endsAt: iso(date, start, block),
     available: !busy.includes(start),
-    priceCents: block * 300,
+    // R$ 180 an hour; R$ 220 an hour on the peak times.
+    priceCents: peak.includes(start) ? (block / 30) * 11000 : block * 300,
   }));
 }
 
 function availabilityFor(
   date: string,
-  busy: { field1?: string[]; field2?: string[] } = {},
+  busy: { field1?: string[]; field2?: string[]; peak?: string[] } = {},
 ): Availability {
   return {
     date,
@@ -62,13 +77,13 @@ function availabilityFor(
         id: FIELD_1,
         name: 'Quadra 1',
         minSlotMinutes: 60,
-        slots: slotsOf(date, 60, busy.field1),
+        slots: slotsOf(date, 60, busy.field1, undefined, busy.peak),
       },
       {
         id: FIELD_2,
         name: 'Quadra 2',
         minSlotMinutes: 30,
-        slots: slotsOf(date, 30, busy.field2),
+        slots: slotsOf(date, 30, busy.field2, undefined, busy.peak),
       },
     ],
   };
@@ -80,22 +95,51 @@ function serveAvailability(busy: Parameters<typeof availabilityFor>[1] = {}) {
   );
 }
 
+function stubDesktop() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      matches: query.includes('min-width: 1024px'),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+}
+
+/** The picker as the page shows it: with the booking card beside it. */
 function renderPicker(
-  props: Partial<React.ComponentProps<typeof SlotPicker>> = {},
+  props: Partial<Omit<BookingProviderProps, 'children'>> = {},
 ) {
   return render(
-    <SlotPicker
+    <BookingProvider
       slug="arena-x"
       timezone="America/Sao_Paulo"
       fields={FIELDS}
       signedIn={false}
       {...props}
-    />,
+    >
+      <SlotPicker />
+      <BookingCard price={{ cents: 18000, from: false, offPeak: false }} />
+    </BookingProvider>,
   );
 }
 
+/** The time button starting at `time` ("18:00"); its name says more. */
+function slot(time: string): HTMLElement {
+  return screen.getByRole('button', { name: new RegExp(`^${time}, `) });
+}
+
 async function loaded() {
-  await screen.findByRole('button', { name: '18:00' });
+  await screen.findByRole('button', { name: /^18:00, / });
+}
+
+/** The alerts on the screen (the picker's and the card's), as one text. */
+function alerts(): string {
+  return screen
+    .getAllByRole('alert')
+    .map((alert) => alert.textContent)
+    .join(' | ');
 }
 
 describe('SlotPicker', () => {
@@ -104,43 +148,55 @@ describe('SlotPicker', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-05T18:00:00.000Z'));
     serveAvailability();
+    stubDesktop();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it('shows today and the next 13 days as chips, today selected', async () => {
+  it('shows today and the next 13 days as weekday and number, today selected', async () => {
     renderPicker();
     await loaded();
 
     const group = screen.getByRole('group', { name: 'Data' });
-    const chips = within(group).getAllByRole('button');
-    expect(chips).toHaveLength(14);
-    expect(chips.slice(0, 4).map((chip) => chip.textContent)).toEqual([
-      'Hoje',
-      'Amanhã',
-      'Sáb 7',
-      'Dom 8',
+    const days = within(group).getAllByRole('button');
+    expect(days).toHaveLength(14);
+    expect(days.slice(0, 4).map((day) => day.textContent)).toEqual([
+      'Hoje5',
+      'Sex6',
+      'Sáb7',
+      'Dom8',
     ]);
-    expect(chips[0]).toHaveAttribute('aria-pressed', 'true');
-    expect(chips[1]).toHaveAttribute('aria-pressed', 'false');
+    expect(days[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(days[1]).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('names each date chip with its full date', async () => {
+  it('draws each day as the 64 x 68 px button of the prototype', async () => {
     renderPicker();
     await loaded();
 
-    const chips = within(
+    const day = within(
       screen.getByRole('group', { name: 'Data' }),
-    ).getAllByRole('button');
-    expect(chips[0]).toHaveAccessibleName('Hoje, quinta-feira, 5 de novembro');
-    expect(chips[1]).toHaveAccessibleName('Amanhã, sexta-feira, 6 de novembro');
-    expect(chips[2]).toHaveAccessibleName('Sáb 7, sábado, 7 de novembro');
+    ).getAllByRole('button')[0];
+    expect(day).toHaveClass('w-16', 'h-[68px]', 'shrink-0');
   });
 
-  it('leaves room above the chips for their focus ring', async () => {
+  it('names each day with its visible text first and the full date after', async () => {
+    renderPicker();
+    await loaded();
+
+    const days = within(
+      screen.getByRole('group', { name: 'Data' }),
+    ).getAllByRole('button');
+    expect(days[0]).toHaveAccessibleName('Hoje 5, quinta-feira, 5 de novembro');
+    expect(days[1]).toHaveAccessibleName('Sex 6, sexta-feira, 6 de novembro');
+    expect(days[2]).toHaveAccessibleName('Sáb 7, sábado, 7 de novembro');
+  });
+
+  it('leaves room around the days for their focus ring', async () => {
     renderPicker();
     await loaded();
 
@@ -161,7 +217,7 @@ describe('SlotPicker', () => {
       expect.anything(),
     );
 
-    await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
+    await user.click(screen.getByRole('button', { name: /^Sex 6,/ }));
 
     await waitFor(() => {
       expect(mocks.fetchAvailability).toHaveBeenCalledWith(
@@ -170,13 +226,13 @@ describe('SlotPicker', () => {
         expect.anything(),
       );
     });
-    expect(screen.getByRole('button', { name: /^Amanhã/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^Sex 6,/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
   });
 
-  it('lists the times of the first court and marks taken ones as unavailable', async () => {
+  it('lists the times of the first court with their price, taken ones crossed out', async () => {
     serveAvailability({ field1: ['19:00'] });
     renderPicker();
     await loaded();
@@ -186,11 +242,96 @@ describe('SlotPicker', () => {
       within(times)
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']);
+    ).toEqual([
+      '18:00R$ 180',
+      '18:30R$ 180',
+      '19:00Ocupado',
+      '19:30R$ 180',
+      '20:00R$ 180',
+      '20:30R$ 180',
+      '21:00R$ 180',
+    ]);
+    const taken = within(times).getByRole('button', {
+      name: '19:00, ocupado, R$ 180',
+    });
+    expect(taken).toBeDisabled();
+    expect(taken).toHaveClass('line-through');
+    expect(slot('18:00')).toBeEnabled();
+  });
+
+  it('leaves out the times that already started today', async () => {
+    // 15:00 in Brasília: 14:00 and 14:30 are gone, not "Ocupado".
+    mocks.fetchAvailability.mockImplementation((_slug: string, date: string) =>
+      Promise.resolve({
+        ok: true,
+        data: {
+          ...availabilityFor(date),
+          fields: availabilityFor(date).fields.map((field) => ({
+            ...field,
+            slots: [
+              ...slotsOf(
+                date,
+                field.minSlotMinutes,
+                ['14:00', '14:30'],
+                ['14:00', '14:30'],
+              ),
+              ...field.slots,
+            ],
+          })),
+        },
+      }),
+    );
+    renderPicker();
+    await loaded();
+
+    expect(screen.queryByRole('button', { name: /^14:00, / })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^14:30, / })).toBeNull();
+    expect(slot('18:00')).toBeEnabled();
+  });
+
+  it('names every time with its price and whether it is free, taken or chosen', async () => {
+    serveAvailability({ field1: ['19:00'] });
+    const user = userEvent.setup();
+    renderPicker();
+    await loaded();
+
+    expect(slot('18:00')).toHaveAccessibleName('18:00, R$ 180, livre');
+    expect(slot('19:00')).toHaveAccessibleName('19:00, ocupado, R$ 180');
+
+    await user.click(slot('18:00'));
+
+    expect(slot('18:00')).toHaveAccessibleName('18:00, R$ 180, selecionado');
+    expect(slot('18:00')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('marks the times dearer than the base price as "nobre"', async () => {
+    serveAvailability({ peak: ['20:00', '21:00'] });
+    renderPicker();
+    await loaded();
+
+    expect(slot('20:00')).toHaveTextContent('R$ 220 · nobre');
+    expect(slot('20:00')).toHaveAccessibleName('20:00, R$ 220, nobre, livre');
+    expect(within(slot('20:00')).getByText('R$ 220 · nobre')).toHaveClass(
+      'text-peak',
+    );
+    expect(slot('18:00')).toHaveTextContent(/^18:00R\$ 180$/);
+  });
+
+  it('reaches every free time with the keyboard', async () => {
+    serveAvailability({ field1: ['19:00'] });
+    renderPicker();
+    await loaded();
+
+    const times = within(
+      screen.getByRole('group', { name: 'Horários' }),
+    ).getAllByRole('button');
+    for (const button of times) {
+      expect(button.tagName).toBe('BUTTON');
+      expect(button).not.toHaveAttribute('tabindex');
+    }
     expect(
-      within(times).getByRole('button', { name: '19:00, indisponível' }),
-    ).toBeDisabled();
-    expect(screen.getByRole('button', { name: '18:00' })).toBeEnabled();
+      times.filter((button) => !button.hasAttribute('disabled')),
+    ).toHaveLength(6);
   });
 
   it('switches the grid when another court is picked', async () => {
@@ -202,7 +343,7 @@ describe('SlotPicker', () => {
     await user.selectOptions(screen.getByLabelText('Quadra'), FIELD_2);
 
     expect(
-      screen.getByRole('button', { name: '18:30, indisponível' }),
+      screen.getByRole('button', { name: '18:30, ocupado, R$ 90' }),
     ).toBeDisabled();
   });
 
@@ -211,15 +352,12 @@ describe('SlotPicker', () => {
     renderPicker();
     await loaded();
 
-    await user.click(screen.getByRole('button', { name: '18:00' }));
+    await user.click(slot('18:00'));
 
-    expect(screen.getByRole('button', { name: '18:00' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(slot('18:00')).toHaveAttribute('aria-pressed', 'true');
     const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
     expect(summary).toHaveTextContent('Quadra 1');
-    expect(summary).toHaveTextContent('Hoje');
+    expect(summary).toHaveTextContent('Qui, 5 nov');
     expect(summary).toHaveTextContent('18:00–19:00');
     // 60 min x 300 cents = R$ 180.
     expect(summary).toHaveTextContent('R$ 180');
@@ -230,9 +368,9 @@ describe('SlotPicker', () => {
     renderPicker();
     await loaded();
 
-    await user.click(screen.getByRole('button', { name: '18:00' }));
-    await user.click(screen.getByRole('button', { name: '19:00' }));
-    await user.click(screen.getByRole('button', { name: '20:00' }));
+    await user.click(slot('18:00'));
+    await user.click(slot('19:00'));
+    await user.click(slot('20:00'));
 
     const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
     expect(summary).toHaveTextContent('18:00–21:00');
@@ -245,9 +383,9 @@ describe('SlotPicker', () => {
     await loaded();
     await user.selectOptions(screen.getByLabelText('Quadra'), FIELD_2);
 
-    await user.click(screen.getByRole('button', { name: '18:00' }));
-    await user.click(screen.getByRole('button', { name: '18:30' }));
-    await user.click(screen.getByRole('button', { name: '19:00' }));
+    await user.click(slot('18:00'));
+    await user.click(slot('18:30'));
+    await user.click(slot('19:00'));
 
     const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
     expect(summary).toHaveTextContent('18:00–19:30');
@@ -260,8 +398,8 @@ describe('SlotPicker', () => {
     renderPicker();
     await loaded();
 
-    await user.click(screen.getByRole('button', { name: '18:00' }));
-    await user.click(screen.getByRole('button', { name: '21:00' }));
+    await user.click(slot('18:00'));
+    await user.click(slot('21:00'));
 
     const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
     expect(summary).toHaveTextContent('18:00–19:00');
@@ -285,16 +423,16 @@ describe('SlotPicker', () => {
     const user = userEvent.setup();
     renderPicker();
     await loaded();
-    await user.click(screen.getByRole('button', { name: '18:00' }));
+    await user.click(slot('18:00'));
 
-    await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
+    await user.click(screen.getByRole('button', { name: /^Sex 6,/ }));
 
     await waitFor(() => {
       expect(
         screen.queryByRole('status', { name: 'Resumo da reserva' }),
       ).not.toHaveTextContent('18:00');
     });
-    expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
   });
 
   it('says there is nothing free when every time is taken', async () => {
@@ -337,9 +475,9 @@ describe('SlotPicker', () => {
     const user = userEvent.setup();
     renderPicker();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Não foi possível carregar os horários',
-    );
+    await waitFor(() => {
+      expect(alerts()).toContain('Não foi possível carregar os horários');
+    });
 
     await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
 
@@ -355,9 +493,11 @@ describe('SlotPicker', () => {
     });
     renderPicker();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Muitas tentativas. Aguarde um instante e tente de novo.',
-    );
+    await waitFor(() => {
+      expect(alerts()).toContain(
+        'Muitas tentativas. Aguarde um instante e tente de novo.',
+      );
+    });
   });
 
   it('shows the venue time zone only when it is not Brasília time', async () => {
@@ -385,8 +525,8 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: false });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '18:00' }));
-      await user.click(screen.getByRole('button', { name: '19:00' }));
+      await user.click(slot('18:00'));
+      await user.click(slot('19:00'));
 
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
 
@@ -415,7 +555,7 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '19:00' }));
+      await user.click(slot('19:00'));
 
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
 
@@ -437,7 +577,7 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '18:00' }));
+      await user.click(slot('18:00'));
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
       expect(
         screen.getByRole('button', { name: /^Reservar, Aguarde/ }),
@@ -452,11 +592,42 @@ describe('SlotPicker', () => {
       expect(screen.getByRole('button', { name: 'Reservar' })).toBeEnabled();
     });
 
-    it('is disabled until a time is picked', async () => {
+    it('is "Escolher horário" until a time is picked', async () => {
       renderPicker({ signedIn: true });
       await loaded();
 
-      expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Escolher horário' }),
+      ).toBeEnabled();
+    });
+
+    it('"Escolher horário" takes the focus to the chosen day', async () => {
+      const user = userEvent.setup();
+      Element.prototype.scrollIntoView = vi.fn();
+      renderPicker({ signedIn: true });
+      await loaded();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Escolher horário' }),
+      );
+
+      expect(screen.getByRole('button', { name: /^Hoje 5,/ })).toHaveFocus();
+    });
+
+    it('keeps the group size in the sign in link', async () => {
+      const user = userEvent.setup();
+      renderPicker({ signedIn: false, initialPlayers: 12 });
+      await loaded();
+      await user.click(slot('18:00'));
+
+      await user.click(screen.getByRole('button', { name: 'Reservar' }));
+
+      const target = String(mocks.navigate.mock.calls[0]?.[0]);
+      const next = new URL(target, 'http://x').searchParams.get('next') ?? '';
+      expect(new URL(next, 'http://x').searchParams.get('jogadores')).toBe(
+        '12',
+      );
     });
 
     it('creates the booking and goes to its page', async () => {
@@ -467,8 +638,8 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '19:00' }));
-      await user.click(screen.getByRole('button', { name: '20:00' }));
+      await user.click(slot('19:00'));
+      await user.click(slot('20:00'));
 
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
 
@@ -492,23 +663,23 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '18:00' }));
+      await user.click(slot('18:00'));
       expect(mocks.fetchAvailability).toHaveBeenCalledTimes(1);
 
       // The reload now says 18:00 is gone.
       serveAvailability({ field1: ['18:00'] });
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Esse horário acabou de ser reservado',
-      );
+      await waitFor(() => {
+        expect(alerts()).toContain('Esse horário acabou de ser reservado');
+      });
       await waitFor(() => {
         expect(mocks.fetchAvailability).toHaveBeenCalledTimes(2);
       });
       expect(
-        await screen.findByRole('button', { name: '18:00, indisponível' }),
+        await screen.findByRole('button', { name: '18:00, ocupado, R$ 180' }),
       ).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
       expect(mocks.navigate).not.toHaveBeenCalled();
     });
 
@@ -522,13 +693,13 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '18:00' }));
+      await user.click(slot('18:00'));
 
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Você já tem reservas aguardando pagamento',
-      );
+      await waitFor(() => {
+        expect(alerts()).toContain('Você já tem reservas aguardando pagamento');
+      });
       expect(mocks.fetchAvailability).toHaveBeenCalledTimes(1);
       // The choice is kept so the person can try again.
       expect(screen.getByRole('button', { name: 'Reservar' })).toBeEnabled();
@@ -544,7 +715,7 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
       await loaded();
-      await user.click(screen.getByRole('button', { name: '18:00' }));
+      await user.click(slot('18:00'));
 
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
       // Busy: the button is disabled and says so.
@@ -632,11 +803,11 @@ describe('SlotPicker', () => {
         within(group)
           .getAllByRole('button')
           .map((button) => button.textContent),
-      ).toEqual(['00:00', '01:00', '02:00']);
+      ).toEqual(['00:00R$ 60', '01:00R$ 60', '02:00R$ 60']);
       // Names carry the date, so "00:00" is not mistaken for tonight.
       expect(
         within(group).getByRole('button', {
-          name: '00:00, sexta-feira, 6 de novembro',
+          name: '00:00, sexta-feira, 6 de novembro, R$ 60, livre',
         }),
       ).toBeEnabled();
     });
@@ -647,7 +818,7 @@ describe('SlotPicker', () => {
 
       expect(
         await screen.findByRole('button', {
-          name: '01:00, sexta-feira, 6 de novembro, indisponível',
+          name: '01:00, sexta-feira, 6 de novembro, ocupado, R$ 60',
         }),
       ).toBeDisabled();
     });
@@ -660,7 +831,7 @@ describe('SlotPicker', () => {
         ],
       });
       renderPicker();
-      await screen.findByRole('button', { name: '20:00' });
+      await screen.findByRole('button', { name: /^20:00, / });
 
       expect(mocks.fetchAvailability).toHaveBeenCalledTimes(1);
       expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
@@ -674,7 +845,7 @@ describe('SlotPicker', () => {
         ],
       });
       renderPicker();
-      await screen.findByRole('button', { name: '21:00' });
+      await screen.findByRole('button', { name: /^21:00, / });
 
       expect(mocks.fetchAvailability).toHaveBeenCalledTimes(2);
       expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
@@ -697,10 +868,12 @@ describe('SlotPicker', () => {
       renderPicker();
 
       expect(
-        await screen.findByRole('button', { name: '23:00' }),
+        await screen.findByRole('button', { name: /^23:00, / }),
       ).toBeEnabled();
       expect(screen.queryByText(/^Madrugada de/)).not.toBeInTheDocument();
-      expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+      for (const alert of screen.queryAllByRole('alert')) {
+        expect(alert).toBeEmptyDOMElement();
+      }
     });
 
     it('extends a selection across midnight and books it as one stretch', async () => {
@@ -712,21 +885,21 @@ describe('SlotPicker', () => {
       const user = userEvent.setup();
       renderPicker({ signedIn: true });
 
-      await user.click(await screen.findByRole('button', { name: '23:00' }));
+      await user.click(await screen.findByRole('button', { name: /^23:00, / }));
       await user.click(
         screen.getByRole('button', {
-          name: '00:00, sexta-feira, 6 de novembro',
+          name: '00:00, sexta-feira, 6 de novembro, R$ 60, livre',
         }),
       );
       await user.click(
         screen.getByRole('button', {
-          name: '01:00, sexta-feira, 6 de novembro',
+          name: '01:00, sexta-feira, 6 de novembro, R$ 60, livre',
         }),
       );
 
       const summary = screen.getByRole('status', { name: 'Resumo da reserva' });
       expect(summary).toHaveTextContent('23:00–02:00');
-      expect(summary).toHaveTextContent('Sex, 06/11');
+      expect(summary).toHaveTextContent('termina Sex, 6 nov');
       // Three hours at R$ 60.
       expect(summary).toHaveTextContent('R$ 180');
 
@@ -750,7 +923,7 @@ describe('SlotPicker', () => {
 
       await user.click(
         await screen.findByRole('button', {
-          name: '01:00, sexta-feira, 6 de novembro',
+          name: '01:00, sexta-feira, 6 de novembro, R$ 60, livre',
         }),
       );
       await user.click(screen.getByRole('button', { name: 'Reservar' }));
@@ -782,6 +955,70 @@ describe('SlotPicker', () => {
     });
   });
 
+  describe('arriving from the search', () => {
+    it('opens the day of ?data', async () => {
+      renderPicker({ initialDate: '2026-11-07' });
+
+      await waitFor(() => {
+        expect(mocks.fetchAvailability).toHaveBeenCalledWith(
+          'arena-x',
+          '2026-11-07',
+          expect.anything(),
+        );
+      });
+      expect(screen.getByRole('button', { name: /^Sáb 7,/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('offers days up to a ?data beyond the first two weeks', async () => {
+      renderPicker({ initialDate: '2026-12-01' });
+
+      expect(
+        await screen.findByRole('button', { name: /^Ter 1,/ }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('ignores a ?data outside the bookable horizon', async () => {
+      renderPicker({ initialDate: '2027-03-01' });
+      await loaded();
+
+      expect(screen.getByRole('button', { name: /^Hoje 5,/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(mocks.fetchAvailability).toHaveBeenCalledWith(
+        'arena-x',
+        '2026-11-05',
+        expect.anything(),
+      );
+    });
+
+    it('picks the ?hora of that day when it is free', async () => {
+      renderPicker({ initialDate: '2026-11-06', initialTime: '19:00' });
+
+      await waitFor(() => {
+        expect(slot('19:00')).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(
+        screen.getByRole('status', { name: 'Resumo da reserva' }),
+      ).toHaveTextContent('19:00–20:00');
+    });
+
+    it('just opens the day when the ?hora is taken', async () => {
+      serveAvailability({ field1: ['19:00'] });
+      renderPicker({ initialDate: '2026-11-06', initialTime: '19:00' });
+      await loaded();
+
+      expect(screen.getByRole('button', { name: /^Sex 6,/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
+    });
+  });
+
   describe('coming back from sign in', () => {
     it('restores the choice when it is still free', async () => {
       renderPicker({
@@ -799,7 +1036,7 @@ describe('SlotPicker', () => {
           screen.getByRole('status', { name: 'Resumo da reserva' }),
         ).toHaveTextContent('19:00–21:00');
       });
-      expect(screen.getByRole('button', { name: /^Amanhã/ })).toHaveAttribute(
+      expect(screen.getByRole('button', { name: /^Sex 6,/ })).toHaveAttribute(
         'aria-pressed',
         'true',
       );
@@ -822,10 +1059,10 @@ describe('SlotPicker', () => {
         screen.getByRole('button', { name: 'Sáb 7, sábado, 7 de novembro' }),
       );
       await loaded();
-      await user.click(screen.getByRole('button', { name: /^Amanhã/ }));
+      await user.click(screen.getByRole('button', { name: /^Sex 6,/ }));
       await loaded();
 
-      expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
     });
 
     it('drops the choice when it is no longer free', async () => {
@@ -841,7 +1078,7 @@ describe('SlotPicker', () => {
       });
       await loaded();
 
-      expect(screen.getByRole('button', { name: 'Reservar' })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: 'Reservar' })).toBeNull();
     });
   });
 });

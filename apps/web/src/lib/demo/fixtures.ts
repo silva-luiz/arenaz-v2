@@ -29,6 +29,8 @@ export interface DemoVenueExtras {
   badge?: string;
   /** Line under the owner's name on the venue page. */
   hostHighlight?: string;
+  /** What players praise, beside "Uma das mais bem avaliadas da cidade". */
+  praise?: string;
   reviews: DemoReview[];
   subRatings: DemoSubRating[];
 }
@@ -89,6 +91,7 @@ export const DEMO_VENUE_EXTRAS: Readonly<Record<string, DemoVenueExtras>> = {
     rating: '4,92',
     reviewsCount: 318,
     hostHighlight: HOST_HIGHLIGHT,
+    praise: 'Jogadores elogiam o gramado e a iluminação.',
     subRatings: [
       { label: 'Gramado', value: '4,9' },
       { label: 'Iluminação', value: '5,0' },

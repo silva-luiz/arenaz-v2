@@ -6,12 +6,25 @@ import {
 import { Gallery } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { BookingCard } from '@/components/public/booking-card';
+import { BookingProvider } from '@/components/booking/booking-state';
+import { SlotPicker } from '@/components/booking/slot-picker';
+import { BookingCard, BookingPanel } from '@/components/public/booking-card';
+import { SaveButton } from '@/components/public/save-button';
 import { ShareButton } from '@/components/public/share-button';
-import { VenueDetails } from '@/components/public/venue-details';
-import type { BookingIntent } from '@/lib/booking-client';
+import {
+  SECTION_TITLE,
+  VenueDetails,
+  VenueOverview,
+  VenueReviews,
+} from '@/components/public/venue-details';
+import {
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  type BookingIntent,
+} from '@/lib/booking-client';
+import { isDemoMode } from '@/lib/demo';
 import { publicGet } from '@/lib/public-api';
-import { lowestPriceCents } from '@/lib/price-rule-summary';
+import { venuePrice } from '@/lib/price-rule-summary';
 import { absoluteUrl } from '@/lib/site';
 import { isSignedIn } from '@/lib/venue-session';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
@@ -33,6 +46,42 @@ interface Props {
   searchParams?: Promise<SearchParams>;
 }
 
+/** The single value of a query parameter (a repeated one counts as none). */
+function single(params: SearchParams, key: string): string | undefined {
+  const value = params[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+/** A real calendar day "YYYY-MM-DD" (2026-02-30 is not one). */
+function isCalendarDate(text: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const [year = 0, month = 1, day = 1] = text.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toISOString().slice(0, 10) === text;
+}
+
+/**
+ * What the home and the search hand the page: `?data` (the day to open; the
+ * picker keeps it only within the bookable horizon), `?hora` ("HH:MM" on the
+ * half hour, picked on that day when free) and `?jogadores` (2 to 30).
+ * Anything else is ignored.
+ */
+function parseSearchIntent(params: SearchParams): {
+  date?: string;
+  time?: string;
+  players?: number;
+} {
+  const date = single(params, 'data');
+  const time = single(params, 'hora');
+  const players = single(params, 'jogadores');
+  const count = players && /^\d{1,2}$/.test(players) ? Number(players) : NaN;
+  return {
+    ...(date && isCalendarDate(date) ? { date } : {}),
+    ...(time && /^([01]\d|2[0-3]):[03]0$/.test(time) ? { time } : {}),
+    ...(count >= MIN_PLAYERS && count <= MAX_PLAYERS ? { players: count } : {}),
+  };
+}
+
 /**
  * The choice carried through sign in (`?data=&quadra=&inicio=&duracao=`),
  * or `undefined` when any part is missing or does not make sense. Whether the
@@ -42,14 +91,10 @@ function parseIntent(
   params: SearchParams,
   venue: PublicVenue,
 ): BookingIntent | undefined {
-  const one = (key: string): string | undefined => {
-    const value = params[key];
-    return typeof value === 'string' ? value : undefined;
-  };
-  const date = one('data');
-  const fieldId = one('quadra');
-  const startsAt = one('inicio');
-  const duration = one('duracao');
+  const date = single(params, 'data');
+  const fieldId = single(params, 'quadra');
+  const startsAt = single(params, 'inicio');
+  const duration = single(params, 'duracao');
   if (!date || !fieldId || !startsAt || !duration) return undefined;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
   if (!venue.fields.some((field) => field.id === fieldId)) return undefined;
@@ -144,20 +189,19 @@ export default async function VenuePage({ params, searchParams }: Props) {
     searchParams ?? Promise.resolve<SearchParams>({}),
   ]);
   const initial = parseIntent(query, venue);
+  const arriving = parseSearchIntent(query);
 
   const photos = sortedPhotos(venue.photos).map((photo, index) => ({
     url: photo.url,
     srcSet: photo.srcSet,
     alt: `${venue.name}, foto ${String(index + 1)}`,
   }));
-  const minPrice =
-    venue.fields.length > 0
-      ? Math.min(...venue.fields.map(lowestPriceCents))
-      : null;
+  const bookable = venue.fields.length > 0;
 
   return (
-    // The page owns its bottom gap (as the home and search do).
-    <div className="pb-12">
+    // The prototype's 1160px column; the page owns its bottom gap (as the
+    // home and search do).
+    <div className="mx-auto max-w-[1160px] pb-12 md:pt-1">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -167,38 +211,61 @@ export default async function VenuePage({ params, searchParams }: Props) {
         }}
       />
 
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
-        <div className="min-w-0">
-          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-            {venue.name}
-          </h1>
-          <p className="mt-1 text-muted">
-            {`${venue.neighborhood}, ${venue.city} · ${venue.state}`}
-          </p>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="min-w-0 text-[26px] leading-tight font-[650] tracking-[-0.025em] break-words md:text-[30px]">
+          {venue.name}
+        </h1>
+        <div className="-ml-3 flex gap-1 md:-mr-3 md:ml-0">
+          <ShareButton title={venue.name} />
+          {isDemoMode ? <SaveButton slug={venue.slug} /> : null}
         </div>
-        <ShareButton title={venue.name} />
       </div>
 
       <Gallery photos={photos} />
 
-      {/* From lg: content on the left, the booking card sticky on the right.
-          Below lg the card is the last child and becomes a bottom bar: it must be
-          a direct child here, because `sticky` only moves inside its parent. */}
-      <div className="mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-x-16 xl:mt-10">
-        <VenueDetails venue={venue} />
-        <BookingCard
-          slug={venue.slug}
-          timezone={venue.timezone}
-          fields={venue.fields.map((field) => ({
-            id: field.id,
-            name: field.name,
-            minSlotMinutes: field.minSlotMinutes,
-          }))}
-          minPriceCentsPerHour={minPrice}
-          signedIn={signedIn}
-          initial={initial}
-        />
-      </div>
+      <BookingProvider
+        slug={venue.slug}
+        timezone={venue.timezone}
+        fields={venue.fields.map((field) => ({
+          id: field.id,
+          name: field.name,
+          minSlotMinutes: field.minSlotMinutes,
+          basePriceCentsPerHour: field.basePriceCentsPerHour,
+        }))}
+        signedIn={signedIn}
+        initial={initial}
+        initialDate={arriving.date}
+        initialTime={arriving.time}
+        initialPlayers={arriving.players}
+      >
+        {/* From lg: content on the left, the booking card sticky on the
+            right (Quadra.dc.html: 72px apart, 340px card). Below lg the card
+            is the last child and becomes a bottom bar: it must be a direct
+            child here, because `sticky` only moves inside its parent. */}
+        <div className="mt-9 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-x-[72px]">
+          <div className="min-w-0">
+            <VenueOverview venue={venue} />
+            {bookable ? (
+              <section
+                id="horarios"
+                aria-labelledby="horarios-titulo"
+                className="border-b border-line py-[30px]"
+              >
+                <h2 id="horarios-titulo" className={SECTION_TITLE}>
+                  Escolha o horário
+                </h2>
+                <div className="mt-4">
+                  <SlotPicker />
+                </div>
+                <BookingPanel />
+              </section>
+            ) : null}
+            <VenueReviews slug={venue.slug} />
+            <VenueDetails venue={venue} />
+          </div>
+          <BookingCard price={venuePrice(venue.fields)} />
+        </div>
+      </BookingProvider>
     </div>
   );
 }

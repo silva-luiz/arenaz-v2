@@ -111,18 +111,21 @@ test('jogador encontra e abre um espaço publicado', async ({
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Quadras' })).toBeVisible();
   await expect(page.getByText('Society 1')).toBeVisible();
-  await expect(page.getByText(/a partir de/i).first()).toBeVisible();
   await expect(page.getByText(/R\$\s*180\b/).first()).toBeVisible();
   await expect(
     page.getByText(
       `${published.neighborhood}, São Paulo. O endereço exato aparece depois da reserva.`,
     ),
   ).toBeVisible();
-  // The time picker sits in the booking card (desktop viewport).
+  // The card: the price per hour; the time picker sits in the page, as in
+  // the prototype (desktop viewport).
   await expect(
-    page.getByRole('complementary', { name: 'Reserva' }).getByRole('group', {
-      name: 'Data',
-    }),
+    page.getByRole('complementary', { name: 'Reserva' }),
+  ).toContainText(/R\$\s*180\s*\/ hora/);
+  await expect(
+    page
+      .getByRole('region', { name: 'Escolha o horário' })
+      .getByRole('group', { name: 'Data' }),
   ).toBeVisible();
 
   // Nothing private leaks: not in the text, and not anywhere in the markup.
@@ -290,6 +293,55 @@ test('busca: filtros, pinos e prévia do mapa', async ({ page, published }) => {
   ).toBeVisible();
 });
 
+test('quadra: dia e grupo da busca, sem rolagem lateral no celular', async ({
+  page,
+  published,
+}) => {
+  const data = tomorrow();
+  const day = Number(data.slice(8, 10));
+
+  // Desktop: the day and the group size come from the search link.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/espacos/${published.slug}?data=${data}&jogadores=12`);
+  const days = page.getByRole('group', { name: 'Data' });
+  await expect(
+    days.getByRole('button', { pressed: true }),
+  ).toHaveAccessibleName(new RegExp(`^\\S+ ${String(day)}, `));
+  const card = page.getByRole('complementary', { name: 'Reserva' });
+  await expect(card).toContainText('12 pessoas');
+  await expect(card.getByRole('switch')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+
+  // Phone: no horizontal page scroll, and every control of the booking is a
+  // 44px target at least.
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(`/espacos/${published.slug}?data=${data}&jogadores=12`);
+  const times = page.getByRole('group', { name: 'Horários' });
+  await expect(times.getByText('Carregando horários')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
+  const targets = [
+    page.getByRole('button', { name: 'Escolher horário' }),
+    page.getByRole('button', { name: 'Mais um jogador' }),
+    page.getByRole('button', { name: 'Menos um jogador' }),
+    page.getByRole('switch'),
+    days.getByRole('button').first(),
+    page.getByRole('button', { name: 'Compartilhar' }),
+  ];
+  const firstTime = times.getByRole('button').first();
+  if ((await firstTime.count()) > 0) targets.push(firstTime);
+  for (const target of targets) {
+    const box = await target.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test('rascunho dá 404', async ({ page, draft }) => {
   const response: Response | null = await page.goto(`/espacos/${draft.slug}`);
   expect(response?.status()).toBe(404);
@@ -353,17 +405,20 @@ for (const viewport of VIEWPORTS) {
     await page.locator('.leaflet-container').first().waitFor();
     await scan(`/espacos/${published.slug}`);
 
-    // The time picker: in the card from lg up, in the sheet below it. Scans
-    // run with the default motion, after every animation and transition has
-    // ended, so axe never reads a colour halfway through one.
+    // The time picker sits in the page; below lg "Escolher horário" in the
+    // bar takes the focus to it. Scans run with the default motion, after
+    // every animation and transition has ended, so axe never reads a colour
+    // halfway through one.
     const settled = async (): Promise<void> => {
       await page.waitForFunction(() => document.getAnimations().length === 0);
     };
     if (viewport.width < 1024) {
       await page.getByRole('button', { name: 'Escolher horário' }).click();
       await expect(
-        page.getByRole('dialog', { name: 'Escolha o horário' }),
-      ).toBeVisible();
+        page.getByRole('group', { name: 'Data' }).getByRole('button', {
+          pressed: true,
+        }),
+      ).toBeFocused();
     }
     const times = page.getByRole('group', { name: 'Horários' });
     await expect(times.getByText('Carregando horários')).toHaveCount(0);

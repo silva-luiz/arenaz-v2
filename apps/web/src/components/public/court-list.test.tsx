@@ -5,8 +5,10 @@ import {
   courtFacts,
   formatMeasures,
   formatMinSlot,
+  venueFacts,
+  venueHeadline,
 } from './court-list';
-import { makeField } from '@/test/venue-fixture';
+import { makeField, makeVenue } from '@/test/venue-fixture';
 
 const SECOND_ID = '11111111-1111-4111-8111-111111111112';
 
@@ -151,5 +153,69 @@ describe('CourtList', () => {
   it('renders nothing for a venue without courts', () => {
     const { container } = render(<CourtList fields={[]} />);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('venueHeadline', () => {
+  it('names the sport and format of a single court and the place', () => {
+    expect(venueHeadline(makeVenue())).toBe(
+      'Society 7x7 em Vila Madalena, São Paulo',
+    );
+  });
+
+  it('leaves the format out when the court has none', () => {
+    expect(
+      venueHeadline(
+        makeVenue({ fields: [makeField({ sports: ['padel'], format: null })] }),
+      ),
+    ).toBe('Padel em Vila Madalena, São Paulo');
+  });
+
+  it('counts the courts when there are several', () => {
+    expect(
+      venueHeadline(
+        makeVenue({ fields: [makeField(), makeField({ id: SECOND_ID })] }),
+      ),
+    ).toBe('2 quadras em Vila Madalena, São Paulo');
+  });
+
+  it('still says where without courts', () => {
+    expect(venueHeadline(makeVenue({ fields: [] }))).toBe(
+      'Espaço em Vila Madalena, São Paulo',
+    );
+  });
+});
+
+describe('venueFacts', () => {
+  it('lists surface, cover and size of a single court', () => {
+    expect(venueFacts(makeVenue({ amenities: ['coberta', 'vestiario'] }))).toBe(
+      'Grama sintética · coberta · 40 × 20 m',
+    );
+  });
+
+  it('leaves out what is not known', () => {
+    expect(
+      venueFacts(
+        makeVenue({ fields: [makeField({ lengthM: null })], amenities: [] }),
+      ),
+    ).toBe('Grama sintética');
+  });
+
+  it('lists the sports of several courts', () => {
+    expect(
+      venueFacts(
+        makeVenue({
+          amenities: [],
+          fields: [
+            makeField(),
+            makeField({ id: SECOND_ID, sports: ['futsal', 'futebol_society'] }),
+          ],
+        }),
+      ),
+    ).toBe('Society, Futsal');
+  });
+
+  it('is empty without courts', () => {
+    expect(venueFacts(makeVenue({ fields: [], amenities: [] }))).toBe('');
   });
 });

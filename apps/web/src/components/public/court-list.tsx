@@ -2,6 +2,7 @@ import {
   SPORT_LABELS,
   SURFACE_LABELS,
   type PublicField,
+  type PublicVenue,
 } from '@arenaz/contracts';
 import { PriceTag } from '@arenaz/ui';
 import { lowestPriceCents, summarizePriceRule } from '@/lib/price-rule-summary';
@@ -40,6 +41,49 @@ export function courtFacts(field: PublicField): string[] {
     measures,
     formatMinSlot(field.minSlotMinutes),
   ].filter((fact): fact is string => fact !== null && fact !== '');
+}
+
+/**
+ * The line under the venue's photos (Quadra.dc.html): "Society 7x7 em Vila
+ * Madalena, São Paulo" for one court, "2 quadras em ..." for several.
+ */
+export function venueHeadline(
+  venue: Pick<PublicVenue, 'fields' | 'neighborhood' | 'city'>,
+): string {
+  const place = `${venue.neighborhood}, ${venue.city}`;
+  const [only, ...others] = venue.fields;
+  if (!only) return `Espaço em ${place}`;
+  if (others.length > 0) {
+    return `${String(venue.fields.length)} quadras em ${place}`;
+  }
+  const sport = only.sports[0] ? SPORT_LABELS[only.sports[0]] : 'Quadra';
+  return `${[sport, only.format].filter(Boolean).join(' ')} em ${place}`;
+}
+
+/**
+ * The facts under the headline: surface, "coberta" and size of a single
+ * court ("Grama sintética · coberta · 40 × 20 m"); the sports of several.
+ */
+export function venueFacts(
+  venue: Pick<PublicVenue, 'fields' | 'amenities'>,
+): string {
+  const covered = venue.amenities.includes('coberta') ? 'coberta' : null;
+  const [only, ...others] = venue.fields;
+  if (!only) return '';
+  const facts =
+    others.length > 0
+      ? [
+          [...new Set(venue.fields.flatMap((field) => field.sports))]
+            .map((sport) => SPORT_LABELS[sport])
+            .join(', '),
+          covered,
+        ]
+      : [
+          SURFACE_LABELS[only.surface],
+          covered,
+          formatMeasures(only.lengthM, only.widthM),
+        ];
+  return facts.filter((fact): fact is string => Boolean(fact)).join(' · ');
 }
 
 /**

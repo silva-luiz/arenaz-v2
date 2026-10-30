@@ -45,18 +45,67 @@ describe('Gallery', () => {
 
     expect(photoButtons()).toHaveLength(5);
     expect(container.innerHTML).toContain('md:grid-cols-4');
-    expect(container.innerHTML).toContain('md:rounded-photo');
+    expect(container.innerHTML).toContain('md:grid-rows-[210px_210px]');
+    expect(container.innerHTML).toContain('md:rounded-card');
+    expect(container.innerHTML).toContain('shadow-2');
   });
 
-  it('keeps every photo on the mobile strip but only five on the grid', () => {
+  it('is a 2 column grid on a phone: the large photo on top, squares below', () => {
+    render(<Gallery photos={photos(5)} />);
+
+    const [large, ...small] = photoButtons();
+    expect(large).toHaveClass('col-span-2', 'aspect-[4/3]');
+    for (const button of small) {
+      expect(button).toHaveClass('aspect-square');
+      expect(button).not.toHaveClass('col-span-2');
+    }
+  });
+
+  it('shows five photos and leaves the others to the lightbox', async () => {
+    const user = userEvent.setup();
     render(<Gallery photos={photos(7)} />);
 
     const buttons = photoButtons();
-    expect(buttons).toHaveLength(7);
-    expect(buttons[4]).not.toHaveClass('md:hidden');
-    expect(buttons[5]).toHaveClass('md:hidden');
-    expect(buttons[6]).toHaveClass('md:hidden');
-    expect(buttons[6]).toHaveAccessibleName('Abrir foto 7 de 7');
+    expect(buttons).toHaveLength(5);
+    expect(buttons[4]).toHaveAccessibleName('Abrir foto 5 de 7');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Mostrar todas as fotos' }),
+    );
+    expect(screen.getByText('1 de 7')).toBeVisible();
+  });
+
+  it.each([
+    [2, 'md:grid-cols-2'],
+    [3, 'md:grid-cols-4'],
+    [4, 'md:grid-cols-4'],
+  ])('leaves no hole with %i photos', (count, desktopGrid) => {
+    const { container } = render(<Gallery photos={photos(count)} />);
+
+    const buttons = photoButtons();
+    expect(container.innerHTML).toContain(desktopGrid);
+    // Phone: after the large photo, an odd count of small ones would leave a
+    // hole in the 2 columns, so the last one takes the whole row.
+    const small = buttons.slice(1);
+    const last = small.at(-1);
+    if (small.length % 2 === 1) {
+      expect(last).toHaveClass('col-span-2', 'aspect-[2/1]');
+    } else {
+      expect(last).not.toHaveClass('col-span-2');
+    }
+    // Desktop: 3 photos stack two halves on the right, 4 put a wide one on
+    // top of two quarters; a stretched phone row is undone.
+    if (count === 3) {
+      expect(buttons[1]).toHaveClass('md:col-span-2');
+      expect(buttons[2]).toHaveClass('md:col-span-2');
+    }
+    if (count === 4) {
+      expect(buttons[1]).toHaveClass('md:col-span-2');
+      expect(buttons[3]).toHaveClass('md:col-span-1', 'md:aspect-auto');
+    }
+    if (count === 2) {
+      expect(buttons[1]).toHaveClass('md:col-span-1');
+    }
   });
 
   it('describes each photo button with the photo alt text', () => {
@@ -120,16 +169,16 @@ describe('Gallery', () => {
     const imgs = container.querySelectorAll('img');
     expect(imgs[0]).toHaveAttribute('srcset', list[0]?.srcSet);
     expect(imgs[0]).toHaveAttribute('src', '/foto-1.jpg');
-    // The large photo: half the content width on desktop, 88% of the
-    // screen on the mobile strip.
+    // The large photo: half the 1160px column on desktop, the whole content
+    // width on a phone.
     expect(imgs[0]).toHaveAttribute(
       'sizes',
-      '(min-width: 1360px) 636px, (min-width: 768px) calc(50vw - 44px), calc(88vw - 28px)',
+      '(min-width: 1240px) 576px, (min-width: 768px) calc(50vw - 44px), calc(100vw - 32px)',
     );
-    // A small one: a quarter of it.
+    // A small one: a quarter of it, half the width on a phone.
     expect(imgs[3]).toHaveAttribute(
       'sizes',
-      '(min-width: 1360px) 314px, (min-width: 768px) calc(25vw - 26px), calc(88vw - 28px)',
+      '(min-width: 1240px) 284px, (min-width: 768px) calc(25vw - 26px), calc(50vw - 20px)',
     );
   });
 
@@ -137,7 +186,7 @@ describe('Gallery', () => {
     const list = photos(3).map((photo) => ({ ...photo, srcSet: 'x 400w' }));
     const { container } = render(<Gallery photos={list} />);
     for (const img of container.querySelectorAll('img')) {
-      expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 1360px\) 636px/);
+      expect(img.getAttribute('sizes')).toMatch(/^\(min-width: 1240px\) 576px/);
     }
   });
 
@@ -149,7 +198,7 @@ describe('Gallery', () => {
     );
     expect(container.querySelector('img')).toHaveAttribute(
       'sizes',
-      '(min-width: 1360px) 1280px, (min-width: 768px) calc(100vw - 80px), calc(100vw - 32px)',
+      '(min-width: 1240px) 1160px, (min-width: 768px) calc(100vw - 80px), calc(100vw - 32px)',
     );
   });
 
@@ -165,15 +214,10 @@ describe('Gallery', () => {
     }
   });
 
-  it('gives a lone photo the full width of the mobile row', () => {
-    const { rerender } = render(<Gallery photos={photos(1)} />);
+  it('gives a lone photo the whole row', () => {
+    render(<Gallery photos={photos(1)} />);
     const lone = screen.getByRole('button', { name: 'Abrir foto 1 de 1' });
-    expect(lone).toHaveClass('basis-full');
-    expect(lone).not.toHaveClass('basis-[88%]');
-
-    rerender(<Gallery photos={photos(2)} />);
-    const first = screen.getByRole('button', { name: 'Abrir foto 1 de 2' });
-    expect(first).toHaveClass('basis-[88%]');
+    expect(lone).toHaveClass('col-span-2', 'aspect-[4/3]');
   });
 
   it('opens the lightbox at the first photo from "Mostrar todas as fotos"', async () => {

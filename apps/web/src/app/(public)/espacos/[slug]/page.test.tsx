@@ -1,11 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeField, makeVenue } from '@/test/venue-fixture';
 
 const mocks = vi.hoisted(() => ({
   publicGet: vi.fn(),
   isSignedIn: vi.fn(),
-  slotPicker: vi.fn(),
+  provider: vi.fn(),
+  demo: false,
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND');
   }),
@@ -20,13 +21,35 @@ vi.mock('next/dynamic', () => ({
 }));
 vi.mock('next/navigation', () => ({ notFound: mocks.notFound }));
 vi.mock('@/lib/venue-session', () => ({ isSignedIn: mocks.isSignedIn }));
-// The picker has its own tests; here only what the page hands it matters.
-vi.mock('@/components/booking/slot-picker', () => ({
-  SlotPicker: (props: unknown) => {
-    mocks.slotPicker(props);
-    return <div data-testid="picker" />;
-  },
+// The picker has its own tests; here only what the page hands the booking
+// state matters. The availability never arrives (the grid stays loading).
+vi.mock('@/components/booking/booking-state', async (importActual) => {
+  const actual =
+    await importActual<typeof import('@/components/booking/booking-state')>();
+  return {
+    ...actual,
+    BookingProvider: (
+      props: React.ComponentProps<typeof actual.BookingProvider>,
+    ) => {
+      mocks.provider(props);
+      return <actual.BookingProvider {...props} />;
+    },
+  };
+});
+vi.mock('@/lib/booking-client', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/booking-client')>()),
+  fetchAvailability: () => new Promise(() => undefined),
 }));
+vi.mock('@/lib/demo', async () => {
+  const fixtures = await import('@/lib/demo/fixtures');
+  return {
+    get isDemoMode() {
+      return mocks.demo;
+    },
+    demoVenueExtras: (slug: string) =>
+      mocks.demo ? (fixtures.DEMO_VENUE_EXTRAS[slug] ?? null) : null,
+  };
+});
 vi.mock('@/lib/public-api', async (importActual) => ({
   ...(await importActual<typeof import('@/lib/public-api')>()),
   publicGet: mocks.publicGet,
@@ -108,11 +131,44 @@ describe('venue page', () => {
       screen.getByRole('heading', { level: 1, name: 'Arena Vila Madalena' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Vila Madalena, São Paulo · SP'),
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'Society 7x7 em Vila Madalena, São Paulo',
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Compartilhar' }),
     ).toBeInTheDocument();
+  });
+
+  it('offers "Salvar" only in the demo', async () => {
+    await renderPage();
+    expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
+    cleanup();
+
+    mocks.demo = true;
+    await renderPage();
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    mocks.demo = false;
+  });
+
+  it('shows the rating and reviews only in the demo, with no holes otherwise', async () => {
+    await renderPage();
+    expect(screen.queryByRole('region', { name: /avaliações/ })).toBeNull();
+    expect(screen.queryByText(/Dono destaque/)).toBeNull();
+    expect(screen.queryByText('Racha no Pix')).toBeNull();
+    cleanup();
+
+    mocks.demo = true;
+    await renderPage();
+    expect(
+      screen.getByRole('region', { name: '4,92 · 318 avaliações' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Racha no Pix')).toBeInTheDocument();
+    mocks.demo = false;
   });
 
   it('shows the gallery with a described photo each', async () => {
@@ -180,6 +236,7 @@ describe('venue page', () => {
     const card = screen.getByRole('complementary', { name: 'Reserva' });
     expect(card).toHaveTextContent('a partir de');
     expect(card).toHaveTextContent('R$ 90 / hora');
+    expect(card).not.toHaveTextContent('fora de pico');
     expect(
       within(card).getByRole('button', { name: 'Escolher horário' }),
     ).toBeEnabled();
@@ -209,7 +266,34 @@ describe('venue page', () => {
 
     expect(
       screen.getByRole('complementary', { name: 'Reserva' }),
-    ).toHaveTextContent('R$ 120,50 / hora');
+    ).toHaveTextContent('R$ 120,50 / hora fora de pico');
+  });
+
+  it('puts the time picker in the page, not in the card', async () => {
+    await renderPage();
+
+    const section = screen.getByRole('region', { name: 'Escolha o horário' });
+    expect(section).toHaveAttribute('id', 'horarios');
+    expect(
+      within(section).getByRole('group', { name: 'Data' }),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole('complementary', { name: 'Reserva' }),
+      ).queryByRole('group', { name: 'Data' }),
+    ).toBeNull();
+  });
+
+  it('has no picker when the venue has no court', async () => {
+    mocks.publicGet.mockResolvedValue(makeVenue({ fields: [] }));
+    await renderPage();
+
+    expect(
+      screen.queryByRole('region', { name: 'Escolha o horário' }),
+    ).toBeNull();
+    expect(
+      screen.getByRole('complementary', { name: 'Reserva' }),
+    ).toHaveTextContent('Este espaço ainda não tem quadras para reservar.');
   });
 
   it('has a single h1 and a labelled section per block', async () => {
@@ -217,6 +301,7 @@ describe('venue page', () => {
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     for (const name of [
+      'Escolha o horário',
       'Sobre o espaço',
       'Comodidades',
       'Quadras',
@@ -231,8 +316,6 @@ describe('venue page', () => {
   describe('booking picker', () => {
     const FIELD_ID = '11111111-1111-4111-8111-111111111111';
 
-    // From lg up the picker sits in the card, so the stub shows what the page
-    // hands it (on a phone it would be inside a closed dialog).
     beforeEach(() => {
       vi.stubGlobal(
         'matchMedia',
@@ -250,7 +333,7 @@ describe('venue page', () => {
     });
 
     function pickerProps() {
-      return mocks.slotPicker.mock.lastCall?.[0] as Record<string, unknown>;
+      return mocks.provider.mock.lastCall?.[0] as Record<string, unknown>;
     }
 
     async function renderOpen(
@@ -275,7 +358,14 @@ describe('venue page', () => {
       expect(pickerProps()).toMatchObject({
         slug: 'arena-vila-madalena',
         timezone: 'America/Manaus',
-        fields: [{ id: FIELD_ID, name: 'Quadra 1', minSlotMinutes: 60 }],
+        fields: [
+          {
+            id: FIELD_ID,
+            name: 'Quadra 1',
+            minSlotMinutes: 60,
+            basePriceCentsPerHour: 18000,
+          },
+        ],
         signedIn: true,
       });
     });
@@ -328,6 +418,44 @@ describe('venue page', () => {
       });
 
       expect(pickerProps().initial).toBeUndefined();
+    });
+  });
+
+  describe('arriving from the home or the search', () => {
+    function providerProps() {
+      return mocks.provider.mock.lastCall?.[0] as Record<string, unknown>;
+    }
+
+    it('hands over the day, the time and the group size', async () => {
+      await renderPage(undefined, {
+        data: '2026-11-06',
+        hora: '20:00',
+        jogadores: '12',
+      });
+
+      expect(providerProps()).toMatchObject({
+        initialDate: '2026-11-06',
+        initialTime: '20:00',
+        initialPlayers: 12,
+      });
+    });
+
+    it.each([
+      ['a day that does not exist', { data: '2026-02-30' }],
+      ['a malformed day', { data: '06/11/2026' }],
+      ['a time off the half hour', { hora: '20:15' }],
+      ['an hour past 23', { hora: '24:00' }],
+      ['a group of one', { jogadores: '1' }],
+      ['a group of 31', { jogadores: '31' }],
+      ['a group that is not a number', { jogadores: 'dez' }],
+      ['repeated values', { jogadores: ['12', '13'] }],
+    ])('ignores %s', async (_name, query) => {
+      await renderPage(undefined, query);
+
+      const props = providerProps();
+      expect(props.initialDate).toBeUndefined();
+      expect(props.initialTime).toBeUndefined();
+      expect(props.initialPlayers).toBeUndefined();
     });
   });
 

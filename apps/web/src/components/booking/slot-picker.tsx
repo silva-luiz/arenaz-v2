@@ -1,364 +1,59 @@
 'use client';
 
-import {
-  DEFAULT_TIMEZONE,
-  TIMEZONE_LABELS,
-  type Availability,
-  type BrazilTimezone,
-} from '@arenaz/contracts';
+import { DEFAULT_TIMEZONE, TIMEZONE_LABELS } from '@arenaz/contracts';
 import {
   Alert,
   Button,
-  Chip,
   cn,
   Field,
   FOCUS_RING,
+  formatPrice,
   Select,
   Skeleton,
 } from '@arenaz/ui';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  addDaysToDateKey,
-  createBooking,
-  dateChips,
-  fetchAvailability,
-  longDateLabel,
-  signInPathFor,
-  type BookingIntent,
-} from '@/lib/booking-client';
-import { navigate } from '@/lib/navigate';
-import { GENERIC_ERROR } from '@/lib/problem';
-import {
-  overnightTail,
-  selectionTotalCents,
-  selectSlot,
-  type PickerSlot,
-  type Selection,
-} from '@/lib/slot-selection';
-import {
-  formatZonedDay,
-  formatZonedRange,
-  formatZonedTime,
-  todayInZone,
-  toZonedIso,
-} from '@/lib/zoned-time';
-import { BookingSummary } from './booking-summary';
+import { formatZonedTime } from '@/lib/zoned-time';
+import { isPeak, useBooking, type GridSlot } from './booking-state';
 
-export interface PickerField {
-  id: string;
-  name: string;
-  minSlotMinutes: number;
-}
+export type { PickerField } from './booking-state';
 
-export interface SlotPickerProps {
-  slug: string;
-  /** IANA zone of the venue: every time is shown in it. */
-  timezone: BrazilTimezone;
-  fields: PickerField[];
-  signedIn: boolean;
-  /** A choice made before signing in, restored when it is still free. */
-  initial?: BookingIntent | undefined;
-}
-
-/** A grid slot with the instants as the API wrote them. */
-interface GridSlot extends PickerSlot {
-  startsAt: string;
-}
-
-type Loaded =
-  | {
-      key: string;
-      ok: true;
-      data: Availability;
-      /** The day after, loaded when the day's opening runs to 24:00. */
-      nextData?: Availability;
-    }
-  | { key: string; ok: false; message: string };
-
-const SLOT_TAKEN = 'Esse horário acabou de ser reservado. Escolha outro.';
-const LOAD_ERROR = 'Não foi possível carregar os horários.';
-
-const TIME_BUTTON = cn(
-  'h-11 rounded-button border px-2 font-mono text-sm font-semibold transition-colors duration-150 motion-reduce:transition-none',
+const DAY_BUTTON = cn(
+  'flex h-[68px] w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-button border transition-colors duration-150 motion-reduce:transition-none',
   FOCUS_RING,
 );
 
-/** The API's own text for a refusal worth telling (429...), else ours. */
-function loadErrorText(message: string): string {
-  return message === GENERIC_ERROR ? LOAD_ERROR : message;
-}
+const TIME_BUTTON = cn(
+  'flex min-h-[60px] flex-col items-start justify-center gap-[3px] rounded-[12px] border px-3 py-2.5 text-left transition-colors duration-150 motion-reduce:transition-none',
+  FOCUS_RING,
+);
 
-function toGridSlots(
-  data: Availability | undefined,
-  fieldId: string,
-): GridSlot[] {
-  const field = data?.fields.find((candidate) => candidate.id === fieldId);
-  return (field?.slots ?? []).map((slot) => ({
-    startsAt: slot.startsAt,
-    startMs: Date.parse(slot.startsAt),
-    endMs: Date.parse(slot.endsAt),
-    available: slot.available,
-    priceCents: slot.priceCents,
-  }));
-}
-
-/** 00:00 of the day after `date`, in the venue's zone. */
-function midnightAfter(date: string, timezone: string): number {
-  return Date.parse(toZonedIso(date, 24 * 60, timezone));
-}
-
-interface Grid {
-  /** The day's own times. */
-  day: GridSlot[];
-  /** The early hours of the next day that continue the day's last opening. */
-  tail: GridSlot[];
-}
-
-function toGrid(
-  loaded: Extract<Loaded, { ok: true }> | null,
-  fieldId: string,
-  midnightMs: number,
-): Grid {
-  if (!loaded) return { day: [], tail: [] };
-  const day = toGridSlots(loaded.data, fieldId);
-  const tail = overnightTail(
-    day,
-    toGridSlots(loaded.nextData, fieldId),
-    midnightMs,
-  );
-  return { day, tail };
-}
-
-/** The chosen stretch when every block of it is still free; else `null`. */
-function restoreSelection(
-  slots: readonly GridSlot[],
-  intent: BookingIntent,
-): Selection | null {
-  const startMs = Date.parse(intent.startsAt);
-  const endMs = startMs + intent.durationMinutes * 60_000;
-  const first = slots.find((slot) => slot.startMs === startMs);
-  if (!first) return null;
-  const block = first.endMs - first.startMs;
-  if ((endMs - startMs) % block !== 0) return null;
-  for (let at = startMs; at < endMs; at += block) {
-    if (!slots.find((slot) => slot.startMs === at)?.available) return null;
-  }
-  return { startMs, endMs };
-}
+const TIME_GRID =
+  'grid grid-cols-3 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(112px,1fr))]';
 
 /**
- * Day, court and time of a booking, read from the public availability of the
- * venue. All times are the venue's, whatever the browser's zone.
+ * Day, court and time of a booking (the "Escolha o horário" section of
+ * Quadra.dc.html), on the state of `BookingProvider`: the booking card shows
+ * the result and books it. Each time is a button named with its time, price
+ * and state ("20:00, R$ 220, nobre, livre"); taken times are crossed out and
+ * disabled.
  */
-export function SlotPicker({
-  slug,
-  timezone,
-  fields,
-  signedIn,
-  initial,
-}: SlotPickerProps) {
-  const [today] = useState(() => todayInZone(timezone));
-  const chips = useMemo(() => dateChips(today), [today]);
-
-  // A saved choice only counts when its day is still on offer and its court
-  // still exists.
-  const usableInitial =
-    initial &&
-    chips.some((chip) => chip.date === initial.date) &&
-    fields.some((field) => field.id === initial.fieldId)
-      ? initial
-      : undefined;
-
-  const [date, setDate] = useState(usableInitial?.date ?? today);
-  const [fieldId, setFieldId] = useState(
-    usableInitial?.fieldId ?? fields[0]?.id ?? '',
-  );
-  const [selection, setSelection] = useState<Selection | null>(null);
-  const [notice, setNotice] = useState('');
-  const [submitError, setSubmitError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [reload, setReload] = useState(0);
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  // The saved choice is applied once, to the first grid of its day.
-  const pendingInitial = useRef(usableInitial);
-
-  const requestKey = `${date}#${String(reload)}`;
-
-  // Coming back with the browser's back button can restore this page from the
-  // back/forward cache with the "busy" state frozen in.
-  useEffect(() => {
-    const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) setSubmitting(false);
-    };
-    window.addEventListener('pageshow', onPageShow);
-    return () => {
-      window.removeEventListener('pageshow', onPageShow);
-    };
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    // A function: TypeScript would keep the first check's narrowing across the
-    // second await.
-    const aborted = () => controller.signal.aborted;
-    void (async () => {
-      const result = await fetchAvailability(slug, date, controller.signal);
-      if (aborted()) return;
-      if (!result.ok) {
-        setLoaded({ key: requestKey, ok: false, message: result.message });
-        return;
-      }
-
-      // An opening that runs to 24:00 goes on after midnight when the next
-      // day opens at 00:00: that day is read too, to offer the early hours.
-      let nextData: Availability | undefined;
-      const midnight = midnightAfter(date, timezone);
-      const runsToMidnight = result.data.fields.some((candidate) =>
-        candidate.slots.some((slot) => Date.parse(slot.endsAt) >= midnight),
-      );
-      if (runsToMidnight) {
-        const next = await fetchAvailability(
-          slug,
-          addDaysToDateKey(date, 1),
-          controller.signal,
-        );
-        if (aborted()) return;
-        // Without it the day still works; it just ends at 24:00.
-        if (next.ok) nextData = next.data;
-      }
-
-      const ready: Extract<Loaded, { ok: true }> = {
-        key: requestKey,
-        ok: true,
-        data: result.data,
-        ...(nextData ? { nextData } : {}),
-      };
-      setLoaded(ready);
-      const intent = pendingInitial.current;
-      if (intent && intent.date === date) {
-        pendingInitial.current = undefined;
-        const initialGrid = toGrid(ready, intent.fieldId, midnight);
-        setSelection(
-          restoreSelection([...initialGrid.day, ...initialGrid.tail], intent),
-        );
-      }
-    })();
-    return () => {
-      controller.abort();
-    };
-  }, [slug, date, requestKey, timezone]);
-
-  const current = loaded?.key === requestKey ? loaded : null;
-  const field = fields.find((candidate) => candidate.id === fieldId);
-  const midnightMs = useMemo(
-    () => midnightAfter(date, timezone),
-    [date, timezone],
-  );
-  const grid = useMemo(
-    () => toGrid(current?.ok ? current : null, fieldId, midnightMs),
-    [current, fieldId, midnightMs],
-  );
-  const slots = useMemo(() => [...grid.day, ...grid.tail], [grid]);
-  const tailLabel = longDateLabel(addDaysToDateKey(date, 1));
-
-  const total = selection ? selectionTotalCents(slots, selection) : null;
-  const summary =
-    selection && total !== null && field
-      ? summaryOf(selection, field.name, total)
-      : null;
-
-  /** Day and range of a selection; past midnight the end day is named. */
-  function summaryOf(chosen: Selection, fieldName: string, totalCents: number) {
-    const startsAt = new Date(chosen.startMs).toISOString();
-    const endsAt = new Date(chosen.endMs).toISOString();
-    const startsAfterMidnight = chosen.startMs >= midnightMs;
-    const endsAfterMidnight = chosen.endMs > midnightMs;
-    const range = formatZonedRange(startsAt, endsAt, timezone);
-    return {
-      fieldName,
-      dayLabel: startsAfterMidnight
-        ? formatZonedDay(startsAt, timezone)
-        : (chips.find((chip) => chip.date === date)?.label ?? date),
-      timeRange:
-        endsAfterMidnight && !startsAfterMidnight
-          ? `${range} (termina ${formatZonedDay(endsAt, timezone)})`
-          : range,
-      totalCents,
-    };
-  }
-
-  function chooseDate(next: string) {
-    pendingInitial.current = undefined;
-    if (next === date) return;
-    setDate(next);
-    setSelection(null);
-    setNotice('');
-    setSubmitError('');
-  }
-
-  function chooseField(next: string) {
-    pendingInitial.current = undefined;
-    setFieldId(next);
-    setSelection(null);
-    setNotice('');
-    setSubmitError('');
-  }
-
-  function tap(startMs: number) {
-    pendingInitial.current = undefined;
-    const result = selectSlot(slots, selection, startMs);
-    setSelection(result.selection);
-    setNotice(result.message ?? '');
-    setSubmitError('');
-  }
-
-  function retry() {
-    setReload((value) => value + 1);
-  }
-
-  async function reserve() {
-    if (!selection || !field || submitting) return;
-    const first = slots.find((slot) => slot.startMs === selection.startMs);
-    if (!first) return;
-    const intent: BookingIntent = {
-      date,
-      fieldId: field.id,
-      startsAt: first.startsAt,
-      durationMinutes: (selection.endMs - selection.startMs) / 60_000,
-    };
-
-    if (!signedIn) {
-      navigate(signInPathFor(slug, intent));
-      return;
-    }
-
-    setSubmitting(true);
-    setSubmitError('');
-    const result = await createBooking({
-      fieldId: intent.fieldId,
-      startsAt: intent.startsAt,
-      durationMinutes: intent.durationMinutes,
-    });
-    if (result.ok) {
-      // Stays "busy" until the page changes.
-      navigate(`/reservas/${result.data.id}`);
-      return;
-    }
-    setSubmitting(false);
-    if (result.status === 401) {
-      // The API client already sent the person to sign in, but only back to
-      // this path; this link also brings the choice back.
-      navigate(signInPathFor(slug, intent));
-      return;
-    }
-    if (result.status === 409) {
-      setSubmitError(SLOT_TAKEN);
-      setSelection(null);
-      retry();
-      return;
-    }
-    setSubmitError(result.message);
-  }
+export function SlotPicker() {
+  const {
+    timezone,
+    fields,
+    field,
+    chooseField,
+    days,
+    date,
+    chooseDate,
+    status,
+    retry,
+    grid,
+    tailLabel,
+    selection,
+    tap,
+    notice,
+    pickerFocusRef,
+  } = useBooking();
 
   const showZone = timezone !== DEFAULT_TIMEZONE;
   const hasSlots = grid.day.length > 0;
@@ -366,68 +61,96 @@ export function SlotPicker({
 
   function timeButton(slot: GridSlot, overnight: boolean) {
     const time = formatZonedTime(slot.startsAt, timezone);
-    const inSelection =
+    const chosen =
       selection !== null &&
       slot.startMs >= selection.startMs &&
       slot.startMs < selection.endMs;
+    const price = formatPrice(slot.priceCents);
+    const peak = field !== undefined && isPeak(slot, field);
     // Past midnight the name carries the date: "00:00" alone would read as
-    // tonight's midnight. It starts with the visible text.
+    // tonight's midnight. It starts with the visible time.
     const base = overnight ? `${time}, ${tailLabel}` : time;
+    const name = !slot.available
+      ? `${base}, ocupado, ${price}`
+      : `${base}, ${price}${peak ? ', nobre' : ''}, ${chosen ? 'selecionado' : 'livre'}`;
     return (
       <button
         key={slot.startsAt}
         type="button"
         disabled={!slot.available}
-        aria-pressed={slot.available ? inSelection : undefined}
-        aria-label={
-          slot.available
-            ? overnight
-              ? base
-              : undefined
-            : `${base}, indisponível`
-        }
+        aria-pressed={slot.available ? chosen : undefined}
+        aria-label={name}
         onClick={() => {
           tap(slot.startMs);
         }}
         className={cn(
           TIME_BUTTON,
-          inSelection
-            ? 'border-ink bg-ink text-white'
-            : 'border-line-control bg-bg text-ink enabled:hover:bg-surface',
-          'disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted disabled:line-through',
+          !slot.available
+            ? 'cursor-not-allowed border-surface bg-surface text-muted line-through'
+            : chosen
+              ? 'border-ink bg-ink text-white'
+              : 'border-line-control bg-bg text-ink hover:border-ink',
         )}
       >
-        {time}
+        <span className="font-mono text-[15px] font-semibold">{time}</span>
+        <span
+          className={cn(
+            'text-xs',
+            !slot.available
+              ? 'text-muted'
+              : chosen
+                ? 'text-[#d9d9d9]'
+                : peak
+                  ? 'font-semibold text-peak'
+                  : 'text-muted',
+          )}
+        >
+          {slot.available ? `${price}${peak ? ' · nobre' : ''}` : 'Ocupado'}
+        </span>
       </button>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-[18px]">
+      <p className="-mt-3 mb-0.5 text-sm text-muted">
+        Toque em horários seguidos para jogar mais tempo.
+      </p>
       <div
         role="group"
         aria-label="Data"
-        className="-mx-1 -mt-1 flex gap-2 overflow-x-auto px-1 pt-1 pb-1"
+        className="-mx-1 -mt-1 flex gap-2 overflow-x-auto px-1 pt-1 pb-1.5"
       >
-        {chips.map((chip) => (
-          <Chip
-            key={chip.date}
-            pressed={chip.date === date}
-            aria-label={chip.ariaLabel}
-            onClick={() => {
-              chooseDate(chip.date);
-            }}
-            className="shrink-0"
-          >
-            {chip.label}
-          </Chip>
-        ))}
+        {days.map((day) => {
+          const pressed = day.date === date;
+          return (
+            <button
+              key={day.date}
+              ref={pressed ? pickerFocusRef : undefined}
+              type="button"
+              aria-pressed={pressed}
+              aria-label={day.ariaLabel}
+              onClick={() => {
+                chooseDate(day.date);
+              }}
+              className={cn(
+                DAY_BUTTON,
+                pressed
+                  ? 'border-ink bg-ink text-white'
+                  : 'border-line-control bg-bg text-ink hover:border-ink',
+              )}
+            >
+              <span className="text-xs font-semibold">{day.weekday}</span>
+              <span className="text-xl font-[650]">{day.dayOfMonth}</span>
+            </button>
+          );
+        })}
       </div>
 
       {fields.length > 1 ? (
         <Field label="Quadra">
           <Select
-            value={fieldId}
+            value={field?.id ?? ''}
             options={fields.map((item) => ({
               value: item.id,
               label: item.name,
@@ -439,30 +162,26 @@ export function SlotPicker({
         </Field>
       ) : null}
 
-      <fieldset className="min-w-0" aria-busy={current === null}>
-        <legend className="mb-2 text-sm font-medium text-ink">Horários</legend>
+      <fieldset className="min-w-0" aria-busy={status.state === 'loading'}>
+        <legend className="sr-only">Horários</legend>
         {showZone ? (
           <p className="mb-2 text-sm text-muted">
             {`Horários de ${TIMEZONE_LABELS[timezone]}`}
           </p>
         ) : null}
 
-        {current === null ? (
+        {status.state === 'loading' ? (
           <>
             <p role="status" className="sr-only">
               Carregando horários
             </p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className={TIME_GRID}>
               {Array.from({ length: 8 }, (_, index) => (
-                <Skeleton key={index} className="h-11 rounded-button" />
+                <Skeleton key={index} className="h-[60px] rounded-[12px]" />
               ))}
             </div>
           </>
-        ) : !current.ok ? (
-          <Button variant="secondary" size="sm" onClick={retry}>
-            Tentar de novo
-          </Button>
-        ) : !hasSlots ? (
+        ) : status.state === 'error' ? null : !hasSlots ? (
           <p className="text-sm text-muted">O espaço não abre neste dia.</p>
         ) : (
           <>
@@ -471,7 +190,7 @@ export function SlotPicker({
                 Nenhum horário livre neste dia.
               </p>
             )}
-            <div className="grid grid-cols-4 gap-2">
+            <div className={TIME_GRID}>
               {grid.day.map((slot) => timeButton(slot, false))}
             </div>
             {grid.tail.length > 0 ? (
@@ -482,18 +201,15 @@ export function SlotPicker({
               >
                 <p
                   id="madrugada-heading"
-                  className="mb-2 text-sm font-medium text-ink"
+                  className="mb-2 text-sm font-semibold text-ink"
                 >
                   {`Madrugada de ${tailLabel}`}
                 </p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className={TIME_GRID}>
                   {grid.tail.map((slot) => timeButton(slot, true))}
                 </div>
               </div>
             ) : null}
-            <p className="mt-3 text-sm text-muted">
-              Toque em horários seguidos para jogar mais tempo.
-            </p>
           </>
         )}
         <p aria-live="polite" className={notice ? 'mt-2 text-sm text-ink' : ''}>
@@ -501,27 +217,20 @@ export function SlotPicker({
         </p>
       </fieldset>
 
-      {/* Sticks to the bottom of the sheet (or card) when the grid is taller
-          than the space, so the total and "Reservar" are always in view. */}
-      <div className="sticky bottom-0 -mx-1 flex flex-col gap-4 bg-bg px-1 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <BookingSummary selection={summary} />
-
-        <Alert tone="error">
-          {current?.ok === false ? loadErrorText(current.message) : submitError}
-        </Alert>
-
+      {/* Outside the "Horários" group: only times are buttons in there. */}
+      <Alert tone="error">
+        {status.state === 'error' ? status.message : ''}
+      </Alert>
+      {status.state === 'error' ? (
         <Button
-          size="md"
-          loading={submitting}
-          disabled={selection === null || total === null}
-          onClick={() => {
-            void reserve();
-          }}
-          className="w-full"
+          variant="secondary"
+          size="sm"
+          onClick={retry}
+          className="self-start"
         >
-          Reservar
+          Tentar de novo
         </Button>
-      </div>
+      ) : null}
     </div>
   );
 }

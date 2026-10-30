@@ -1,4 +1,5 @@
 import {
+  AVAILABILITY_HORIZON_DAYS,
   availabilitySchema,
   bookingSchema,
   type Availability,
@@ -84,20 +85,42 @@ export interface BookingIntent {
   durationMinutes: number;
 }
 
-/** The venue page with the choice in its query string (`/entrar?next=`). */
-export function bookingNextPath(slug: string, intent: BookingIntent): string {
+/**
+ * The venue page with the choice in its query string (`/entrar?next=`), and
+ * the group size of the booking card when there is one.
+ */
+export function bookingNextPath(
+  slug: string,
+  intent: BookingIntent,
+  players?: number,
+): string {
   const query = new URLSearchParams({
     data: intent.date,
     quadra: intent.fieldId,
     inicio: intent.startsAt,
     duracao: String(intent.durationMinutes),
   });
+  if (players !== undefined) query.set('jogadores', String(players));
   return `/espacos/${encodeURIComponent(slug)}?${query.toString()}`;
 }
 
 /** The sign-in page, which brings the person back to the choice. */
-export function signInPathFor(slug: string, intent: BookingIntent): string {
-  return `/entrar?next=${encodeURIComponent(bookingNextPath(slug, intent))}`;
+export function signInPathFor(
+  slug: string,
+  intent: BookingIntent,
+  players?: number,
+): string {
+  return `/entrar?next=${encodeURIComponent(bookingNextPath(slug, intent, players))}`;
+}
+
+/** Group size of the booking card: 2 to 30, 14 unless the search said. */
+export const MIN_PLAYERS = 2;
+export const MAX_PLAYERS = 30;
+export const DEFAULT_PLAYERS = 14;
+
+/** Each player's share of `totalCents`, rounded up to the cent. */
+export function perPersonCents(totalCents: number, players: number): number {
+  return Math.ceil(totalCents / players);
 }
 
 function parseKey(dateKey: string): Date {
@@ -143,6 +166,70 @@ const LONG_DATE = new Intl.DateTimeFormat('pt-BR', {
 /** "sexta-feira, 6 de novembro" for a date key. */
 export function longDateLabel(dateKey: string): string {
   return LONG_DATE.format(parseKey(dateKey));
+}
+
+const MONTHS = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+] as const;
+
+/** "Qui, 29 out" for a date key. */
+export function whenLabel(dateKey: string): string {
+  const date = parseKey(dateKey);
+  return `${WEEKDAYS[date.getUTCDay()] ?? ''}, ${String(date.getUTCDate())} ${MONTHS[date.getUTCMonth()] ?? ''}`;
+}
+
+/** Whether `date` can be booked: from `today` up to 60 days after it. */
+export function withinHorizon(today: string, date: string): boolean {
+  return (
+    date >= today && date <= addDaysToDateKey(today, AVAILABILITY_HORIZON_DAYS)
+  );
+}
+
+/** One day button of the venue page's picker. */
+export interface PickerDay {
+  date: string;
+  /** "Hoje" for today, else the short weekday: "Qui". */
+  weekday: string;
+  dayOfMonth: number;
+  /** Accessible name: the visible "Qui 29" first, then the full date. */
+  ariaLabel: string;
+  /** "Qui, 29 out", for the booking card. */
+  whenLabel: string;
+}
+
+/**
+ * Today and the 13 days after it, or up to `through` when that later day is
+ * asked for (it must be within the horizon; see `withinHorizon`).
+ */
+export function pickerDays(today: string, through?: string): PickerDay[] {
+  let count = DATE_CHIP_COUNT;
+  if (through !== undefined && withinHorizon(today, through)) {
+    while (addDaysToDateKey(today, count - 1) < through) count += 1;
+  }
+  return Array.from({ length: count }, (_, index) => {
+    const date = addDaysToDateKey(today, index);
+    const day = parseKey(date);
+    const weekday = index === 0 ? 'Hoje' : (WEEKDAYS[day.getUTCDay()] ?? '');
+    const dayOfMonth = day.getUTCDate();
+    return {
+      date,
+      weekday,
+      dayOfMonth,
+      ariaLabel: `${weekday} ${String(dayOfMonth)}, ${LONG_DATE.format(day)}`,
+      whenLabel: whenLabel(date),
+    };
+  });
 }
 
 /** Today (in the venue's zone, passed in) and the days after it. */

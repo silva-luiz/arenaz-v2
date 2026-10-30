@@ -1,5 +1,18 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const captured = vi.hoisted(() => ({ demo: false }));
+
+vi.mock('@/lib/demo', async () => {
+  const fixtures = await import('@/lib/demo/fixtures');
+  return {
+    get isDemoMode() {
+      return captured.demo;
+    },
+    demoVenueExtras: (slug: string) =>
+      captured.demo ? (fixtures.DEMO_VENUE_EXTRAS[slug] ?? null) : null,
+  };
+});
 
 // Leaflet needs a real browser; the map has its own tests.
 vi.mock('next/dynamic', () => ({
@@ -11,7 +24,7 @@ vi.mock('next/dynamic', () => ({
     },
 }));
 
-import { VenueDetails } from './venue-details';
+import { VenueDetails, VenueOverview, VenueReviews } from './venue-details';
 import { makeField, makeVenue } from '@/test/venue-fixture';
 
 function section(name: string) {
@@ -147,10 +160,112 @@ describe('VenueDetails', () => {
       'Vila Madalena, São Paulo. O endereço exato aparece depois da reserva.',
     );
   });
+});
+
+describe('VenueOverview', () => {
+  afterEach(() => {
+    captured.demo = false;
+  });
+
+  it('says what and where, with the real facts of the court', () => {
+    render(<VenueOverview venue={makeVenue({ amenities: ['coberta'] })} />);
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'Society 7x7 em Vila Madalena, São Paulo',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Grama sintética · coberta · 40 × 20 m'),
+    ).toBeInTheDocument();
+  });
 
   it('names the host by first name only', () => {
-    render(<VenueDetails venue={makeVenue()} />);
+    render(<VenueOverview venue={makeVenue()} />);
 
     expect(screen.getByText('Dono: Marcos')).toBeInTheDocument();
+    expect(screen.getByText('M')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('always offers "Reserva instantânea"', () => {
+    render(<VenueOverview venue={makeVenue()} />);
+
+    expect(screen.getByText('Reserva instantânea')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'O horário é seu assim que o Pix cai. Sem esperar resposta do dono.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows no rating, badge or fictional highlight outside the demo', () => {
+    render(<VenueOverview venue={makeVenue()} />);
+
+    expect(screen.queryByText(/avaliaç/)).toBeNull();
+    expect(screen.queryByText(/4,92/)).toBeNull();
+    expect(screen.queryByText(/Uma das mais bem avaliadas/)).toBeNull();
+    expect(screen.queryByText(/Dono destaque/)).toBeNull();
+    expect(screen.queryByText('Racha no Pix')).toBeNull();
+    expect(screen.queryByText('Aceita mensalista')).toBeNull();
+    // One highlight, nothing left behind.
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('shows the prototype rating, host line and highlights in the demo', () => {
+    captured.demo = true;
+    render(<VenueOverview venue={makeVenue()} />);
+
+    expect(
+      screen.getByRole('link', { name: '318 avaliações' }),
+    ).toHaveAttribute('href', '#avaliacoes');
+    expect(
+      screen.getByText('Uma das mais bem avaliadas da cidade'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Jogadores elogiam o gramado e a iluminação.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Dono destaque · responde em cerca de 10 min'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Racha no Pix')).toBeInTheDocument();
+    expect(screen.getByText('Aceita mensalista')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('keeps a venue without demo extras free of them in the demo', () => {
+    captured.demo = true;
+    render(<VenueOverview venue={makeVenue({ slug: 'outro-espaco' })} />);
+
+    expect(screen.queryByText(/avaliaç/)).toBeNull();
+    expect(screen.queryByText(/Dono destaque/)).toBeNull();
+  });
+});
+
+describe('VenueReviews', () => {
+  afterEach(() => {
+    captured.demo = false;
+  });
+
+  it('renders nothing outside the demo', () => {
+    const { container } = render(<VenueReviews slug="arena-vila-madalena" />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows the rating, the sub-ratings and the reviews of Rafael and Camila in the demo', () => {
+    captured.demo = true;
+    render(<VenueReviews slug="arena-vila-madalena" />);
+
+    const reviews = screen.getByRole('region', {
+      name: '4,92 · 318 avaliações',
+    });
+    expect(reviews).toHaveAttribute('id', 'avaliacoes');
+    expect(reviews).toHaveTextContent('Gramado4,9');
+    expect(reviews).toHaveTextContent('Pontualidade5,0');
+    expect(within(reviews).getByText('Rafael')).toBeInTheDocument();
+    expect(within(reviews).getByText('Camila')).toBeInTheDocument();
+    expect(
+      within(reviews).getByText(/O gramado é o melhor da região/),
+    ).toBeInTheDocument();
   });
 });

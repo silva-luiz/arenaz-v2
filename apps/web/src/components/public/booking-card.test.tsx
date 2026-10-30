@@ -1,34 +1,70 @@
-import { render, screen, within } from '@testing-library/react';
+import type { Availability } from '@arenaz/contracts';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The picker has its own tests; here it only needs to be findable.
-const mocks = vi.hoisted(() => ({ pickerMounts: vi.fn() }));
-vi.mock('@/components/booking/slot-picker', async () => {
-  const { useEffect } = await import('react');
-  return {
-    SlotPicker: (props: { slug: string; signedIn: boolean }) => {
-      useEffect(() => {
-        mocks.pickerMounts();
-      }, []);
-      return (
-        <div data-testid="picker" data-slug={props.slug}>
-          <button type="button">Dentro do seletor</button>
-        </div>
-      );
-    },
-  };
-});
+const mocks = vi.hoisted(() => ({
+  fetchAvailability: vi.fn(),
+  createBooking: vi.fn(),
+  navigate: vi.fn(),
+  demo: false,
+}));
 
-import { BookingCard } from './booking-card';
+vi.mock('@/lib/booking-client', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/booking-client')>()),
+  fetchAvailability: mocks.fetchAvailability,
+  createBooking: mocks.createBooking,
+}));
+vi.mock('@/lib/navigate', () => ({ navigate: mocks.navigate }));
+vi.mock('@/lib/demo', () => ({
+  get isDemoMode() {
+    return mocks.demo;
+  },
+}));
 
+import {
+  BookingProvider,
+  type BookingProviderProps,
+} from '@/components/booking/booking-state';
+import { SlotPicker } from '@/components/booking/slot-picker';
+import {
+  BookingCard,
+  BookingPanel,
+  type BookingCardProps,
+} from './booking-card';
+
+const FIELD_ID = '11111111-1111-4111-8111-111111111111';
 const FIELDS = [
   {
-    id: '11111111-1111-4111-8111-111111111111',
+    id: FIELD_ID,
     name: 'Quadra 1',
     minSlotMinutes: 60,
+    basePriceCentsPerHour: 18000,
   },
 ];
+
+/** 20:00 to 23:00 on 2026-11-05, R$ 180 then R$ 220 from 21:00. */
+function availability(date: string): Availability {
+  const at = (hour: number) =>
+    `${date}T${String(hour).padStart(2, '0')}:00:00.000-03:00`;
+  return {
+    date,
+    timezone: 'America/Sao_Paulo',
+    fields: [
+      {
+        id: FIELD_ID,
+        name: 'Quadra 1',
+        minSlotMinutes: 60,
+        slots: [20, 21, 22].map((hour) => ({
+          startsAt: at(hour),
+          endsAt: at(hour + 1),
+          available: true,
+          priceCents: hour === 20 ? 18000 : 22000,
+        })),
+      },
+    ],
+  };
+}
 
 function stubViewport(desktop: boolean) {
   vi.stubGlobal(
@@ -42,170 +78,344 @@ function stubViewport(desktop: boolean) {
   );
 }
 
-function renderCard(
-  props: Partial<React.ComponentProps<typeof BookingCard>> = {},
+const PRICE: BookingCardProps['price'] = {
+  cents: 18000,
+  from: false,
+  offPeak: true,
+};
+
+function renderBooking(
+  props: Partial<Omit<BookingProviderProps, 'children'>> = {},
+  price: BookingCardProps['price'] = PRICE,
 ) {
   return render(
-    <BookingCard
+    <BookingProvider
       slug="arena-x"
       timezone="America/Sao_Paulo"
       fields={FIELDS}
-      minPriceCentsPerHour={9000}
-      signedIn={false}
+      signedIn
       {...props}
-    />,
+    >
+      <SlotPicker />
+      <BookingPanel />
+      <BookingCard price={price} />
+    </BookingProvider>,
   );
+}
+
+async function loaded() {
+  await screen.findByRole('button', { name: /^20:00, / });
+}
+
+function card() {
+  return screen.getByRole('complementary', { name: 'Reserva' });
 }
 
 describe('BookingCard', () => {
   beforeEach(() => {
-    mocks.pickerMounts.mockClear();
-    stubViewport(false);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-05T18:00:00.000Z'));
+    mocks.demo = false;
+    mocks.fetchAvailability.mockImplementation((_slug: string, date: string) =>
+      Promise.resolve({ ok: true, data: availability(date) }),
+    );
+    Element.prototype.scrollIntoView = vi.fn();
+    stubViewport(true);
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
-
-  it('shows the lowest price as "a partir de"', () => {
-    renderCard();
-
-    const card = screen.getByRole('complementary', { name: 'Reserva' });
-    expect(card).toHaveTextContent('a partir de');
-    expect(card).toHaveTextContent('R$ 90 / hora');
-  });
-
-  it('omits the price when no court is known', () => {
-    renderCard({ minPriceCentsPerHour: null });
-
-    expect(screen.queryByText('a partir de')).not.toBeInTheDocument();
-  });
-
-  it('is a bar that sticks above the tab bar on a phone and a card from lg up', () => {
-    renderCard();
-
-    const card = screen.getByRole('complementary', { name: 'Reserva' });
-    // Sticky, not fixed: in flow at the end of the page, so it never covers
-    // the content or the footer.
-    expect(card).toHaveClass('sticky', 'lg:rounded-card', 'lg:shadow-3');
-    // A fixed height from the shared variable, which also feeds the page's
-    // scroll padding so focus does not hide under the bar.
-    expect(card).toHaveClass('h-(--booking-bar-h)', 'lg:h-auto');
-    expect(card).toHaveAttribute('data-booking-bar');
-    expect(card).not.toHaveClass('fixed');
-  });
-
-  describe('on a phone', () => {
-    it('has an enabled "Escolher horário" button and no picker yet', () => {
-      renderCard();
-
-      expect(
-        screen.getByRole('button', { name: 'Escolher horário' }),
-      ).toBeEnabled();
-      expect(screen.queryByTestId('picker')).not.toBeInTheDocument();
-    });
-
-    it('opens the picker in a modal dialog with focus inside', async () => {
-      const showModal = vi.spyOn(HTMLDialogElement.prototype, 'showModal');
-      const user = userEvent.setup();
-      renderCard({ signedIn: true });
-
-      await user.click(
-        screen.getByRole('button', { name: 'Escolher horário' }),
-      );
-
-      expect(showModal).toHaveBeenCalledTimes(1);
-      const dialog = screen.getByRole('dialog', { name: 'Escolha o horário' });
-      expect(within(dialog).getByTestId('picker')).toHaveAttribute(
-        'data-slug',
-        'arena-x',
-      );
-      expect(dialog.contains(document.activeElement)).toBe(true);
-    });
-
-    it('closes with "Fechar" and gives the focus back to the button', async () => {
-      const user = userEvent.setup();
-      renderCard();
-      const trigger = screen.getByRole('button', { name: 'Escolher horário' });
-      await user.click(trigger);
-
-      await user.click(screen.getByRole('button', { name: 'Fechar' }));
-
-      expect(screen.queryByTestId('picker')).not.toBeInTheDocument();
-      expect(trigger).toHaveFocus();
-    });
-
-    it('closes with Esc and gives the focus back to the button', async () => {
-      const user = userEvent.setup();
-      renderCard();
-      const trigger = screen.getByRole('button', { name: 'Escolher horário' });
-      await user.click(trigger);
-
-      await user.keyboard('{Escape}');
-
-      expect(screen.queryByTestId('picker')).not.toBeInTheDocument();
-      expect(trigger).toHaveFocus();
-    });
-
-    it('opens by itself when the person comes back from sign in with a choice', async () => {
-      renderCard({
-        signedIn: true,
-        initial: {
-          date: '2026-11-06',
-          fieldId: FIELDS[0]?.id ?? '',
-          startsAt: '2026-11-06T18:00:00.000-03:00',
-          durationMinutes: 60,
-        },
-      });
-
-      expect(
-        await screen.findByRole('dialog', { name: 'Escolha o horário' }),
-      ).toBeInTheDocument();
-    });
+    vi.clearAllMocks();
   });
 
   describe('from lg up', () => {
-    beforeEach(() => {
-      stubViewport(true);
+    it('shows the off-peak price of the prototype', async () => {
+      renderBooking();
+      await loaded();
+
+      expect(card()).toHaveTextContent('R$ 180 / hora fora de pico');
     });
 
-    it('mounts a single picker and no dialog even with a saved choice', () => {
-      renderCard({
-        signedIn: true,
-        initial: {
-          date: '2026-11-06',
-          fieldId: FIELDS[0]?.id ?? '',
-          startsAt: '2026-11-06T18:00:00.000-03:00',
-          durationMinutes: 60,
-        },
+    it('says "a partir de" when the lowest price is not the usual one', async () => {
+      renderBooking({}, { cents: 9000, from: true, offPeak: false });
+      await loaded();
+
+      expect(card()).toHaveTextContent('a partir de');
+      expect(card()).toHaveTextContent('R$ 90 / hora');
+      expect(card()).not.toHaveTextContent('fora de pico');
+    });
+
+    it('is a card in the right column, sticky under the header', () => {
+      renderBooking();
+
+      expect(card()).toHaveAttribute('data-booking-bar');
+      expect(card().className).toContain('sticky');
+      expect(card().className).toContain('lg:top-28');
+      expect(card().className).toContain('lg:shadow-3');
+    });
+
+    it('tells when and asks for a time until one is picked', async () => {
+      renderBooking();
+      await loaded();
+
+      const when = within(card()).getByRole('link', { name: /^Quando/ });
+      expect(when).toHaveAttribute('href', '#horarios');
+      expect(when).toHaveTextContent('Qui, 5 nov · escolha um horário');
+      expect(
+        within(card()).getByRole('button', { name: 'Escolher horário' }),
+      ).toBeInTheDocument();
+    });
+
+    it('turns into "Reservar" with the range, the hours and the total, without any fee', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+      await user.click(screen.getByRole('button', { name: /^21:00, / }));
+
+      expect(
+        within(card()).getByRole('link', { name: /^Quando/ }),
+      ).toHaveTextContent('Qui, 5 nov · 20:00–22:00');
+      const summary = within(card()).getByRole('status', {
+        name: 'Resumo da reserva',
+      });
+      expect(summary).toHaveTextContent('Confirmação na hora do pagamento');
+      expect(summary).toHaveTextContent('2 horas');
+      expect(summary).toHaveTextContent('TotalR$ 400,00');
+      expect(summary).not.toHaveTextContent(/taxa/i);
+      expect(
+        within(card()).getByRole('button', { name: 'Reservar' }),
+      ).toBeEnabled();
+    });
+
+    it('starts the group at 14 and steps it one by one', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+
+      expect(card()).toHaveTextContent('14 pessoas');
+      await user.click(
+        within(card()).getByRole('button', { name: 'Mais um jogador' }),
+      );
+      expect(card()).toHaveTextContent('15 pessoas');
+      await user.click(
+        within(card()).getByRole('button', { name: 'Menos um jogador' }),
+      );
+      expect(card()).toHaveTextContent('14 pessoas');
+    });
+
+    it('never goes above 30', async () => {
+      const user = userEvent.setup();
+      renderBooking({ initialPlayers: 29 });
+      await loaded();
+      const more = within(card()).getByRole('button', {
+        name: 'Mais um jogador',
       });
 
-      expect(screen.getAllByTestId('picker')).toHaveLength(1);
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      expect(mocks.pickerMounts).toHaveBeenCalledTimes(1);
+      await user.click(more);
+      await user.click(more);
+
+      expect(card()).toHaveTextContent('30 pessoas');
     });
 
-    it('keeps the picker in the card, with no button and no dialog', () => {
-      renderCard();
+    it('never goes below 2', async () => {
+      const user = userEvent.setup();
+      renderBooking({ initialPlayers: 3 });
+      await loaded();
+      const less = within(card()).getByRole('button', {
+        name: 'Menos um jogador',
+      });
 
-      const card = screen.getByRole('complementary', { name: 'Reserva' });
-      expect(within(card).getByTestId('picker')).toBeInTheDocument();
+      await user.click(less);
+      await user.click(less);
+
+      expect(card()).toHaveTextContent('2 pessoas');
+    });
+
+    it('starts the group at ?jogadores', async () => {
+      renderBooking({ initialPlayers: 12 });
+      await loaded();
+
+      expect(card()).toHaveTextContent('12 pessoas');
+    });
+
+    it('divides the total by the group, rounded up to the cent', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^21:00, / }));
+      await user.click(screen.getByRole('button', { name: /^22:00, / }));
+
+      // R$ 440 / 14 = 31,428... -> R$ 31,43.
+      const summary = within(card()).getByRole('status', {
+        name: 'Resumo da reserva',
+      });
+      expect(summary).toHaveTextContent('Por pessoa (14)R$ 31,43');
+
+      await user.click(
+        within(card()).getByRole('button', { name: 'Menos um jogador' }),
+      );
+      expect(summary).toHaveTextContent('Por pessoa (13)R$ 33,85');
+    });
+
+    it('hides the share per person when the switch is off', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+
+      const toggle = within(card()).getByRole('switch');
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
+      await user.click(toggle);
+
+      expect(toggle).toHaveAttribute('aria-checked', 'false');
+      expect(card()).not.toHaveTextContent('Por pessoa');
+    });
+
+    it('does not promise to charge each player outside the demo', async () => {
+      renderBooking();
+      await loaded();
+
+      const toggle = within(card()).getByRole('switch');
+      expect(toggle).toHaveAccessibleName('Mostrar valor por pessoa');
+      expect(card()).not.toHaveTextContent('Dividir com o time');
+      expect(card()).not.toHaveTextContent('Pix');
+    });
+
+    it('uses the prototype copy of "Dividir com o time" in the demo', async () => {
+      mocks.demo = true;
+      renderBooking();
+      await loaded();
+
+      const toggle = within(card()).getByRole('switch');
+      expect(toggle).toHaveAccessibleName('Dividir com o time');
+      expect(toggle).toHaveAccessibleDescription(
+        'Cada um paga a sua parte no Pix',
+      );
+    });
+
+    it('has no bar and no phone panel', async () => {
+      renderBooking();
+      await loaded();
+
       expect(
-        screen.queryByRole('button', { name: 'Escolher horário' }),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        screen.getAllByRole('status', { name: 'Resumo da reserva' }),
+      ).toHaveLength(1);
+      expect(screen.getAllByRole('switch')).toHaveLength(1);
+    });
+  });
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      stubViewport(false);
+    });
+
+    it('is a bar that sticks above the tab bar', () => {
+      renderBooking();
+
+      expect(card()).toHaveAttribute('data-booking-bar');
+      expect(card().className).toContain('sticky');
+      expect(card().className).toContain(
+        'bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))]',
+      );
+      expect(card().className).toContain('h-(--booking-bar-h)');
+    });
+
+    it('shows the price and "Escolher horário", which goes to the days', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+
+      expect(card()).toHaveTextContent('R$ 180 / hora');
+      await user.click(
+        within(card()).getByRole('button', { name: 'Escolher horário' }),
+      );
+
+      expect(screen.getByRole('button', { name: /^Hoje 5,/ })).toHaveFocus();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('shows the choice and books it from the bar', async () => {
+      mocks.createBooking.mockResolvedValue({
+        ok: true,
+        data: { id: '33333333-3333-4333-8333-333333333333' },
+      });
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+
+      expect(card()).toHaveTextContent('R$ 180');
+      expect(card()).toHaveTextContent('Qui, 5 nov · 20:00–21:00');
+      await user.click(
+        within(card()).getByRole('button', { name: 'Reservar' }),
+      );
+
+      await waitFor(() => {
+        expect(mocks.navigate).toHaveBeenCalledWith(
+          '/reservas/33333333-3333-4333-8333-333333333333',
+        );
+      });
+    });
+
+    it('keeps the group, the switch and the total under the times', async () => {
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+
+      const panel = screen.getByRole('region', { name: 'Sua reserva' });
+      expect(
+        within(panel).getByRole('button', { name: 'Mais um jogador' }),
+      ).toBeInTheDocument();
+      expect(within(panel).getByRole('switch')).toBeInTheDocument();
+      expect(
+        within(panel).getByRole('status', { name: 'Resumo da reserva' }),
+      ).toHaveTextContent('Por pessoa (14)R$ 12,86');
+      // Only one of everything: the card keeps just the bar.
+      expect(screen.getAllByRole('switch')).toHaveLength(1);
+    });
+
+    it('shows a refused booking under the times', async () => {
+      mocks.createBooking.mockResolvedValue({
+        ok: false,
+        status: 422,
+        fieldErrors: {},
+        message: 'Você já tem reservas aguardando pagamento',
+      });
+      const user = userEvent.setup();
+      renderBooking();
+      await loaded();
+      await user.click(screen.getByRole('button', { name: /^20:00, / }));
+      await user.click(
+        within(card()).getByRole('button', { name: 'Reservar' }),
+      );
+
+      const panel = screen.getByRole('region', { name: 'Sua reserva' });
+      expect(await within(panel).findByRole('alert')).toHaveTextContent(
+        'Você já tem reservas aguardando pagamento',
+      );
     });
   });
 
   it('says there is nothing to book when the venue has no court', () => {
-    renderCard({ fields: [], minPriceCentsPerHour: null });
+    stubViewport(false);
+    render(
+      <BookingProvider
+        slug="arena-x"
+        timezone="America/Sao_Paulo"
+        fields={[]}
+        signedIn={false}
+      >
+        <BookingCard price={null} />
+      </BookingProvider>,
+    );
 
-    expect(
-      screen.getByText('Este espaço ainda não tem quadras para reservar.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Escolher horário' }),
-    ).not.toBeInTheDocument();
+    expect(card()).toHaveTextContent(
+      'Este espaço ainda não tem quadras para reservar.',
+    );
+    expect(within(card()).queryByRole('button')).toBeNull();
   });
 });
