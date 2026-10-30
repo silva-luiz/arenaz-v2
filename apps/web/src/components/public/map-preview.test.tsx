@@ -32,6 +32,7 @@ function venue(overrides: Partial<PublicVenueCard> = {}): PublicVenueCard {
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm: 1.2,
     nextFreeTime: '20:00',
+    freeTimes: ['20:00'],
     ...overrides,
   };
 }
@@ -137,7 +138,7 @@ describe('MapPreview', () => {
       );
 
       expect(screen.getByTestId('map-preview-rating')).toHaveTextContent(
-        'Nota 4,92',
+        'Nota 4,92(318), 318 avaliações',
       );
     });
 

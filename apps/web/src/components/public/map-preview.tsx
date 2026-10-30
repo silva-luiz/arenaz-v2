@@ -20,7 +20,7 @@ export interface MapPreviewProps {
  * button is its sibling, so it is a real button and not inside an anchor.
  */
 export function MapPreview({ venue, href, onClose }: MapPreviewProps) {
-  const rating = demoVenueExtras(venue.slug)?.rating;
+  const extras = demoVenueExtras(venue.slug);
 
   return (
     <div className="absolute bottom-20 left-1/2 z-[1000] w-[340px] max-w-[calc(100%-2rem)] -translate-x-1/2 lg:bottom-7">
@@ -56,7 +56,7 @@ export function MapPreview({ venue, href, onClose }: MapPreviewProps) {
             <strong className="line-clamp-2 min-w-0 font-semibold text-ink">
               {venue.name}
             </strong>
-            {rating ? (
+            {extras ? (
               <span
                 data-testid="map-preview-rating"
                 className="flex shrink-0 items-center gap-1 text-ink"
@@ -70,7 +70,13 @@ export function MapPreview({ venue, href, onClose }: MapPreviewProps) {
                 >
                   <polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6" />
                 </svg>
-                <span className="sr-only">Nota</span> {rating}
+                <span className="sr-only">Nota</span> {extras.rating}
+                <span aria-hidden="true">
+                  ({extras.reviewsCount.toLocaleString('pt-BR')})
+                </span>
+                <span className="sr-only">
+                  , {extras.reviewsCount.toLocaleString('pt-BR')} avaliações
+                </span>
               </span>
             ) : null}
           </span>

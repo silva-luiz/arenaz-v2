@@ -19,10 +19,11 @@ type Filter =
   | { kind: 'amenity'; amenity: Amenity }
   | { kind: 'price' }
   /** In the prototype, but nothing behind it yet: shown disabled (demo). */
-  | { kind: 'soon'; label: string };
+  | { kind: 'soon'; label: string; icon?: boolean };
 
 // The prototype's order. The two "soon" filters exist only in the demo mode.
 const FILTERS: readonly Filter[] = [
+  { kind: 'soon', label: 'Filtros', icon: true },
   { kind: 'soon', label: 'Reserva instantânea' },
   { kind: 'amenity', amenity: 'coberta' },
   { kind: 'amenity', amenity: 'vestiario' },
@@ -86,6 +87,22 @@ export function SearchFilters({ params }: SearchFiltersProps) {
               title="Em breve"
               className={CHIP_SIZE}
             >
+              {filter.icon ? (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                  <line x1="10" y1="17" x2="14" y2="17" />
+                </svg>
+              ) : null}
               {filter.label}
               <span className="sr-only"> (em breve)</span>
             </Chip>

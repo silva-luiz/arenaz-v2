@@ -63,13 +63,51 @@ describe('SiteHeader', () => {
     expect(link.textContent).toBe('Anuncie sua quadra');
   });
 
-  it('drops the wordmark on a phone (the logo mark stays), so the header fits 375px', () => {
+  it('keeps the wordmark on a phone by default and gives the logo a 44px target', () => {
     render(<SiteHeader user={null} />);
+
+    const home = screen.getByRole('link', { name: 'ArenaZ, início' });
+    expect(within(home).getByText('arenaz')).not.toHaveClass('max-md:hidden');
+    expect(home).toHaveClass('max-md:min-h-11', 'max-md:min-w-11');
+  });
+
+  it('can drop the wordmark (and "Anuncie") on a phone, keeping both reachable from md', () => {
+    render(<SiteHeader user={null} hideWordmarkOnPhone hideOwnerCtaOnPhone />);
 
     const home = screen.getByRole('link', { name: 'ArenaZ, início' });
     expect(within(home).getByText('arenaz')).toHaveClass('max-md:hidden');
     expect(home.querySelector('svg')).not.toBeNull();
-    expect(home).toHaveClass('max-md:min-h-11', 'max-md:min-w-11');
+    expect(
+      screen.getByRole('link', { name: 'Anuncie sua quadra' }),
+    ).toHaveClass('max-md:hidden');
+  });
+
+  it('is a little tighter on a phone so the signed-out bar fits 375px', () => {
+    render(<SiteHeader user={null} />);
+
+    const home = screen.getByRole('link', { name: 'ArenaZ, início' });
+    expect(within(home).getByText('arenaz')).toHaveClass('max-md:text-[22px]');
+    expect(
+      screen.getByRole('link', { name: 'Anuncie sua quadra' }),
+    ).toHaveClass('max-md:px-2.5');
+  });
+
+  it('renders a row under the bar inside the header, and can span the viewport', () => {
+    render(
+      <SiteHeader user={null} fluid bordered belowRow={<p>Filtros aqui</p>} />,
+    );
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByText('Filtros aqui')).toBeInTheDocument();
+    expect(header).not.toHaveClass('md:border-b-0');
+    expect(header.innerHTML).not.toContain('max-w-[1360px]');
+  });
+
+  it('keeps the 1360px column and drops the border from md by default', () => {
+    render(<SiteHeader user={null} />);
+
+    expect(screen.getByRole('banner')).toHaveClass('md:border-b-0');
+    expect(screen.getByRole('banner').innerHTML).toContain('max-w-[1360px]');
   });
 
   it('names the account link without initials when the name is empty', () => {

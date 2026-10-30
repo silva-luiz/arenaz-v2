@@ -252,7 +252,7 @@ export default function ResultsMap({
     <div
       role="region"
       aria-label="Mapa dos resultados"
-      className="relative isolate size-full overflow-hidden rounded-card bg-surface"
+      className="relative isolate size-full overflow-hidden bg-surface"
     >
       <MapContainer
         center={FALLBACK_CENTER}
@@ -296,6 +296,12 @@ export default function ResultsMap({
           />
         ))}
       </MapContainer>
+      {/* The prototype's soft edge where the map meets the list. Above the
+          tiles and pins (panes go to 700), under the controls and preview. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[750] shadow-[inset_14px_0_28px_-20px_rgba(8,36,24,0.45)] max-lg:hidden"
+      />
       {previewed ? (
         <>
           <CloseOnEscape

@@ -59,10 +59,12 @@ function venue(index: number): PublicVenueCard {
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm: null,
     nextFreeTime: null,
+    freeTimes: [],
   };
 }
 
 const ITEMS = [venue(1), venue(2), venue(3)];
+const TODAY = '2026-10-29';
 
 describe('ResultsList', () => {
   beforeEach(() => {
@@ -71,7 +73,7 @@ describe('ResultsList', () => {
   });
 
   it('lists a card per venue', () => {
-    render(<ResultsList items={ITEMS} />);
+    render(<ResultsList today={TODAY} items={ITEMS} />);
 
     const list = screen.getByRole('list', { name: 'Espaços encontrados' });
     expect(within(list).getAllByRole('link')).toHaveLength(3);
@@ -80,6 +82,7 @@ describe('ResultsList', () => {
   it('sizes the card covers to the results grid', () => {
     render(
       <ResultsList
+        today={TODAY}
         items={[
           {
             ...venue(9),
@@ -96,20 +99,26 @@ describe('ResultsList', () => {
     expect(img).toHaveAttribute('srcset', 'http://img.test/9.w400.webp 400w');
     expect(img).toHaveAttribute(
       'sizes',
-      '(min-width: 1360px) 257px, (min-width: 1235px) calc(22vw - 42px), (min-width: 1024px) calc(33vw - 52px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)',
+      '(min-width: 1582px) calc(16.5vw - 31px), (min-width: 1203px) calc(22vw - 35px), (min-width: 1024px) calc(33vw - 42px), (min-width: 810px) calc(33.4vw - 40px), (min-width: 768px) calc(50vw - 50px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)',
     );
   });
 
   it('renders the footer after the cards', () => {
     render(
-      <ResultsList items={ITEMS} footer={<a href="/x">Carregar mais</a>} />,
+      <ResultsList
+        today={TODAY}
+        items={ITEMS}
+        footer={<a href="/x">Carregar mais</a>}
+      />,
     );
 
     expect(screen.getByRole('link', { name: 'Carregar mais' })).toBeVisible();
   });
 
   it('renders the header above the cards and hides it with the list on a phone', async () => {
-    render(<ResultsList items={ITEMS} header={<h1>Quadras</h1>} />);
+    render(
+      <ResultsList today={TODAY} items={ITEMS} header={<h1>Quadras</h1>} />,
+    );
 
     const header = screen.getByTestId('results-header');
     expect(header).toContainElement(screen.getByRole('heading'));
@@ -122,14 +131,14 @@ describe('ResultsList', () => {
 
   describe('pin highlight and preview', () => {
     it('starts with nothing highlighted and no preview', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       expect(captured.props?.hoveredSlug).toBeNull();
       expect(captured.props?.previewSlug).toBeNull();
     });
 
     it('highlights the pin of the card the mouse is over, without a preview', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.hover(screen.getByRole('link', { name: 'Arena 2' }));
 
@@ -144,7 +153,7 @@ describe('ResultsList', () => {
     });
 
     it('lets go of the highlight when the mouse leaves the card', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
       const card = screen.getByRole('link', { name: 'Arena 2' });
 
       await userEvent.hover(card);
@@ -154,7 +163,7 @@ describe('ResultsList', () => {
     });
 
     it('highlights the pin of the card that gets keyboard focus, without a preview', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.tab();
       expect(captured.props?.hoveredSlug).toBe('arena-1');
@@ -167,7 +176,7 @@ describe('ResultsList', () => {
     });
 
     it('lets go of the highlight when the card loses focus', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.tab();
       act(() => {
@@ -178,7 +187,7 @@ describe('ResultsList', () => {
     });
 
     it('keeps the highlight while the card is still focused after the mouse leaves', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
       const card = screen.getByRole('link', { name: 'Arena 1' });
 
       await userEvent.tab();
@@ -189,7 +198,7 @@ describe('ResultsList', () => {
     });
 
     it('opens the preview only when a pin is clicked, and closes it', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       act(() => {
         captured.props?.onPreview('arena-3');
@@ -204,7 +213,7 @@ describe('ResultsList', () => {
     });
 
     it('keeps the preview open while cards are hovered', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
       act(() => {
         captured.props?.onPreview('arena-3');
       });
@@ -223,7 +232,7 @@ describe('ResultsList', () => {
       });
 
     it('has a "Mostrar ... no mapa" button per card, none pressed', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       for (const n of [1, 2, 3]) {
         expect(mapButton(n)).toHaveAttribute('aria-pressed', 'false');
@@ -231,7 +240,7 @@ describe('ResultsList', () => {
     });
 
     it('selecting a card darkens its pin and opens the preview, leaving the others', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.click(mapButton(2));
 
@@ -241,7 +250,7 @@ describe('ResultsList', () => {
     });
 
     it('selecting another card moves the selection, and the same one again clears it', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.click(mapButton(1));
       await userEvent.click(mapButton(3));
@@ -253,7 +262,7 @@ describe('ResultsList', () => {
     });
 
     it('a pin selected on the map presses the card button', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       act(() => {
         captured.props?.onPreview('arena-3');
@@ -263,7 +272,7 @@ describe('ResultsList', () => {
     });
 
     it('on a phone it takes you from the list to the map, and moves focus to "Mapa"', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.click(mapButton(2));
 
@@ -276,7 +285,7 @@ describe('ResultsList', () => {
     });
 
     it('does not select by merely following the card link', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.hover(screen.getByRole('link', { name: 'Arena 1' }));
 
@@ -288,6 +297,7 @@ describe('ResultsList', () => {
     it('go on every card link', () => {
       render(
         <ResultsList
+          today={TODAY}
           items={ITEMS}
           intent={{ data: '2026-10-30', jogadores: '14' }}
         />,
@@ -304,6 +314,7 @@ describe('ResultsList', () => {
     it('go to the preview of the map too', () => {
       render(
         <ResultsList
+          today={TODAY}
           items={ITEMS}
           intent={{ data: '2026-10-30', jogadores: '14' }}
         />,
@@ -315,7 +326,7 @@ describe('ResultsList', () => {
     });
 
     it('leave the links plain when the search has neither', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       expect(screen.getByRole('link', { name: 'Arena 1' })).toHaveAttribute(
         'href',
@@ -329,7 +340,11 @@ describe('ResultsList', () => {
     it('shows "Livre às 20h" from nextFreeTime, and nothing without it', () => {
       render(
         <ResultsList
-          items={[{ ...venue(1), nextFreeTime: '20:00' }, venue(2)]}
+          today={TODAY}
+          items={[
+            { ...venue(1), nextFreeTime: '20:00', freeTimes: ['20:00'] },
+            venue(2),
+          ]}
         />,
       );
 
@@ -339,7 +354,10 @@ describe('ResultsList', () => {
 
     it('has no rating, badge or heart outside the demo mode', () => {
       render(
-        <ResultsList items={[{ ...venue(1), slug: 'arena-vila-madalena' }]} />,
+        <ResultsList
+          today={TODAY}
+          items={[{ ...venue(1), slug: 'arena-vila-madalena' }]}
+        />,
       );
 
       expect(screen.queryByTestId('venue-card-rating')).toBeNull();
@@ -354,6 +372,7 @@ describe('ResultsList', () => {
       captured.demo = true;
       render(
         <ResultsList
+          today={TODAY}
           items={[{ ...venue(1), slug: 'arena-vila-madalena' }, venue(2)]}
         />,
       );
@@ -366,10 +385,69 @@ describe('ResultsList', () => {
       expect(screen.getAllByRole('link')).toHaveLength(2);
     });
 
+    it('shows the review count with the rating in the demo mode only', () => {
+      captured.demo = true;
+      const { unmount } = render(
+        <ResultsList
+          today={TODAY}
+          items={[{ ...venue(1), slug: 'arena-vila-madalena' }]}
+        />,
+      );
+      expect(screen.getByTestId('venue-card-rating')).toHaveTextContent(
+        'Nota 4,92(318), 318 avaliações',
+      );
+      unmount();
+
+      captured.demo = false;
+      render(
+        <ResultsList
+          today={TODAY}
+          items={[{ ...venue(1), slug: 'arena-vila-madalena' }]}
+        />,
+      );
+      expect(screen.queryByText(/\(318\)/)).toBeNull();
+      expect(screen.queryByTestId('venue-card-rating')).toBeNull();
+    });
+
+    it('shows up to three free time chips per card, to the venue page on today with the time and players', () => {
+      render(
+        <ResultsList
+          today={TODAY}
+          intent={{ data: '2026-11-02', jogadores: '14' }}
+          items={[
+            {
+              ...venue(1),
+              nextFreeTime: '20:00',
+              freeTimes: ['20:00', '21:00', '22:00'],
+            },
+            venue(2),
+          ]}
+        />,
+      );
+
+      const list = screen.getByRole('list', {
+        name: 'Horários livres hoje em Arena 1',
+      });
+      const chips = within(list).getAllByRole('link');
+      expect(chips.map((chip) => chip.textContent)).toEqual([
+        '20:00',
+        '21:00',
+        '22:00',
+      ]);
+      expect(chips[1]).toHaveAttribute(
+        'href',
+        '/espacos/arena-1?data=2026-10-29&hora=21%3A00&jogadores=14',
+      );
+      // A venue with nothing free today has no chips, and leaves no hole.
+      expect(
+        screen.queryByRole('list', { name: 'Horários livres hoje em Arena 2' }),
+      ).toBeNull();
+    });
+
     it('degrades cleanly: no photo, no free time and a 40+ character name', () => {
       const name =
         'Complexo Esportivo Municipal Professor Doutor Fulano de Tal';
-      render(<ResultsList items={[{ ...venue(1), name }]} />);
+      render(<ResultsList today={TODAY} items={[{ ...venue(1), name }]} />);
 
       const list = screen.getByRole('list', { name: 'Espaços encontrados' });
       expect(within(list).getByRole('link', { name })).toBeInTheDocument();
@@ -381,7 +459,7 @@ describe('ResultsList', () => {
 
   describe('mobile view toggle', () => {
     it('shows the list first: "Lista" pressed, "Mapa" not', () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       expect(screen.getByRole('button', { name: 'Lista' })).toHaveAttribute(
         'aria-pressed',
@@ -396,7 +474,7 @@ describe('ResultsList', () => {
     });
 
     it('switches the view and the pressed button, and back', async () => {
-      render(<ResultsList items={ITEMS} />);
+      render(<ResultsList today={TODAY} items={ITEMS} />);
 
       await userEvent.click(screen.getByRole('button', { name: 'Mapa' }));
 

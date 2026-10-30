@@ -21,6 +21,7 @@ function card(slug: string, nextFreeTime: string | null): PublicVenueCard {
     approxLocation: { lat: -23.5, lng: -46.7 },
     distanceKm: null,
     nextFreeTime,
+    freeTimes: nextFreeTime === null ? [] : [nextFreeTime],
   };
 }
 

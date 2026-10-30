@@ -1,6 +1,7 @@
 import { SiteFooter } from '@arenaz/ui';
 import type { ReactNode } from 'react';
 import { PublicHeader } from '@/components/layout/public-header';
+import { PublicMain } from '@/components/layout/public-main';
 import { PublicTabBar } from '@/components/layout/public-tab-bar';
 import { SkipLink } from '@/components/layout/skip-link';
 import { currentUser } from '@/lib/current-user';
@@ -22,14 +23,7 @@ export default async function PublicLayout({
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <PublicHeader user={user ? { name: user.name } : null} />
-      {/* tabIndex -1: the skip link moves focus here; no ring for that. */}
-      <main
-        id="conteudo"
-        tabIndex={-1}
-        className="mx-auto w-full max-w-[1360px] flex-1 px-4 pt-4 outline-none md:px-10 md:pt-6"
-      >
-        {children}
-      </main>
+      <PublicMain>{children}</PublicMain>
       <SiteFooter showPhotoCredit={isDemoMode} />
       <PublicTabBar />
     </div>

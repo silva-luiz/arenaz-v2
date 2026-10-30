@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { nextFreeTime, type NextFreeVenue } from '../src/public/next-free.js';
+import {
+  freeTimes,
+  nextFreeTime,
+  type NextFreeVenue,
+} from '../src/public/next-free.js';
 
 const TZ = 'America/Sao_Paulo';
 /** Wall clock of São Paulo (UTC-3 all year) as an instant. */
@@ -112,5 +116,65 @@ describe('nextFreeTime', () => {
     expect(
       nextFreeTime(manaus, new Map(), new Date(`${DATE}T12:10:00-04:00`)),
     ).toBe('12:30');
+  });
+});
+
+describe('freeTimes', () => {
+  it('lista os 3 primeiros inícios livres, em ordem, e o primeiro é o nextFreeTime', () => {
+    const map = new Map([['f1', [busy('19:30', '21:00')]]]);
+    const now = at(DATE, '19:10');
+    expect(freeTimes(venue(), map, now)).toEqual(['21:00', '21:30', '22:00']);
+    expect(nextFreeTime(venue(), map, now)).toBe('21:00');
+  });
+
+  it('cada horário aparece uma vez, mesmo livre em duas quadras', () => {
+    const two = venue({
+      fields: [
+        { id: 'f1', minSlotMinutes: 60 },
+        { id: 'f2', minSlotMinutes: 60 },
+      ],
+    });
+    expect(freeTimes(two, new Map(), at(DATE, '19:10'))).toEqual([
+      '19:30',
+      '20:00',
+      '20:30',
+    ]);
+  });
+
+  it('junta as quadras: o que uma ocupa a outra completa', () => {
+    const two = venue({
+      fields: [
+        { id: 'f1', minSlotMinutes: 60 },
+        { id: 'f2', minSlotMinutes: 60 },
+      ],
+    });
+    const map = new Map([
+      ['f1', [busy('19:30', '23:30')]],
+      ['f2', [busy('19:30', '22:00')]],
+    ]);
+    expect(freeTimes(two, map, at(DATE, '19:10'))).toEqual([
+      '22:00',
+      '22:30',
+      '23:00',
+    ]);
+  });
+
+  it('traz menos de 3 quando não há mais, e [] sem nada livre', () => {
+    const closes = venue({ hours: everyDay(420, 1320) }); // closes 22:00
+    expect(freeTimes(closes, new Map(), at(DATE, '20:40'))).toEqual(['21:00']);
+    expect(freeTimes(closes, new Map(), at(DATE, '21:10'))).toEqual([]);
+    expect(
+      freeTimes(venue({ fields: [] }), new Map(), at(DATE, '10:00')),
+    ).toEqual([]);
+  });
+
+  it('só conta o dia local de hoje', () => {
+    const overnight = venue({
+      hours: [...everyDay(0, 120), ...everyDay(1080, 1440)],
+      fields: [{ id: 'f1', minSlotMinutes: 30 }],
+    });
+    expect(freeTimes(overnight, new Map(), at(DATE, '23:10'))).toEqual([
+      '23:30',
+    ]);
   });
 });

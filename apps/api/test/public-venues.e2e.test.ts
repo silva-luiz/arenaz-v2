@@ -14,7 +14,7 @@ import type { LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.factory.js';
 import { DB, type DbHandle } from '../src/db/db.module.js';
-import { loadNextFreeTimes } from '../src/public/next-free.js';
+import { loadFreeTimes, loadNextFreeTimes } from '../src/public/next-free.js';
 import { STORAGE, type StoragePort } from '../src/storage/storage.port.js';
 import { SP, at, insertBooking, spDate } from './booking-seed.js';
 import { buildTestApp, signUpAs, testEnv, uniqueToken } from './helpers.js';
@@ -178,6 +178,7 @@ describe('GET /api/venues', () => {
       distanceKm: null,
       // No opening hours: nothing is free today.
       nextFreeTime: null,
+      freeTimes: [],
     });
     const raw = res.body;
     for (const secret of [
@@ -203,6 +204,7 @@ describe('GET /api/venues', () => {
         'coverSrcSet',
         'coverUrl',
         'distanceKm',
+        'freeTimes',
         'minPriceCentsPerHour',
         'nextFreeTime',
         'name',
@@ -717,6 +719,27 @@ describe('nextFreeTime (relógio fixo, banco real)', () => {
     expect(await free()).toBe('23:00');
   });
 
+  it('depois de uma reserva 19:30-21:00 (agora 19:10): os 3 primeiros horários livres', async () => {
+    const hours = everyDay(420, 1440);
+    const row = await seed({ hours });
+    const [fieldId] = await fieldIdsOf(row.id);
+    if (!fieldId) throw new Error('sem quadra');
+    await insertBooking(
+      handle,
+      { slug: row.slug, venueId: row.id, fieldId, inactiveFieldId: fieldId },
+      ownerId,
+      hhmm('19:30'),
+      hhmm('21:00'),
+      'confirmed',
+    );
+    const input = await asInput(row, hours);
+
+    const free = await loadFreeTimes(handle.db, [input], hhmm('19:10'));
+    expect(free.get(row.id)).toEqual(['21:00', '21:30', '22:00']);
+    const next = await loadNextFreeTimes(handle.db, [input], hhmm('19:10'));
+    expect(next.get(row.id)).toBe('21:00');
+  });
+
   it('tudo ocupado, fechado hoje e 23:40 com mínimo de 60 min: null', async () => {
     const allDay = everyDay(0, 1440);
     const blocked = await seed({ hours: allDay });
@@ -805,7 +828,15 @@ describe('GET /api/venues: nextFreeTime (relógio do banco)', () => {
     const body = await search(q(token));
     const bySlug = new Map(body.items.map((item) => [item.slug, item]));
     expect(bySlug.get(blocked.slug)?.nextFreeTime).toBeNull();
+    expect(bySlug.get(blocked.slug)?.freeTimes).toEqual([]);
     expect(bySlug.get(noHours.slug)?.nextFreeTime).toBeNull();
+    expect(bySlug.get(noHours.slug)?.freeTimes).toEqual([]);
+    const openFree = bySlug.get(open.slug)?.freeTimes ?? [];
+    // Up to 3, ascending, the first is nextFreeTime.
+    expect(openFree.length).toBeGreaterThan(0);
+    expect(openFree.length).toBeLessThanOrEqual(3);
+    expect(openFree).toEqual([...openFree].sort());
+    expect(openFree[0]).toBe(bySlug.get(open.slug)?.nextFreeTime);
     const time = bySlug.get(open.slug)?.nextFreeTime;
     expect(time).toMatch(/^\d{2}:\d{2}$/);
     const [h, m] = (time ?? '00:00').split(':').map(Number) as [number, number];

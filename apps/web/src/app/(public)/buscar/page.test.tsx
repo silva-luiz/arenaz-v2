@@ -39,6 +39,7 @@ function card(index: number, distanceKm: number | null = null) {
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm,
     nextFreeTime: null as string | null,
+    freeTimes: [] as string[],
   };
 }
 
@@ -55,10 +56,9 @@ function props(searchParams: Params) {
   return { searchParams: Promise.resolve(searchParams) };
 }
 
-/** The search bar keeps an empty alert region of its own; only text counts. */
 function messages(): string[] {
   return screen
-    .getAllByRole('alert')
+    .queryAllByRole('alert')
     .map((alert) => alert.textContent)
     .filter((text) => text !== '');
 }
@@ -79,17 +79,15 @@ describe('search page', () => {
 
       expect(messages()).toEqual(['Esporte inválido']);
       expect(mocks.publicGet).not.toHaveBeenCalled();
-      expect(screen.getByRole('search')).toBeInTheDocument();
       expect(screen.queryByTestId('map-stub')).not.toBeInTheDocument();
     });
 
-    it('shows the schema message for a one-character q, keeps the value and makes no call', async () => {
+    it('shows the schema message for a one-character q and makes no call', async () => {
       await renderPage({ q: 'a' });
 
       expect(messages()).toEqual([
         'A busca precisa ter pelo menos 2 caracteres',
       ]);
-      expect(screen.getByRole('textbox', { name: 'Onde' })).toHaveValue('a');
       expect(mocks.publicGet).not.toHaveBeenCalled();
     });
 
@@ -149,7 +147,6 @@ describe('search page', () => {
       expect(messages()).toEqual([
         'Não foi possível carregar os espaços agora.',
       ]);
-      expect(screen.getByRole('search')).toBeInTheDocument();
     });
 
     it('treats a 404 from the API like a failure', async () => {
@@ -292,53 +289,14 @@ describe('search page', () => {
       expect(query.get('maxPrice')).toBe('200');
     });
 
-    it('does not send date and players to the API (it cannot filter by them)', async () => {
-      await renderPage({
-        q: 'vila',
-        data: '2026-10-30',
-        jogadores: '14',
-      });
-
-      const path = mocks.publicGet.mock.calls[0]?.[0] as string;
-      expect(path).toBe('/venues?q=vila');
-    });
-
-    it('shows the pills with what the URL filters pressed', async () => {
-      await renderPage({ amenities: 'coberta', maxPrice: '200' });
-
-      expect(screen.getByRole('button', { name: 'Coberta' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
-      expect(screen.getByRole('button', { name: 'Vestiário' })).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
-      expect(
-        screen.getByRole('button', { name: 'Até R$ 200/h' }),
-      ).toHaveAttribute('aria-pressed', 'true');
-    });
-
-    it('shows date and players in the search bar', async () => {
-      const day = new Date(Date.now() + 2 * 86_400_000)
-        .toISOString()
-        .slice(0, 10);
-      await renderPage({ data: day, jogadores: '10' });
-
-      expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveValue(day);
-      expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
-        '10',
-      );
-    });
-
     it('ignores a date in the past and a player count out of range, without an error', async () => {
       await renderPage({ data: '2020-01-01', jogadores: '99' });
 
       expect(messages()).toEqual([]);
-      expect(screen.getByRole('combobox', { name: 'Quando' })).toHaveValue('');
-      expect(screen.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
-        '',
-      );
+      const list = screen.getByRole('list', { name: 'Espaços encontrados' });
+      expect(
+        within(list).getByRole('link', { name: 'Arena 2' }),
+      ).toHaveAttribute('href', '/espacos/arena-2');
     });
 
     it('carries date and players on every venue link', async () => {
@@ -349,39 +307,6 @@ describe('search page', () => {
       expect(
         within(list).getByRole('link', { name: 'Arena 2' }),
       ).toHaveAttribute('href', `/espacos/arena-2?data=${day}&jogadores=14`);
-    });
-
-    it('keeps date, players and filters on "Carregar mais"', async () => {
-      const day = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-      mocks.publicGet.mockResolvedValue(response(20, true));
-      await renderPage({
-        data: day,
-        jogadores: '14',
-        amenities: 'coberta',
-        maxPrice: '200',
-      });
-
-      const href = screen
-        .getByRole('link', { name: 'Carregar mais' })
-        .getAttribute('href');
-      const query = new URLSearchParams(href?.split('?')[1]);
-      expect(query.get('data')).toBe(day);
-      expect(query.get('jogadores')).toBe('14');
-      expect(query.get('amenities')).toBe('coberta');
-      expect(query.get('maxPrice')).toBe('200');
-      expect(query.get('page')).toBe('2');
-    });
-
-    it('a new search from the bar keeps the pills (hidden fields)', async () => {
-      const { container } = render(
-        await SearchPage(props({ amenities: 'coberta', maxPrice: '200' })),
-      );
-
-      const form = container.querySelector('form');
-      expect(form?.querySelector('input[name="amenities"]')).toHaveValue(
-        'coberta',
-      );
-      expect(form?.querySelector('input[name="maxPrice"]')).toHaveValue('200');
     });
 
     it('refuses an unknown amenity with the schema message', async () => {
@@ -397,8 +322,8 @@ describe('search page', () => {
       mocks.publicGet.mockResolvedValue({
         ...response(3),
         items: [
-          { ...card(1), nextFreeTime: '20:00' },
-          { ...card(2), nextFreeTime: '21:30' },
+          { ...card(1), nextFreeTime: '20:00', freeTimes: ['20:00'] },
+          { ...card(2), nextFreeTime: '21:30', freeTimes: ['21:30'] },
           card(3),
         ],
       });
@@ -413,7 +338,10 @@ describe('search page', () => {
     it('uses the singular for one', async () => {
       mocks.publicGet.mockResolvedValue({
         ...response(2),
-        items: [{ ...card(1), nextFreeTime: '20:00' }, card(2)],
+        items: [
+          { ...card(1), nextFreeTime: '20:00', freeTimes: ['20:00'] },
+          card(2),
+        ],
       });
       await renderPage();
 
@@ -430,15 +358,56 @@ describe('search page', () => {
     });
   });
 
-  describe('empty results with filters', () => {
-    it('keeps the pills, so the user can take the filter off', async () => {
+  describe('what the page no longer has', () => {
+    it('leaves the search bar and the pills to the sticky header', async () => {
+      await renderPage({ amenities: 'coberta' });
+
+      expect(screen.queryByRole('search')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Coberta' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still explains an empty result, with the way back', async () => {
       mocks.publicGet.mockResolvedValue(response(0));
       await renderPage({ amenities: 'coberta' });
 
-      expect(screen.getByRole('button', { name: 'Coberta' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
+      expect(
+        screen.getByRole('heading', { name: 'Nenhum espaço encontrado' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/tire algum filtro/)).toBeInTheDocument();
+    });
+  });
+
+  describe('free time chips', () => {
+    it('lists the venue free times as chips to the venue page, today, with the time and players', async () => {
+      mocks.publicGet.mockResolvedValue({
+        ...response(1),
+        items: [
+          { ...card(1), nextFreeTime: '20:00', freeTimes: ['20:00', '21:00'] },
+        ],
+      });
+      await renderPage({ jogadores: '14', data: '2099-01-01' });
+
+      const chip = screen.getByRole('link', { name: '20:00, Arena 1' });
+      const href = chip.getAttribute('href') ?? '';
+      const url = new URL(href, 'http://x');
+      expect(url.pathname).toBe('/espacos/arena-1');
+      expect(url.searchParams.get('hora')).toBe('20:00');
+      expect(url.searchParams.get('jogadores')).toBe('14');
+      // Today in São Paulo, not the searched day.
+      expect(url.searchParams.get('data')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(
+        screen.getByRole('link', { name: '21:00, Arena 1' }),
+      ).toBeVisible();
+    });
+
+    it('has no chips for a venue with nothing free today', async () => {
+      await renderPage();
+
+      expect(
+        screen.queryByRole('list', { name: /Horários livres/ }),
+      ).toBeNull();
     });
   });
 

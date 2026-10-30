@@ -154,6 +154,7 @@ describe('publicVenueCardSchema', () => {
     approxLocation,
     distanceKm: null,
     nextFreeTime: '20:00',
+    freeTimes: ['20:00', '21:00', '22:00'],
   };
 
   it('aceita um card válido', () => {
@@ -161,14 +162,20 @@ describe('publicVenueCardSchema', () => {
   });
 
   it.each(['19:30', '00:00', '23:30'])('aceita nextFreeTime %s', (time) => {
-    expect(
-      publicVenueCardSchema.parse({ ...card, nextFreeTime: time }),
-    ).toEqual({ ...card, nextFreeTime: time });
+    const free = { nextFreeTime: time, freeTimes: [time] };
+    expect(publicVenueCardSchema.parse({ ...card, ...free })).toEqual({
+      ...card,
+      ...free,
+    });
   });
 
   it('nextFreeTime null quer dizer nada livre hoje', () => {
     expect(
-      publicVenueCardSchema.parse({ ...card, nextFreeTime: null }).nextFreeTime,
+      publicVenueCardSchema.parse({
+        ...card,
+        nextFreeTime: null,
+        freeTimes: [],
+      }).nextFreeTime,
     ).toBeNull();
   });
 
@@ -176,8 +183,11 @@ describe('publicVenueCardSchema', () => {
     'recusa nextFreeTime %s',
     (time) => {
       expect(
-        publicVenueCardSchema.safeParse({ ...card, nextFreeTime: time })
-          .success,
+        publicVenueCardSchema.safeParse({
+          ...card,
+          nextFreeTime: time,
+          freeTimes: [time],
+        }).success,
       ).toBe(false);
     },
   );
@@ -186,6 +196,60 @@ describe('publicVenueCardSchema', () => {
     const without: Partial<typeof card> = { ...card };
     delete without.nextFreeTime;
     expect(publicVenueCardSchema.safeParse(without).success).toBe(false);
+  });
+
+  describe('freeTimes', () => {
+    it('exige freeTimes (lista, não ausente)', () => {
+      const without: Partial<typeof card> = { ...card };
+      delete without.freeTimes;
+      expect(publicVenueCardSchema.safeParse(without).success).toBe(false);
+    });
+
+    it('aceita de 0 a 3 horários', () => {
+      for (const freeTimes of [[], ['20:00'], ['20:00', '20:30']]) {
+        const nextFreeTime = freeTimes[0] ?? null;
+        expect(
+          publicVenueCardSchema.safeParse({ ...card, nextFreeTime, freeTimes })
+            .success,
+        ).toBe(true);
+      }
+    });
+
+    it('recusa mais de 3 horários', () => {
+      expect(
+        publicVenueCardSchema.safeParse({
+          ...card,
+          freeTimes: ['20:00', '21:00', '22:00', '23:00'],
+        }).success,
+      ).toBe(false);
+    });
+
+    it.each([
+      ['fora de ordem', ['20:00', '19:00']],
+      ['repetido', ['20:00', '20:00']],
+      ['mal formado', ['20:00', '9h']],
+    ])('recusa horários %s', (_name, freeTimes) => {
+      expect(
+        publicVenueCardSchema.safeParse({ ...card, freeTimes }).success,
+      ).toBe(false);
+    });
+
+    it('nextFreeTime tem de ser o primeiro de freeTimes (ou null sem nenhum)', () => {
+      expect(
+        publicVenueCardSchema.safeParse({ ...card, nextFreeTime: '21:00' })
+          .success,
+      ).toBe(false);
+      expect(
+        publicVenueCardSchema.safeParse({ ...card, freeTimes: [] }).success,
+      ).toBe(false);
+      expect(
+        publicVenueCardSchema.safeParse({
+          ...card,
+          nextFreeTime: null,
+          freeTimes: ['20:00'],
+        }).success,
+      ).toBe(false);
+    });
   });
 
   it('exige coverSrcSet (string ou null)', () => {

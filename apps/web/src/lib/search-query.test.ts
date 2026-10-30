@@ -6,6 +6,7 @@ import {
   parseSearch,
   saoPauloDate,
   searchHref,
+  slotHref,
   venueHref,
   withAmenity,
   withMaxPrice,
@@ -245,5 +246,19 @@ describe('amenities and price in the URL', () => {
 
   it('PRICE_CHIP_REAIS is the "Até R$ 200/h" chip', () => {
     expect(PRICE_CHIP_REAIS).toBe(200);
+  });
+});
+
+describe('slotHref', () => {
+  it('opens the venue on today with the time chosen and the group size', () => {
+    expect(
+      slotHref('arena-vm', '20:00', '2026-10-29', { jogadores: '14' }),
+    ).toBe('/espacos/arena-vm?data=2026-10-29&hora=20%3A00&jogadores=14');
+  });
+
+  it('is today even when the search asked for another day, and leaves out missing players', () => {
+    expect(slotHref('arena-vm', '19:30', '2026-10-29', {})).toBe(
+      '/espacos/arena-vm?data=2026-10-29&hora=19%3A30',
+    );
   });
 });

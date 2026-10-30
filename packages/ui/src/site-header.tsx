@@ -37,12 +37,28 @@ export interface SiteHeaderProps {
   showOwnerCta?: boolean | undefined;
   /** Slot for the compact search (the home hero has the full one). */
   children?: ReactNode;
+  /**
+   * A row under the bar, inside the same sticky header (the search page's
+   * filter pills). Same width and gutters as the bar.
+   */
+  belowRow?: ReactNode;
+  /** Let the bar span the whole viewport instead of the 1360px column. */
+  fluid?: boolean | undefined;
+  /** Keep the bottom border from md up too (when a row hangs below). */
+  bordered?: boolean | undefined;
+  /**
+   * Phone only: leave the wordmark out and show only the logo mark, as the
+   * prototype's search page does, to give the compact search room.
+   */
+  hideWordmarkOnPhone?: boolean | undefined;
+  /** Phone only: leave "Anuncie" out (the prototype's search page does). */
+  hideOwnerCtaOnPhone?: boolean | undefined;
   linkComponent?: LinkComponent | undefined;
   className?: string | undefined;
 }
 
 const PILL_LINK = cn(
-  'inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
+  'inline-flex h-11 items-center rounded-full px-4 max-md:px-2.5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-surface motion-reduce:transition-none',
   FOCUS_RING,
 );
 
@@ -95,6 +111,11 @@ export function SiteHeader({
   badge,
   showOwnerCta = true,
   children,
+  belowRow,
+  fluid = false,
+  bordered = false,
+  hideWordmarkOnPhone = false,
+  hideOwnerCtaOnPhone = false,
   linkComponent,
   className,
 }: SiteHeaderProps) {
@@ -104,11 +125,17 @@ export function SiteHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 border-b border-line bg-bg md:border-b-0',
+        'sticky top-0 z-40 border-b border-line bg-bg',
+        !bordered && 'md:border-b-0',
         className,
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between gap-3 px-4 md:h-[84px] md:gap-6 md:px-10">
+      <div
+        className={cn(
+          'mx-auto flex h-16 items-center justify-between gap-3 px-4 md:h-[84px] md:gap-6 md:px-10',
+          !fluid && 'max-w-[1360px]',
+        )}
+      >
         <div className="flex shrink-0 items-center gap-3 md:flex-1 md:basis-0">
           <Link
             href="/"
@@ -120,11 +147,14 @@ export function SiteHeader({
             )}
           >
             <LogoMark />
-            {/* Gone on a phone, as in the prototype's search page: with the
-                account pill and "Anuncie" it pushed the header past 375px. */}
+            {/* Slightly smaller on a phone: with the account pill and
+                "Anuncie" the bar was 17px wider than a 375px screen. */}
             <span
               aria-hidden="true"
-              className="font-wordmark text-[25px] font-extrabold tracking-[-0.045em] text-brand max-md:hidden"
+              className={cn(
+                'font-wordmark text-[25px] font-extrabold tracking-[-0.045em] text-brand max-md:text-[22px]',
+                hideWordmarkOnPhone && 'max-md:hidden',
+              )}
             >
               arenaz
             </span>
@@ -188,7 +218,7 @@ export function SiteHeader({
             <Link
               href="/painel"
               aria-label="Anuncie sua quadra"
-              className={PILL_LINK}
+              className={cn(PILL_LINK, hideOwnerCtaOnPhone && 'max-md:hidden')}
             >
               Anuncie<span className="max-md:hidden">{'\u00a0sua quadra'}</span>
             </Link>
@@ -224,6 +254,13 @@ export function SiteHeader({
           )}
         </div>
       </div>
+      {belowRow ? (
+        <div
+          className={cn('mx-auto px-4 md:px-10', !fluid && 'max-w-[1360px]')}
+        >
+          {belowRow}
+        </div>
+      ) : null}
     </header>
   );
 }

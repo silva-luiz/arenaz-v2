@@ -100,3 +100,18 @@ html:has([data-booking-bar]) {
 .leaflet-marker-icon:focus-visible {
   outline: none;
 }
+
+/*
+ * Height of the search page's sticky header (bar + filter row + border), so
+ * the map beside the list can start right under it and fill the rest of the
+ * screen. The bar is 64px (84px from md), the filter row 60px, the border 1px
+ * (public-header.tsx / search-header.tsx).
+ */
+:root {
+  --search-header-h: 125px;
+}
+@media (min-width: 768px) {
+  :root {
+    --search-header-h: 145px;
+  }
+}

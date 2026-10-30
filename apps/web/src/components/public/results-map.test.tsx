@@ -100,6 +100,7 @@ function venue(
     approxLocation: { lat, lng },
     distanceKm: null,
     nextFreeTime: null,
+    freeTimes: [],
   };
 }
 

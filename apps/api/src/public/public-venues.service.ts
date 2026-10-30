@@ -16,7 +16,7 @@ import { VENUE_NOT_FOUND } from '../common/not-found.js';
 import { DB, type DbHandle } from '../db/db.module.js';
 import { photoUrls } from '../storage/photo-objects.js';
 import { STORAGE, type StoragePort } from '../storage/storage.port.js';
-import { loadNextFreeTimes, type NextFreeVenue } from './next-free.js';
+import { loadFreeTimes, type NextFreeVenue } from './next-free.js';
 
 const { venue, venueHours, venuePhoto, field, priceRule, user } = schema;
 
@@ -91,7 +91,7 @@ export class PublicVenuesService {
    * field, each with its lowest price (the cheapest of the base prices AND
    * the price rules of its active fields: that is what "a partir de" means),
    * the sports of its active fields and its cover photo (with its variants). Fetches one extra row to know `hasMore`.
-   * Then ONE more query (`loadNextFreeTimes`) gives every card its next free time today.
+   * Then ONE more query (`loadNextFreeTimes`) gives every card its free times today.
    * Optional filters: `amenities` (the venue has all of them) and `maxPrice`
    * (reais; the "a partir de" price is at most that).
    *
@@ -199,10 +199,10 @@ export class PublicVenuesService {
     const pageRows = rows.slice(0, PUBLIC_PAGE_SIZE);
     // The database clock (same one the booking paths use), and one busy query
     // for every field of the page.
-    const nextFree =
+    const freeTimes =
       pageRows[0] === undefined
-        ? new Map<string, string | null>()
-        : await loadNextFreeTimes(
+        ? new Map<string, string[]>()
+        : await loadFreeTimes(
             this.handle.db,
             pageRows.map((row) => ({
               id: row.id,
@@ -217,6 +217,7 @@ export class PublicVenuesService {
         row.cover_key === null
           ? null
           : photoUrls(this.storage, row.cover_key, row.cover_widths);
+      const venueFree = freeTimes.get(row.id) ?? [];
       return publicVenueCardSchema.parse({
         slug: row.slug,
         name: row.name,
@@ -233,7 +234,8 @@ export class PublicVenuesService {
           row.distance_m === null
             ? null
             : Math.round(row.distance_m / 100) / 10,
-        nextFreeTime: nextFree.get(row.id) ?? null,
+        nextFreeTime: venueFree[0] ?? null,
+        freeTimes: venueFree,
       });
     });
     return publicSearchResponseSchema.parse({

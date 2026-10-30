@@ -183,6 +183,25 @@ export function venueHref(slug: string, params: SearchParams): string {
   return query ? `/espacos/${slug}?${query}` : `/espacos/${slug}`;
 }
 
+/**
+ * The venue page with one of today's free times chosen: the card's time chips.
+ * The day is today (free times are today's, whatever day the search asked
+ * for), `hora` is "HH:MM" and the group size from the search rides along.
+ */
+export function slotHref(
+  slug: string,
+  time: string,
+  today: string,
+  params: Pick<SearchParams, 'jogadores'>,
+): string {
+  const query = toSearchParams({
+    data: today,
+    hora: time,
+    jogadores: params.jogadores,
+  }).toString();
+  return `/espacos/${slug}?${query}`;
+}
+
 /** The amenities in the URL, in the order the user turned them on. */
 export function amenitiesOf(params: SearchParams): Amenity[] {
   const known = new Set<string>(AMENITIES);

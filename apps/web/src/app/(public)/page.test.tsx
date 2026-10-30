@@ -49,6 +49,7 @@ function card(
     approxLocation: { lat: -23.55, lng: -46.69 },
     distanceKm: null,
     nextFreeTime: '20:00',
+    freeTimes: ['20:00'],
     ...overrides,
   };
 }

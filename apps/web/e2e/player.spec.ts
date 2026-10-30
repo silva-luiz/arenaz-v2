@@ -50,7 +50,7 @@ const MAX_RESULT_PAGES = 5;
  * a safety net that waits for each exact page before looking again.
  */
 async function findCard(page: Page, name: string) {
-  const card = page.getByRole('link', { name: new RegExp(name) });
+  const card = page.getByRole('link', { name, exact: true });
   for (let current = 1; current < MAX_RESULT_PAGES; current += 1) {
     if ((await card.count()) > 0) break;
     const next = current + 1;
@@ -184,18 +184,37 @@ test('busca: filtros, pinos e prévia do mapa', async ({ page, published }) => {
     `/buscar?q=${encodeURIComponent(where)}&data=${data}&jogadores=12`,
   );
 
-  // Date and players show in the bar and ride on the venue link.
+  // Date and players show in the header pill, with the real inputs behind it.
+  await page.locator('summary').click();
   await expect(page.getByRole('combobox', { name: 'Quando' })).toHaveValue(
     data,
   );
   await expect(page.getByRole('combobox', { name: 'Jogadores' })).toHaveValue(
     '12',
   );
-  const card = page.getByRole('link', { name: new RegExp(published.name) });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('details')).not.toHaveAttribute('open', '');
+
+  // They ride on the venue link; the free time chips go to today with `hora`.
+  const card = page.getByRole('link', { name: published.name, exact: true });
   await expect(card).toHaveAttribute(
     'href',
     `/espacos/${published.slug}?data=${data}&jogadores=12`,
   );
+
+  const chips = page
+    .getByRole('list', { name: `Horários livres hoje em ${published.name}` })
+    .getByRole('link');
+  if ((await chips.count()) > 0) {
+    const href = new URL(
+      (await chips.first().getAttribute('href')) ?? '',
+      'http://x',
+    );
+    expect(href.pathname).toBe(`/espacos/${published.slug}`);
+    expect(href.searchParams.get('hora')).toMatch(/^\d{2}:\d{2}$/);
+    expect(href.searchParams.get('jogadores')).toBe('12');
+    expect(href.searchParams.get('data')).not.toBe(data);
+  }
 
   // Not demo mode: no fictional filters, no rating.
   await expect(page.getByRole('button', { name: /mensalista/ })).toHaveCount(0);

@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/session', () => ({ getSession: mocks.getSession }));
 vi.mock('next/navigation', () => ({
   usePathname: () => mocks.pathname,
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
   unstable_rethrow: mocks.rethrow,
 }));
 
@@ -57,6 +59,19 @@ describe('(public) layout', () => {
     expect(
       screen.getByRole('link', { name: 'Pular para o conteúdo' }),
     ).toHaveAttribute('href', '#conteudo');
+  });
+
+  it('keeps the 1360px column on ordinary pages and goes full width on /buscar', async () => {
+    mocks.getSession.mockResolvedValue(null);
+    mocks.pathname = '/espacos/arena-1';
+    const { unmount } = render(await PublicLayout({ children: null }));
+    expect(screen.getByRole('main')).toHaveClass('max-w-[1360px]');
+    unmount();
+
+    mocks.pathname = '/buscar';
+    render(await PublicLayout({ children: null }));
+    expect(screen.getByRole('main')).not.toHaveClass('max-w-[1360px]');
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'conteudo');
   });
 
   it('leaves the bottom spacing to the tab bar spacer, not to <main>', async () => {

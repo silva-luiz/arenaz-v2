@@ -1,22 +1,22 @@
 import {
   PUBLIC_MAX_PAGE,
   PUBLIC_PAGE_SIZE,
-  SPORTS,
   publicSearchResponseSchema,
   type PublicSearchResponse,
 } from '@arenaz/contracts';
-import { Alert, EmptyState, SearchBar, buttonClasses, cn } from '@arenaz/ui';
+import { Alert, EmptyState, buttonClasses, cn } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { unstable_rethrow } from 'next/navigation';
 import { connection } from 'next/server';
+import type { ReactNode } from 'react';
 import { ResultsList } from '@/components/public/results-list';
-import { SearchFilters } from '@/components/public/search-filters';
 import { AppLink } from '@/components/ui/next-link';
 import { publicGet, toSearchParams } from '@/lib/public-api';
 import {
   SEARCH_PATH,
   apiQuery,
   parseSearch,
+  saoPauloDate,
   searchHref,
   type RawSearchParams,
   type SearchParams,
@@ -79,6 +79,18 @@ function freeTodayLabel(count: number): string {
     : `${String(count)} quadras com horário livre hoje`;
 }
 
+/**
+ * Body when there is no list to show (an error, nothing found): a centered
+ * column. The list itself is full width, see `ResultsList`.
+ */
+function Column({ children }: { children: ReactNode }) {
+  return (
+    <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-4 pt-4 pb-12 md:px-10 md:pt-6">
+      {children}
+    </div>
+  );
+}
+
 function Heading({
   title,
   page = 1,
@@ -106,6 +118,12 @@ function Heading({
   );
 }
 
+/*
+ * The search bar (a compact pill that opens the form) and the filter pills
+ * live in the sticky header (components/layout/public-header.tsx, read from
+ * the URL), so this page only has the results, or what to say when there are
+ * none.
+ */
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   // Layout and page prerender side by side; wait for a real request so
   // `next build` never calls the API (same as the home).
@@ -113,29 +131,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   const parsed = parseSearch(await searchParams);
   const { params } = parsed;
-  const sport = SPORTS.find((candidate) => candidate === params.sport);
-
-  // Filters the bar has no field for ride along as hidden inputs, so a new
-  // search keeps the pills the user turned on.
-  const carried: Record<string, string> = {};
-  if (params.amenities) carried.amenities = params.amenities;
-  if (params.maxPrice) carried.maxPrice = params.maxPrice;
-
-  const search = (
-    <SearchBar
-      defaultQuery={params.q}
-      defaultSport={sport}
-      defaultDate={params.data}
-      defaultPlayers={params.jogadores}
-      extraFields={carried}
-      className="mx-auto max-w-4xl"
-    />
-  );
 
   if (!parsed.ok) {
     return (
-      <div className="flex flex-col gap-6 pb-12">
-        {search}
+      <Column>
         <Heading title={DEFAULT_TITLE} />
         <Alert tone="error" className="mx-auto w-full max-w-4xl">
           {Object.values(parsed.messages).map((message) => (
@@ -152,34 +151,26 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             Ver todos os espaços
           </AppLink>
         </p>
-      </div>
+      </Column>
     );
   }
 
   const { q, page } = parsed.query;
   const results = await loadResults(params);
 
-  const heading = <Heading title={titleFor(q)} page={page} />;
-  const filters = <SearchFilters params={params} />;
-
   if (results === null) {
     return (
-      <div className="flex flex-col gap-6 pb-12">
-        {search}
-        {filters}
-        {heading}
+      <Column>
+        <Heading title={titleFor(q)} page={page} />
         <Alert tone="error">Não foi possível carregar os espaços agora.</Alert>
-      </div>
+      </Column>
     );
   }
 
   if (results.items.length === 0) {
     return (
-      <div className="flex flex-col gap-6 pb-12">
-        {search}
-        {/* Kept: a filter that empties the results must be easy to undo. */}
-        {filters}
-        {heading}
+      <Column>
+        <Heading title={titleFor(q)} page={page} />
         <EmptyState
           title="Nenhum espaço encontrado"
           description="Tente outro bairro ou esporte, tire algum filtro ou veja todos os espaços."
@@ -192,7 +183,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </AppLink>
           }
         />
-      </div>
+      </Column>
     );
   }
 
@@ -204,48 +195,45 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const canLoadMore = results.hasMore && page < PUBLIC_MAX_PAGE;
 
   return (
-    <div className="pb-12">
-      <ResultsList
-        items={results.items}
-        intent={{ data: params.data, jogadores: params.jogadores }}
-        header={
-          <div className="flex flex-col gap-4">
-            {search}
-            {filters}
-            <Heading title={titleFor(q)} page={page} hidden />
-            <p className="text-sm">
-              {freeToday > 0 ? (
-                <>
-                  <span className="font-semibold">
-                    {freeTodayLabel(freeToday)}
-                  </span>
-                  {' · '}
-                  <span className="text-muted">
-                    {countLabel(shown, results.hasMore)}
-                  </span>
-                </>
-              ) : (
+    <ResultsList
+      items={results.items}
+      intent={{ data: params.data, jogadores: params.jogadores }}
+      today={saoPauloDate(new Date())}
+      header={
+        <>
+          <Heading title={titleFor(q)} page={page} hidden />
+          <p className="text-sm">
+            {freeToday > 0 ? (
+              <>
                 <span className="font-semibold">
+                  {freeTodayLabel(freeToday)}
+                </span>
+                {' · '}
+                <span className="text-muted">
                   {countLabel(shown, results.hasMore)}
                 </span>
-              )}
-            </p>
-          </div>
-        }
-        footer={
-          canLoadMore ? (
-            <p className="mt-10 text-center">
-              <AppLink
-                href={searchHref(params, page + 1)}
-                rel="next"
-                className={buttonClasses({ variant: 'secondary' })}
-              >
-                Carregar mais
-              </AppLink>
-            </p>
-          ) : null
-        }
-      />
-    </div>
+              </>
+            ) : (
+              <span className="font-semibold">
+                {countLabel(shown, results.hasMore)}
+              </span>
+            )}
+          </p>
+        </>
+      }
+      footer={
+        canLoadMore ? (
+          <p className="mt-10 text-center">
+            <AppLink
+              href={searchHref(params, page + 1)}
+              rel="next"
+              className={buttonClasses({ variant: 'secondary' })}
+            >
+              Carregar mais
+            </AppLink>
+          </p>
+        ) : null
+      }
+    />
   );
 }

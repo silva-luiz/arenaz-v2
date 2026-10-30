@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -243,6 +243,97 @@ describe('VenueCard', () => {
       );
       const button = screen.getByRole('button');
       expect(button.className).toContain('size-11');
+    });
+  });
+
+  describe('review count', () => {
+    it('shows "(318)" after the rating, with the count spoken in full', () => {
+      render(<VenueCard {...BASE} rating="4,92" reviewsCount={318} />);
+
+      const rating = screen.getByTestId('venue-card-rating');
+      expect(rating).toHaveTextContent('Nota 4,92(318), 318 avaliações');
+      expect(within(rating).getByText('(318)')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
+    it('writes thousands the Brazilian way', () => {
+      render(<VenueCard {...BASE} rating="4,9" reviewsCount={1204} />);
+
+      expect(screen.getByText('(1.204)')).toBeInTheDocument();
+    });
+
+    it('is absent without the count, and never shown without a rating', () => {
+      const { rerender } = render(<VenueCard {...BASE} rating="4,92" />);
+      expect(screen.queryByText(/\(/)).toBeNull();
+
+      rerender(<VenueCard {...BASE} reviewsCount={318} />);
+      expect(screen.queryByTestId('venue-card-rating')).toBeNull();
+      expect(screen.queryByText('(318)')).toBeNull();
+    });
+  });
+
+  describe('free time slots (search grid)', () => {
+    const slots = [
+      { time: '20:00', href: '/espacos/arena?data=2026-10-30&hora=20%3A00' },
+      { time: '21:00', href: '/espacos/arena?data=2026-10-30&hora=21%3A00' },
+    ];
+
+    it('lists them as links in a labelled list, named with the time and the venue', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const list = screen.getByRole('list', {
+        name: 'Horários livres hoje em Arena Vila Madalena',
+      });
+      const links = within(list).getAllByRole('link');
+      expect(links.map((link) => link.textContent)).toEqual(['20:00', '21:00']);
+      expect(links[0]).toHaveAccessibleName('20:00, Arena Vila Madalena');
+      expect(links[0]).toHaveAttribute(
+        'href',
+        '/espacos/arena?data=2026-10-30&hora=20%3A00',
+      );
+      // Not inside the card link (links cannot nest).
+      expect(
+        screen.getByRole('link', { name: 'Arena Vila Madalena' }),
+      ).not.toContainElement(links[0] ?? null);
+    });
+
+    it('uses the mono font, a 44px target on a phone and a compact one from md', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const link = screen.getByRole('link', {
+        name: '20:00, Arena Vila Madalena',
+      });
+      expect(link).toHaveClass('font-mono', 'min-h-11', 'md:min-h-8');
+    });
+
+    it('moves the price under the chips, out of the card link, and the link still describes it', () => {
+      render(<VenueCard {...BASE} slots={slots} />);
+
+      const card = screen.getByRole('link', { name: 'Arena Vila Madalena' });
+      expect(card).not.toHaveTextContent('R$');
+      expect(card).toHaveAccessibleDescription(/R\$ 180/);
+      const list = screen.getByRole('list', { name: /Horários livres/ });
+      const price = screen.getByText('R$ 180');
+      expect(
+        list.compareDocumentPosition(price) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('with an empty list there is no list at all, but the price moves the same', () => {
+      render(<VenueCard {...BASE} slots={[]} />);
+
+      expect(screen.queryByRole('list')).toBeNull();
+      expect(screen.getByRole('link')).not.toHaveTextContent('R$');
+      expect(screen.getByText('R$ 180')).toBeInTheDocument();
+    });
+
+    it('without the prop nothing changes: the price stays in the link', () => {
+      render(<VenueCard {...BASE} />);
+
+      expect(screen.getByRole('link')).toHaveTextContent('R$ 180');
+      expect(screen.queryByRole('list')).toBeNull();
     });
   });
 

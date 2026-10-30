@@ -4,7 +4,7 @@ import type { PublicVenueCard } from '@arenaz/contracts';
 import { FOCUS_RING, cn } from '@arenaz/ui';
 import dynamic from 'next/dynamic';
 import { useRef, useState, type ReactNode, type Ref } from 'react';
-import { venueHref, type SearchParams } from '@/lib/search-query';
+import { slotHref, venueHref, type SearchParams } from '@/lib/search-query';
 import { SearchVenueCard } from './search-venue-card';
 
 // Leaflet touches `window` on import, so the map is client-only.
@@ -55,18 +55,21 @@ function ToggleButton({
 }
 
 /*
- * Cover `sizes` of the result cards: 1 column, 2 from sm; from lg the list is
- * the 1fr beside a 34% map column inside the page content (1360px max, 16px /
- * 40px gutters from md, 32px gap), with auto-filled columns of at least 230px
- * (2 up to about 1235px, then 3) and 20px between cards.
+ * Cover `sizes` of the result cards. The page is full width: from lg the list
+ * is the 1fr beside a map of 34% (360px at least), with 40px / 24px of
+ * padding and auto-filled columns of at least 230px (20px between them):
+ * 2 columns up to about 1203px, 3 up to 1582px, then 4. Below lg the list is
+ * the whole width: 2 columns from 512px, 3 from 810px (16px / 40px gutters).
  */
 const CARD_SIZES =
-  '(min-width: 1360px) 257px, (min-width: 1235px) calc(22vw - 42px), (min-width: 1024px) calc(33vw - 52px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)';
+  '(min-width: 1582px) calc(16.5vw - 31px), (min-width: 1203px) calc(22vw - 35px), (min-width: 1024px) calc(33vw - 42px), (min-width: 810px) calc(33.4vw - 40px), (min-width: 768px) calc(50vw - 50px), (min-width: 640px) calc(50vw - 26px), calc(100vw - 32px)';
 
 export interface ResultsListProps {
   items: PublicVenueCard[];
   /** Day and players of the search: carried on every link to a venue. */
   intent?: Pick<SearchParams, 'data' | 'jogadores'> | undefined;
+  /** Today in São Paulo, "YYYY-MM-DD": the day of the free time chips. */
+  today: string;
   /**
    * Search bar and title. They sit above the cards, in the left column, so
    * the map can start at the top of the page; on a phone they leave with the
@@ -95,6 +98,7 @@ export interface ResultsListProps {
 export function ResultsList({
   items,
   intent = {},
+  today,
   header,
   footer,
 }: ResultsListProps) {
@@ -123,12 +127,12 @@ export function ResultsList({
 
   return (
     <>
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_34%] lg:grid-rows-[auto_1fr] lg:gap-x-8">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,34%)] lg:grid-rows-[auto_1fr]">
         {header ? (
           <div
             data-testid="results-header"
             className={cn(
-              'pb-6 lg:col-start-1',
+              'px-4 pt-5 pb-5 md:px-10 lg:col-start-1 lg:pr-6',
               view === 'map' && 'hidden lg:block',
             )}
           >
@@ -137,7 +141,10 @@ export function ResultsList({
         ) : null}
         <div
           data-testid="results-list-view"
-          className={cn('lg:col-start-1', view === 'map' && 'hidden lg:block')}
+          className={cn(
+            'px-4 pb-12 md:px-10 lg:col-start-1 lg:pr-6',
+            view === 'map' && 'hidden lg:block',
+          )}
         >
           <ul
             role="list"
@@ -163,6 +170,7 @@ export function ResultsList({
                 <SearchVenueCard
                   venue={venue}
                   href={hrefFor(venue.slug)}
+                  slotHref={(time) => slotHref(venue.slug, time, today, intent)}
                   imageSizes={CARD_SIZES}
                   selected={previewSlug === venue.slug}
                   onToggleSelected={() => {
@@ -178,8 +186,10 @@ export function ResultsList({
         <div
           data-testid="results-map-view"
           className={cn(
-            // Phone: the screen minus header (65px), tab bar (57px) and gaps.
-            'h-[calc(100dvh-9.5rem)] min-h-80 lg:sticky lg:top-[108px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh-132px)] lg:self-start',
+            // Edge to edge, from under the sticky header (`--search-header-h`,
+            // globals.css) to the bottom of the screen; on a phone also clear
+            // of the tab bar (57px).
+            'h-[calc(100dvh_-_var(--search-header-h)_-_57px_-_env(safe-area-inset-bottom))] min-h-80 lg:sticky lg:top-[var(--search-header-h)] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh_-_var(--search-header-h))] lg:self-start',
             view === 'list' && 'hidden lg:block',
           )}
         >

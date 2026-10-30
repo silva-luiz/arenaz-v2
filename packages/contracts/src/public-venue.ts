@@ -137,39 +137,61 @@ export const publicSearchQuerySchema = z
     }
   });
 
+/** How many free start times a card lists. */
+export const PUBLIC_FREE_TIMES_LIMIT = 3;
+
+const hhmmSchema = z.string().regex(/^\d{2}:\d{2}$/);
+
 /** Venue as a search result card. */
-export const publicVenueCardSchema = z.object({
-  slug: z.string(),
-  name: z.string(),
-  neighborhood: z.string(),
-  city: z.string(),
-  state: z.string(),
-  coverUrl: z.string().nullable(),
-  /** Variants of the cover (see `photoSchema.srcSet`). */
-  coverSrcSet: z.string().nullable(),
-  sports: z.array(z.enum(SPORTS)),
-  /**
-   * Lowest price per hour among the ACTIVE fields: the base prices and every
-   * price rule count ("a partir de").
-   */
-  minPriceCentsPerHour: z.number().int().positive(),
-  /** Latitude and longitude rounded to 2 decimals (about 1 km). */
-  approxLocation: locationSchema,
-  /**
-   * Km from the searched point to the venue's APPROXIMATE point (1 decimal);
-   * `null` without `lat`/`lng`. Never derived from the exact location.
-   */
-  distanceKm: z.number().nonnegative().nullable(),
-  /**
-   * Start ("HH:MM", venue wall clock) of the first free slot from now to the
-   * end of TODAY (the venue's local date) on any active field; `null` when
-   * nothing is free today. Slots that start after midnight do not count.
-   */
-  nextFreeTime: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .nullable(),
-});
+export const publicVenueCardSchema = z
+  .object({
+    slug: z.string(),
+    name: z.string(),
+    neighborhood: z.string(),
+    city: z.string(),
+    state: z.string(),
+    coverUrl: z.string().nullable(),
+    /** Variants of the cover (see `photoSchema.srcSet`). */
+    coverSrcSet: z.string().nullable(),
+    sports: z.array(z.enum(SPORTS)),
+    /**
+     * Lowest price per hour among the ACTIVE fields: the base prices and every
+     * price rule count ("a partir de").
+     */
+    minPriceCentsPerHour: z.number().int().positive(),
+    /** Latitude and longitude rounded to 2 decimals (about 1 km). */
+    approxLocation: locationSchema,
+    /**
+     * Km from the searched point to the venue's APPROXIMATE point (1 decimal);
+     * `null` without `lat`/`lng`. Never derived from the exact location.
+     */
+    distanceKm: z.number().nonnegative().nullable(),
+    /**
+     * Start ("HH:MM", venue wall clock) of the first free slot from now to the
+     * end of TODAY (the venue's local date) on any active field; `null` when
+     * nothing is free today. Slots that start after midnight do not count.
+     */
+    nextFreeTime: hhmmSchema.nullable(),
+    /**
+     * Up to 3 free slot starts ("HH:MM", venue wall clock) from now to the end
+     * of today, ascending, each once, on any active field. `nextFreeTime` is
+     * always `freeTimes[0] ?? null`.
+     */
+    freeTimes: z.array(hhmmSchema).max(PUBLIC_FREE_TIMES_LIMIT),
+  })
+  .refine(
+    (card) =>
+      card.nextFreeTime === (card.freeTimes[0] ?? null) &&
+      card.freeTimes.every(
+        (time, index) =>
+          index === 0 || time > (card.freeTimes[index - 1] ?? ''),
+      ),
+    {
+      message:
+        'nextFreeTime e freeTimes precisam concordar, em ordem crescente',
+      path: ['freeTimes'],
+    },
+  );
 
 export const publicSearchResponseSchema = z.object({
   items: z.array(publicVenueCardSchema),

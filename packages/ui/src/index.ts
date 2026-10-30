@@ -44,4 +44,5 @@ export {
   type VenueCardFavorite,
   type VenueCardProps,
   type VenueCardShowOnMap,
+  type VenueCardSlot,
 } from './venue-card';

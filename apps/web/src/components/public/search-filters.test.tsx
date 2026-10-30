@@ -149,12 +149,13 @@ describe('SearchFilters', () => {
       mocks.demo = true;
     });
 
-    it('adds "Reserva instantânea" and "Aceita mensalista", in the prototype order', () => {
+    it('adds "Filtros", "Reserva instantânea" and "Aceita mensalista", in the prototype order', () => {
       render(<SearchFilters params={{}} />);
 
       expect(
         screen.getAllByRole('button').map((button) => button.textContent),
       ).toEqual([
+        'Filtros (em breve)',
         'Reserva instantânea (em breve)',
         'Coberta',
         'Vestiário',
@@ -167,7 +168,11 @@ describe('SearchFilters', () => {
     it('does not pretend to filter: both are disabled with the "Em breve" hint', async () => {
       render(<SearchFilters params={{}} />);
 
-      for (const name of [/Reserva instantânea/, /Aceita mensalista/]) {
+      for (const name of [
+        /Filtros/,
+        /Reserva instantânea/,
+        /Aceita mensalista/,
+      ]) {
         expect(chip(name)).toBeDisabled();
         expect(chip(name)).toHaveAttribute('title', 'Em breve');
         expect(chip(name)).toHaveAttribute('aria-pressed', 'false');
@@ -177,9 +182,10 @@ describe('SearchFilters', () => {
     });
   });
 
-  it('has neither of the two outside the demo mode', () => {
+  it('has none of the three outside the demo mode', () => {
     render(<SearchFilters params={{}} />);
 
+    expect(screen.queryByText(/Filtros/)).toBeNull();
     expect(screen.queryByText(/Reserva instantânea/)).toBeNull();
     expect(screen.queryByText(/mensalista/)).toBeNull();
     expect(screen.queryByText(/Em breve/i)).toBeNull();

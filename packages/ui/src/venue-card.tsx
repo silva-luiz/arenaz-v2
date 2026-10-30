@@ -17,6 +17,13 @@ export interface VenueCardShowOnMap {
   onToggle: () => void;
 }
 
+export interface VenueCardSlot {
+  /** "20:00", shown as is. */
+  time: string;
+  /** Where the slot leads (the venue page with that time chosen). */
+  href: string;
+}
+
 export interface VenueCardProps {
   href: string;
   name: string;
@@ -40,6 +47,14 @@ export interface VenueCardProps {
   nextFreeTime?: string | null | undefined;
   /** Already formatted ("4,92"); shown next to the name only when given. */
   rating?: string | undefined;
+  /** Number of reviews, shown as "(318)" after the rating; needs `rating`. */
+  reviewsCount?: number | undefined;
+  /**
+   * Free start times under the name, as small mono links (the search grid).
+   * Giving the prop, even empty, also moves the price under them and out of
+   * the card link, as in the prototype (the description still reads it).
+   */
+  slots?: readonly VenueCardSlot[] | undefined;
   /** Glass pill on the photo ("Preferido da galera"). */
   badge?: string | undefined;
   /** Square photo (home rails) instead of the 20:19 one (search grid). */
@@ -102,6 +117,8 @@ export function VenueCard({
   priceFrom = false,
   nextFreeTime,
   rating,
+  reviewsCount,
+  slots,
   badge,
   square = false,
   favorite,
@@ -114,11 +131,14 @@ export function VenueCard({
   const sealId = useId();
   const ratingId = useId();
   const detailsId = useId();
+  const priceId = useId();
+  const priceOutside = slots !== undefined;
   const hasSeal = nextFreeTime !== null && nextFreeTime !== undefined;
   const describedBy = [
     hasSeal ? sealId : null,
     rating ? ratingId : null,
     detailsId,
+    priceOutside ? priceId : null,
   ]
     .filter(Boolean)
     .join(' ');
@@ -217,15 +237,61 @@ export function VenueCard({
                   <polygon points="12 2 15.1 8.6 22 9.3 16.8 14 18.2 21 12 17.3 5.8 21 7.2 14 2 9.3 8.9 8.6" />
                 </svg>
                 <span className="sr-only">Nota</span> {rating}
+                {reviewsCount !== undefined ? (
+                  <>
+                    <span aria-hidden="true">
+                      ({reviewsCount.toLocaleString('pt-BR')})
+                    </span>
+                    <span className="sr-only">
+                      , {reviewsCount.toLocaleString('pt-BR')} avaliações
+                    </span>
+                  </>
+                ) : null}
               </span>
             ) : null}
           </span>
           <span id={detailsId} className="flex flex-col gap-0.5">
             <span className="truncate text-muted">{meta}</span>
-            <PriceTag cents={priceCents} from={priceFrom} className="mt-0.5" />
+            {priceOutside ? null : (
+              <PriceTag
+                cents={priceCents}
+                from={priceFrom}
+                className="mt-0.5"
+              />
+            )}
           </span>
         </div>
       </Link>
+
+      {priceOutside ? (
+        <>
+          {slots.length > 0 ? (
+            <ul
+              role="list"
+              aria-label={`Horários livres hoje em ${name}`}
+              className="mt-2.5 flex flex-wrap gap-1.5 px-0.5"
+            >
+              {slots.map((slot) => (
+                <li key={slot.time}>
+                  <Link
+                    href={slot.href}
+                    aria-label={`${slot.time}, ${name}`}
+                    className={cn(
+                      'inline-flex min-h-11 items-center rounded-lg border border-line-control bg-bg px-[9px] font-mono text-xs font-semibold text-ink transition-colors duration-150 hover:border-ink motion-reduce:transition-none md:min-h-8',
+                      FOCUS_RING,
+                    )}
+                  >
+                    {slot.time}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <p id={priceId} className="mt-2.5 px-0.5 text-sm">
+            <PriceTag cents={priceCents} from={priceFrom} />
+          </p>
+        </>
+      ) : null}
 
       {showOnMap ? (
         <button
