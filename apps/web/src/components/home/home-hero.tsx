@@ -15,8 +15,8 @@ function setPointer(element: HTMLElement, x: string, y: string) {
 /**
  * The night hero of Main.dc.html (desktop): photo with a subtle parallax,
  * the title, two floating marketing cards and the search pill overlapping its
- * bottom edge. Below md only the title remains, visually hidden, as the page's
- * h1 (the mobile home starts with the "Bora jogar?" pill instead).
+ * bottom edge. Below md it is a shorter banner above the "Bora jogar?" pill:
+ * the same photo and title, without the cards or the search.
  *
  * The two floating cards read a {@link HeroShowcase} (today the illustration
  * {@link HERO_SHOWCASE_MOCK}, with no data about a real booking), so they show
@@ -57,15 +57,15 @@ export function HomeHero({
       aria-labelledby="hero-titulo"
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="relative [--mx:0] [--my:0] md:h-[520px]"
+      className="relative h-[244px] [--mx:0] [--my:0] md:h-[520px]"
     >
-      <div className="absolute inset-0 overflow-hidden rounded-section bg-[#0B1A12] shadow-2 max-md:hidden">
+      <div className="absolute inset-0 overflow-hidden rounded-[24px] bg-[#0B1A12] shadow-2 md:rounded-section">
         {/* eslint-disable-next-line @next/next/no-img-element -- static file in /public, already sized for this slot */}
         <img
           src="/home/hero-night.jpg"
           alt="Campo de futebol iluminado por um refletor à noite, com jogadores em campo"
           fetchPriority="high"
-          className="absolute inset-0 size-full [transform:scale(1.08)_translate(calc(var(--mx)*-10px),calc(var(--my)*-8px))] object-cover object-[50%_30%] transition-transform duration-[800ms] ease-out motion-reduce:transition-none"
+          className="absolute inset-0 size-full [transform:scale(1.08)_translate(calc(var(--mx)*-10px),calc(var(--my)*-8px))] object-cover object-[50%_18%] md:object-[50%_30%] transition-transform duration-[800ms] ease-out motion-reduce:transition-none"
         />
         <span
           aria-hidden="true"
@@ -73,21 +73,21 @@ export function HomeHero({
         />
       </div>
 
-      <div className="relative flex h-full max-w-[640px] flex-col justify-end px-14 pb-[104px] text-white max-md:sr-only">
+      <div className="relative flex h-full max-w-[640px] flex-col justify-end px-5 pb-5 text-white md:px-14 md:pb-[104px]">
         {isDemoMode ? (
-          <p className="az-glass-dark mb-[18px] inline-flex items-center gap-2.5 self-start rounded-full border border-white/18 py-2 pr-3.5 pl-2.5 text-sm font-semibold">
+          <p className="az-glass-dark mb-3 inline-flex items-center gap-2 self-start rounded-full border border-white/18 py-1.5 pr-3 pl-2.5 text-xs font-semibold md:mb-[18px] md:gap-2.5 md:py-2 md:pr-3.5 md:text-sm">
             <LiveDot />
             {`${String(demoMarketingCounters.freeCourtsToday)} quadras com horário livre hoje`}
           </p>
         ) : null}
         <h1
           id="hero-titulo"
-          className="font-wordmark text-[52px] leading-[0.94] font-[750] tracking-[-0.05em] [text-shadow:0_6px_30px_rgba(0,0,0,0.35)] lg:text-[60px] min-[68.8125rem]:text-[76px]"
+          className="font-wordmark text-[38px] leading-[0.94] md:text-[52px] font-[750] tracking-[-0.05em] [text-shadow:0_6px_30px_rgba(0,0,0,0.35)] lg:text-[60px] min-[68.8125rem]:text-[76px]"
         >
           Bora jogar <br />
           hoje à noite?
         </h1>
-        <p className="mt-[18px] max-w-[300px] text-lg leading-normal lg:max-w-[400px] min-[68.8125rem]:max-w-[460px] text-white/84">
+        <p className="mt-2.5 text-sm leading-normal text-white/84 md:mt-[18px] md:max-w-[300px] md:text-lg lg:max-w-[400px] min-[68.8125rem]:max-w-[460px]">
           {isDemoMode
             ? 'Reserve a quadra na hora, chame o time e divida no Pix sem ficar cobrando ninguém.'
             : 'Reserve a quadra na hora, chame o time e pague no Pix.'}
