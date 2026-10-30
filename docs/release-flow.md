@@ -14,12 +14,12 @@ main  ──●─────────────────────�
 
 ## Branches
 
-| Branch           | Sai de          | PR vai para     | Dura           |
-| ---------------- | --------------- | --------------- | -------------- |
-| `main`           | —               | —               | sempre         |
-| `release/vX.Y`   | `main`          | `main`          | uma sprint     |
-| `feat/*`, `fix/*`| release aberta  | release aberta  | até o merge    |
-| `hotfix/*`       | `main`          | `main`          | até o merge    |
+| Branch            | Sai de         | PR vai para    | Dura        |
+| ----------------- | -------------- | -------------- | ----------- |
+| `main`            | —              | —              | sempre      |
+| `release/vX.Y`    | `main`         | `main`         | uma sprint  |
+| `feat/*`, `fix/*` | release aberta | release aberta | até o merge |
+| `hotfix/*`        | `main`         | `main`         | até o merge |
 
 ## Sprint, passo a passo
 
