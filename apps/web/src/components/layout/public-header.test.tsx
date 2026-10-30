@@ -27,7 +27,7 @@ describe('PublicHeader', () => {
   });
 
   it('shows "Quadras" as the current section', () => {
-    mocks.pathname = '/espacos/arena-1';
+    mocks.pathname = '/buscar-nao';
     render(<PublicHeader user={null} />);
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     const links = within(nav).getAllByRole('link');
@@ -115,9 +115,47 @@ describe('PublicHeader', () => {
     });
   });
 
+  describe('on a venue page', () => {
+    beforeEach(() => {
+      mocks.pathname = '/espacos/arena-vila-madalena';
+    });
+
+    it('has no section tabs and shows the search the page hands it', () => {
+      render(
+        <PublicHeader
+          user={null}
+          venueSearch={<p>Vila Madalena | Hoje | Society</p>}
+        />,
+      );
+
+      const header = screen.getByRole('banner');
+      expect(
+        within(header).queryByRole('navigation', { name: 'Principal' }),
+      ).toBeNull();
+      const pill = within(header).getByText('Vila Madalena | Hoje | Society');
+      // Hidden on a phone, as in the prototype.
+      expect(pill.parentElement).toHaveClass('max-md:hidden');
+      expect(
+        within(header).queryByRole('group', { name: 'Filtros' }),
+      ).toBeNull();
+    });
+
+    it('keeps the 1360px column, its border and the wordmark, dropping "Anuncie" on a phone', () => {
+      render(<PublicHeader user={null} venueSearch={<p>pill</p>} />);
+
+      const header = screen.getByRole('banner');
+      expect(header).not.toHaveClass('md:border-b-0');
+      expect(header.innerHTML).toContain('max-w-[1360px]');
+      expect(screen.getByText('arenaz')).not.toHaveClass('max-md:hidden');
+      expect(
+        screen.getByRole('link', { name: 'Anuncie sua quadra' }),
+      ).toHaveClass('max-md:hidden');
+    });
+  });
+
   it('keeps the plain header (tabs, 1360px column, wordmark) off /buscar', () => {
-    mocks.pathname = '/espacos/arena-1';
-    render(<PublicHeader user={null} />);
+    mocks.pathname = '/conta-x';
+    render(<PublicHeader user={null} venueSearch={<p>pill</p>} />);
 
     const header = screen.getByRole('banner');
     expect(header).toHaveClass('md:border-b-0');
@@ -125,5 +163,6 @@ describe('PublicHeader', () => {
     expect(screen.getByText('arenaz')).not.toHaveClass('max-md:hidden');
     expect(screen.queryByRole('group', { name: 'Filtros' })).toBeNull();
     expect(screen.queryByText('Alterar a busca:', { exact: false })).toBeNull();
+    expect(screen.queryByText('pill')).toBeNull();
   });
 });

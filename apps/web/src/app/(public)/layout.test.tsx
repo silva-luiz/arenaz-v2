@@ -74,6 +74,24 @@ describe('(public) layout', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'conteudo');
   });
 
+  it('puts the venue page search slot in the header', async () => {
+    mocks.getSession.mockResolvedValue(null);
+    mocks.pathname = '/espacos/arena-1';
+
+    render(
+      await PublicLayout({
+        children: null,
+        header: <p>Vila Madalena | Hoje | Society</p>,
+      }),
+    );
+
+    expect(
+      within(screen.getByRole('banner')).getByText(
+        'Vila Madalena | Hoje | Society',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('leaves the bottom spacing to the tab bar spacer, not to <main>', async () => {
     mocks.getSession.mockResolvedValue(null);
 

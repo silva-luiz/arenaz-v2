@@ -62,7 +62,7 @@ test('jogador reserva, paga com o Pix simulado e vê o endereço', async ({
   });
   expect(signUp.ok()).toBe(true);
 
-  // Mobile first: the whole flow at 375px, with the sheet.
+  // Mobile first: the whole flow at 375px, with the booking bar.
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`/espacos/${published.slug}`);

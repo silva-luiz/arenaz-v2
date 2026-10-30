@@ -293,6 +293,19 @@ test('busca: filtros, pinos e prévia do mapa', async ({ page, published }) => {
   ).toBeVisible();
 });
 
+/** WCAG 2.4.11: the scroll padding covers the sticky header. */
+async function expectFocusClearOfHeader(page: Page): Promise<void> {
+  const headerHeight = await page
+    .getByRole('banner')
+    .evaluate((header) => header.getBoundingClientRect().height);
+  const scrollPadding = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).scrollPaddingTop,
+    ),
+  );
+  expect(scrollPadding).toBeGreaterThanOrEqual(headerHeight);
+}
+
 test('quadra: dia e grupo da busca, sem rolagem lateral no celular', async ({
   page,
   published,
@@ -309,6 +322,11 @@ test('quadra: dia e grupo da busca, sem rolagem lateral no celular', async ({
   ).toHaveAccessibleName(new RegExp(`^\\S+ ${String(day)}, `));
   const card = page.getByRole('complementary', { name: 'Reserva' });
   await expect(card).toContainText('12 pessoas');
+  // The prototype's header: the search pill with the venue's place and day.
+  await expect(page.getByRole('banner').locator('summary')).toContainText(
+    published.neighborhood,
+  );
+  await expectFocusClearOfHeader(page);
   await expect(card.getByRole('switch')).toHaveAttribute(
     'aria-checked',
     'true',
@@ -318,6 +336,7 @@ test('quadra: dia e grupo da busca, sem rolagem lateral no celular', async ({
   // 44px target at least.
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(`/espacos/${published.slug}?data=${data}&jogadores=12`);
+  await expectFocusClearOfHeader(page);
   const times = page.getByRole('group', { name: 'Horários' });
   await expect(times.getByText('Carregando horários')).toHaveCount(0);
   expect(

@@ -20,6 +20,8 @@ export function PublicMain({ children }: { children: ReactNode }) {
       // globals.css keys on it: the search page's sticky header is taller, so
       // the scroll padding that keeps focus clear of it is taller too.
       data-search-page={search ? '' : undefined}
+      // A venue page's header has a border from md (85px, not 84px).
+      data-venue-page={pathname.startsWith('/espacos/') ? '' : undefined}
       className={cn(
         'w-full flex-1 outline-none',
         !search && 'mx-auto max-w-[1360px] px-4 pt-4 md:px-10 md:pt-6',

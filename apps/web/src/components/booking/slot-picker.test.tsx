@@ -446,6 +446,42 @@ describe('SlotPicker', () => {
     ).toBeInTheDocument();
   });
 
+  it('says there is nothing left today once every start has passed', async () => {
+    // 15:00 in Brasília; the venue closed at 15:00 today.
+    mocks.fetchAvailability.mockImplementation((_slug: string, date: string) =>
+      Promise.resolve({
+        ok: true,
+        data: {
+          ...availabilityFor(date),
+          fields: availabilityFor(date).fields.map((field) => ({
+            ...field,
+            slots: slotsOf(date, 30, ['13:00', '14:00'], ['13:00', '14:00']),
+          })),
+        },
+      }),
+    );
+    renderPicker();
+
+    expect(
+      await screen.findByText('Não há mais horários hoje.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('O espaço não abre neste dia.')).toBeNull();
+    expect(
+      within(screen.getByRole('group', { name: 'Horários' })).queryAllByRole(
+        'button',
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('lays the times out like the prototype at every width', async () => {
+    renderPicker();
+    await loaded();
+
+    const grid = slot('18:00').parentElement;
+    expect(grid).toHaveClass('grid-cols-[repeat(auto-fill,minmax(112px,1fr))]');
+    expect(grid?.className).not.toMatch(/grid-cols-3/);
+  });
+
   it('says so when the venue is closed that day', async () => {
     mocks.fetchAvailability.mockResolvedValue({
       ok: true,
@@ -786,6 +822,33 @@ describe('SlotPicker', () => {
           ),
       );
     }
+
+    it('late at night still offers the early hours after midnight', async () => {
+      // 23:30 in Brasília: every time of today has started.
+      vi.setSystemTime(new Date('2026-11-06T02:30:00.000Z'));
+      serveNight({
+        busy: [
+          `${TODAY}T21:00:00.000-03:00`,
+          `${TODAY}T22:00:00.000-03:00`,
+          `${TODAY}T23:00:00.000-03:00`,
+        ],
+      });
+      renderPicker();
+
+      const group = await screen.findByRole('group', {
+        name: 'Madrugada de sexta-feira, 6 de novembro',
+      });
+      expect(
+        within(group).getByRole('button', {
+          name: '00:00, sexta-feira, 6 de novembro, R$ 60, livre',
+        }),
+      ).toBeEnabled();
+      expect(
+        screen.getByText('Não há mais horários hoje.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('O espaço não abre neste dia.')).toBeNull();
+      expect(screen.queryByRole('button', { name: /^23:00, / })).toBeNull();
+    });
 
     it('loads the next day and offers its first hours under a heading with the date', async () => {
       serveNight();

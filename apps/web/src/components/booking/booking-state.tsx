@@ -57,10 +57,12 @@ export interface GridSlot extends PickerSlot {
 }
 
 export interface Grid {
-  /** The day's own times. */
+  /** The day's own times still to come (those that started are left out). */
   day: GridSlot[];
   /** The early hours of the next day that continue the day's last opening. */
   tail: GridSlot[];
+  /** The venue opens that day (it has times, even if all have started). */
+  opens: boolean;
 }
 
 /** What the chosen stretch is, in words, for the card and the bar. */
@@ -121,19 +123,20 @@ function toGrid(
   fieldId: string,
   midnightMs: number,
 ): Grid {
-  if (!loaded) return { day: [], tail: [] };
-  // A time that already started cannot be booked: it is left out instead
-  // of reading "Ocupado" (the API sends it as unavailable).
-  const now = Date.now();
-  const day = toGridSlots(loaded.data, fieldId).filter(
-    (slot) => slot.available || slot.startMs > now,
-  );
+  if (!loaded) return { day: [], tail: [], opens: false };
+  const all = toGridSlots(loaded.data, fieldId);
+  // Whether the night goes on past midnight is a matter of the whole day,
+  // started times included.
   const tail = overnightTail(
-    day,
+    all,
     toGridSlots(loaded.nextData, fieldId),
     midnightMs,
   );
-  return { day, tail };
+  // A time that already started cannot be booked: it is left out instead
+  // of reading "Ocupado" (the API sends it as unavailable).
+  const now = Date.now();
+  const day = all.filter((slot) => slot.available || slot.startMs > now);
+  return { day, tail, opens: all.length > 0 };
 }
 
 /** The chosen stretch when every block of it is still free; else `null`. */

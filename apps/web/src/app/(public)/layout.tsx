@@ -14,15 +14,21 @@ import { isDemoMode } from '@/lib/demo';
  */
 export default async function PublicLayout({
   children,
+  header,
 }: {
   children: ReactNode;
+  /** `@header` slot: the venue page's search pill, nothing elsewhere. */
+  header?: ReactNode;
 }) {
   const user = await currentUser();
 
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
-      <PublicHeader user={user ? { name: user.name } : null} />
+      <PublicHeader
+        user={user ? { name: user.name } : null}
+        venueSearch={header}
+      />
       <PublicMain>{children}</PublicMain>
       <SiteFooter showPhotoCredit={isDemoMode} />
       <PublicTabBar />

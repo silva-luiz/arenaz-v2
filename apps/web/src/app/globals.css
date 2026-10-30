@@ -125,3 +125,13 @@ html:has([data-booking-bar]) {
 html:has([data-search-page]) {
   scroll-padding-top: var(--search-header-h);
 }
+
+/*
+ * Venue page: its header (Quadra.dc.html) keeps the border from md, so it is
+ * 85px tall there (84px bar + 1px), not 84px. On a phone it is the usual 65px.
+ */
+@media (min-width: 768px) {
+  html:has([data-venue-page]) {
+    scroll-padding-top: 85px;
+  }
+}

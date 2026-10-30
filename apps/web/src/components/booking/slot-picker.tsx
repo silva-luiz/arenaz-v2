@@ -26,8 +26,8 @@ const TIME_BUTTON = cn(
   FOCUS_RING,
 );
 
-const TIME_GRID =
-  'grid grid-cols-3 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(112px,1fr))]';
+/** Quadra.dc.html at every width: 2 columns on a 375px phone. */
+const TIME_GRID = 'grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2';
 
 /**
  * Day, court and time of a booking (the "Escolha o horário" section of
@@ -56,7 +56,6 @@ export function SlotPicker() {
   } = useBooking();
 
   const showZone = timezone !== DEFAULT_TIMEZONE;
-  const hasSlots = grid.day.length > 0;
   const hasFreeSlot = grid.day.some((slot) => slot.available);
 
   function timeButton(slot: GridSlot, overnight: boolean) {
@@ -181,18 +180,26 @@ export function SlotPicker() {
               ))}
             </div>
           </>
-        ) : status.state === 'error' ? null : !hasSlots ? (
+        ) : status.state === 'error' ? null : !grid.opens ? (
           <p className="text-sm text-muted">O espaço não abre neste dia.</p>
         ) : (
           <>
-            {hasFreeSlot ? null : (
-              <p className="mb-2 text-sm text-muted">
-                Nenhum horário livre neste dia.
-              </p>
+            {grid.day.length === 0 ? (
+              // Every time of the day has started (late today); the early
+              // hours after midnight may still follow.
+              <p className="text-sm text-muted">Não há mais horários hoje.</p>
+            ) : (
+              <>
+                {hasFreeSlot ? null : (
+                  <p className="mb-2 text-sm text-muted">
+                    Nenhum horário livre neste dia.
+                  </p>
+                )}
+                <div className={TIME_GRID}>
+                  {grid.day.map((slot) => timeButton(slot, false))}
+                </div>
+              </>
             )}
-            <div className={TIME_GRID}>
-              {grid.day.map((slot) => timeButton(slot, false))}
-            </div>
             {grid.tail.length > 0 ? (
               <div
                 role="group"

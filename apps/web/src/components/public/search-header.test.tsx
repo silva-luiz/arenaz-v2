@@ -41,6 +41,23 @@ describe('SearchSummary', () => {
     );
   });
 
+  it('shows the search a venue page hands it instead of the URL', () => {
+    mocks.search = 'q=Pinheiros&sport=padel';
+    render(
+      <SearchSummary
+        seed={{ q: 'Vila Madalena', data: day(0), sport: 'futebol_society' }}
+      />,
+    );
+
+    const summary = screen.getByText('Vila Madalena').closest('summary');
+    expect(summary).toHaveTextContent(
+      'Alterar a busca: Vila MadalenaHojeSociety',
+    );
+    expect(screen.getByRole('textbox', { name: 'Onde' })).toHaveValue(
+      'Vila Madalena',
+    );
+  });
+
   it('writes tomorrow and later days', () => {
     mocks.search = `data=${day(1)}`;
     const first = render(<SearchSummary />);

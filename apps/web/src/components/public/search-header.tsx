@@ -62,11 +62,21 @@ const DIVIDER = (
  * The prototype's compact search pill, in the header of the search page:
  * "Vila Madalena | Hoje | Society · 14" and a green magnifier. It is the
  * summary of a `<details>` (so it opens without JavaScript too) whose panel is
- * the full search form, with the real inputs prefilled from the URL. Esc, a
- * click outside or submitting closes it. On a phone only the place shows.
+ * the full search form, with the real inputs prefilled from the URL (or from
+ * `seed`). Esc, a click outside or submitting closes it. On a phone only the
+ * place shows.
  */
-export function SearchSummary() {
-  const params = useSearchState();
+export function SearchSummary({
+  seed,
+}: {
+  /**
+   * The search to show instead of the URL's: a venue page hands its
+   * neighborhood, day and sport (Quadra.dc.html).
+   */
+  seed?: SearchParams | undefined;
+} = {}) {
+  const fromUrl = useSearchState();
+  const params = seed ?? fromUrl;
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const summaryRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);

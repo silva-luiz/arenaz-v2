@@ -1,8 +1,4 @@
-import {
-  PUBLIC_SLUG_PATTERN,
-  publicVenueSchema,
-  type PublicVenue,
-} from '@arenaz/contracts';
+import type { PublicVenue } from '@arenaz/contracts';
 import { Gallery } from '@arenaz/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -23,16 +19,11 @@ import {
   type BookingIntent,
 } from '@/lib/booking-client';
 import { isDemoMode } from '@/lib/demo';
-import { publicGet } from '@/lib/public-api';
 import { venuePrice } from '@/lib/price-rule-summary';
+import { loadPublicVenue } from '@/lib/public-venue';
 import { absoluteUrl } from '@/lib/site';
 import { isSignedIn } from '@/lib/venue-session';
 import { serializeJsonLd, sortedPhotos, venueJsonLd } from '@/lib/venue-jsonld';
-
-// How long the Next data cache may serve the public API data (see
-// `publicGet`). Not exported: the route is dynamic, so a segment-level
-// `revalidate` export would do nothing.
-const REVALIDATE_SECONDS = 60;
 
 const DESCRIPTION_MAX_LENGTH = 160;
 
@@ -113,19 +104,6 @@ function parseIntent(
   return { date, fieldId, startsAt, durationMinutes };
 }
 
-/**
- * The venue, or `null` when it does not exist (or is not published: the API
- * answers 404 for both). A slug that can never exist skips the request.
- * Rendering the page and building its metadata both ask; Next shares the
- * identical `fetch` between them.
- */
-async function loadVenue(slug: string): Promise<PublicVenue | null> {
-  if (!PUBLIC_SLUG_PATTERN.test(slug)) return null;
-  return publicGet(`/venues/${encodeURIComponent(slug)}`, publicVenueSchema, {
-    revalidate: REVALIDATE_SECONDS,
-  });
-}
-
 /** One line of at most 160 characters, cut on a word with "…". */
 function oneLine(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim();
@@ -147,7 +125,7 @@ function pageDescription(venue: PublicVenue): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const venue = await loadVenue(slug);
+  const venue = await loadPublicVenue(slug);
 
   if (!venue) {
     // The page answers 404; noindex keeps the address out of search results
@@ -182,7 +160,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function VenuePage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const venue = await loadVenue(slug);
+  const venue = await loadPublicVenue(slug);
   if (!venue) notFound();
   const [signedIn, query] = await Promise.all([
     isSignedIn(),

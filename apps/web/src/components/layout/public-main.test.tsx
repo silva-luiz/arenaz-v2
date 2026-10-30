@@ -46,6 +46,28 @@ describe('PublicMain', () => {
     expect(screen.getByRole('main')).not.toHaveAttribute('data-search-page');
   });
 
+  it('marks a venue page, whose header has a border from md', () => {
+    mocks.pathname = '/espacos/arena-1';
+    const { unmount } = render(<PublicMain>conteúdo</PublicMain>);
+    expect(screen.getByRole('main')).toHaveAttribute('data-venue-page', '');
+    unmount();
+
+    mocks.pathname = '/';
+    render(<PublicMain>conteúdo</PublicMain>);
+    expect(screen.getByRole('main')).not.toHaveAttribute('data-venue-page');
+  });
+
+  it('globals.css pads a venue page by its 85px header (84px bar + border) from md', () => {
+    const css = readFileSync(
+      resolve(process.cwd(), 'src/app/globals.css'),
+      'utf8',
+    );
+
+    expect(css).toMatch(
+      /@media \(min-width: 768px\) \{\s*html:has\(\[data-venue-page\]\) \{\s*scroll-padding-top: 85px;/,
+    );
+  });
+
   it('globals.css gives that mark the header height as scroll padding', () => {
     const css = readFileSync(
       resolve(process.cwd(), 'src/app/globals.css'),
