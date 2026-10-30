@@ -17,6 +17,7 @@ import { createDb, runMigrations, schema, type Db } from '@arenaz/db';
 import { hashPassword } from 'better-auth/crypto';
 import { eq, inArray } from 'drizzle-orm';
 import { loadEnv } from '../src/config/env.ts';
+import { photoObjectKeys } from '../src/storage/photo-objects.ts';
 import { S3Storage } from '../src/storage/s3.storage.ts';
 import type { StoragePort } from '../src/storage/storage.port.ts';
 import {
@@ -349,7 +350,8 @@ export async function runDemoSeed(
             ),
           ),
         );
-      return previous.map((row) => row.key);
+      // The worker also wrote resized variants next to each original.
+      return previous.flatMap((row) => photoObjectKeys(row.key));
     });
   } catch (error) {
     // Nothing points at the new objects: drop them and let the error out.

@@ -1,4 +1,5 @@
 import { localDateOf, toInstant } from '@arenaz/booking-core';
+import { PHOTO_VARIANT_WIDTHS, photoVariantKey } from '@arenaz/contracts';
 import { createDb, schema } from '@arenaz/db';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, count, eq, inArray } from 'drizzle-orm';
@@ -143,6 +144,8 @@ describe('assertDemoTarget', () => {
 
 describe('runDemoSeed', () => {
   let firstKeys: string[] = [];
+  // A resized variant the worker would have written for the first run.
+  let firstVariantKey = '';
   let afterFirst: Record<string, number> = {};
   let afterSecond: Record<string, number> = {};
 
@@ -150,6 +153,12 @@ describe('runDemoSeed', () => {
     await seed();
     afterFirst = await snapshot();
     firstKeys = await photoKeys();
+    const width = PHOTO_VARIANT_WIDTHS[0];
+    if (width === undefined || firstKeys[0] === undefined) {
+      throw new Error('sem foto ou largura de variante');
+    }
+    firstVariantKey = photoVariantKey(firstKeys[0], width);
+    await storage.put(firstVariantKey, Buffer.from('webp'), 'image/webp');
     await seed();
     afterSecond = await snapshot();
   });
@@ -278,6 +287,8 @@ describe('runDemoSeed', () => {
     expect(secondKeys.some((key) => firstKeys.includes(key))).toBe(false);
     // The objects of the first run are gone from the bucket.
     expect(await storage.head(firstKeys[0] ?? '')).toBeNull();
+    // ...and so are the WebP variants the worker made from them.
+    expect(await storage.head(firstVariantKey)).toBeNull();
   });
 
   it('books Vila Madalena tonight, from the app and by hand', async () => {
